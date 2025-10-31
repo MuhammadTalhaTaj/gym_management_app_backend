@@ -12,4 +12,7 @@ app.use(express.json());
 app.get('/', ()=>{
     console.log("server is working")
 })
+
+import {userRouter} from "./src/route/auth.route.js";
+app.use('/auth',userRouter)
 export default app
