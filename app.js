@@ -15,4 +15,7 @@ app.get('/', ()=>{
 
 import {userRouter} from "./src/route/auth.route.js";
 app.use('/auth',userRouter)
+
+import { memberRouter } from "./src/route/member.route.js";
+app.use('/member', memberRouter)
 export default app
