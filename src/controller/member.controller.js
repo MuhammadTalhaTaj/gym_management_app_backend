@@ -82,7 +82,7 @@ const addMember = asyncHandler(async (req, res) => {
   // ✅ Send response
   res.status(201).json({
     message: "New Member added successfully",
-    member: memberWithPlan[0] // return single member document with plan details
+    data: memberWithPlan[0] // return single member document with plan details
   });
 });
 
