@@ -1,6 +1,7 @@
 import { Member } from "../model/member.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
+import mongoose from "mongoose";
 
 const addMember = asyncHandler(async (req, res) => {
   const {
@@ -86,4 +87,27 @@ const addMember = asyncHandler(async (req, res) => {
   });
 });
 
-export { addMember };
+
+const findMember = asyncHandler (async(req, res)=>{
+const{name}=req.body;
+if(!name ){
+  throw new APIError(400,"Provide name and contact")
+}
+const member = await Member.find({name})
+if(!member){
+  throw new APIError(404,"Member not found")
+}
+res.status(200).json({
+  message: "Member Found",
+  data: member
+});
+});
+
+const getAllMembers = asyncHandler(async (req, res)=>{
+  const members = await Member.find()
+  res.status(200).json({
+    message: "Members found",
+    data: members
+  })
+})
+export { addMember, findMember, getAllMembers };

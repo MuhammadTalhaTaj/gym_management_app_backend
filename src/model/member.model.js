@@ -9,7 +9,7 @@ email:{
     required:true
 },
 contact:{
-    type: Number,
+    type: String,
     required:true
 },
 batch:{
