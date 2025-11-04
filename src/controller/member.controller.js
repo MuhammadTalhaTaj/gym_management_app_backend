@@ -1,6 +1,8 @@
 import { Member } from "../model/member.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
+import { Payment } from "../model/payment.model.js";
+import { Plan } from "../model/plan.model.js";
 import mongoose from "mongoose";
 
 const addMember = asyncHandler(async (req, res) => {
@@ -11,12 +13,11 @@ const addMember = asyncHandler(async (req, res) => {
     gender,
     batch,
     address,
-    plan,
+    plan,            // Plan ID
     joinDate,
     admissionAmount,
     discount,
-    collectedAmount,
-    dueAmount
+    collectedAmount
   } = req.body;
 
   // ✅ Validate required fields
@@ -43,6 +44,15 @@ const addMember = asyncHandler(async (req, res) => {
     throw new APIError(400, "Email or Phone is already in use");
   }
 
+  // ✅ Fetch the plan details using the plan ID
+  const planDetails = await Plan.findById(plan);
+  if (!planDetails) {
+    throw new APIError(404, "Plan not found");
+  }
+
+  // ✅ Calculate the due amount dynamically
+  const dueAmount = (admissionAmount + planDetails.amount) - collectedAmount - discount;
+
   // ✅ Create new member
   const newMember = new Member({
     name,
@@ -56,10 +66,25 @@ const addMember = asyncHandler(async (req, res) => {
     admissionAmount,
     discount,
     collectedAmount,
-    dueAmount
+    dueAmount // Dynamically calculated due amount
   });
 
   await newMember.save();
+
+  const payment = new Payment({
+    memberId: newMember._id, // Use the newly created memberId
+    plan: plan,              // Use the plan the member selected
+    amount: collectedAmount,
+    paymentDate: new Date()
+  });
+
+  try {
+    await payment.save();
+  } catch (error) {
+    // Rollback member creation if payment fails (you can delete the member or mark it as incomplete)
+    await newMember.delete();
+    throw new APIError(500, "Payment creation failed, and member is removed");
+  }
 
   // ✅ Use aggregation pipeline to join with plan details
   const memberWithPlan = await Member.aggregate([
@@ -82,28 +107,32 @@ const addMember = asyncHandler(async (req, res) => {
 
   // ✅ Send response
   res.status(201).json({
-    message: "New Member added successfully",
-    data: memberWithPlan[0] // return single member document with plan details
+    message: "New Member and Payment added successfully",
+    data: {
+      member: memberWithPlan[0], // Return member with plan details
+      payment: payment           // Return the payment details
+    }
   });
 });
 
 
-const findMember = asyncHandler (async(req, res)=>{
-const{name}=req.body;
-if(!name ){
-  throw new APIError(400,"Provide name and contact")
-}
-const member = await Member.find({name})
-if(!member){
-  throw new APIError(404,"Member not found")
-}
-res.status(200).json({
-  message: "Member Found",
-  data: member
-});
+
+const findMember = asyncHandler(async (req, res) => {
+  const { name } = req.body;
+  if (!name) {
+    throw new APIError(400, "Provide name and contact")
+  }
+  const member = await Member.find({ name })
+  if (!member) {
+    throw new APIError(404, "Member not found")
+  }
+  res.status(200).json({
+    message: "Member Found",
+    data: member
+  });
 });
 
-const getAllMembers = asyncHandler(async (req, res)=>{
+const getAllMembers = asyncHandler(async (req, res) => {
   const members = await Member.find()
   res.status(200).json({
     message: "Members found",

@@ -28,7 +28,7 @@ joinDate:{
     type: Date,
     required: true
 },
-admissionFee:{
+admissionAmount:{
     type: Number,
     required:true,
     default: 0
