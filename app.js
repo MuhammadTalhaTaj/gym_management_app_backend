@@ -18,4 +18,7 @@ app.use('/auth',userRouter)
 
 import { memberRouter } from "./src/route/member.route.js";
 app.use('/member', memberRouter)
+
+import { planRouter } from "./src/route/plan.route.js";
+app.use('/plan',planRouter)
 export default app
