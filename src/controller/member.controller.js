@@ -139,4 +139,54 @@ const getAllMembers = asyncHandler(async (req, res) => {
     data: members
   })
 })
-export { addMember, findMember, getAllMembers };
+
+const getMemberWithPaymentHistory = asyncHandler(async (req, res) => {
+  const { memberId } = req.params; // Get memberId from the route parameters
+  console.log("member id received: ", memberId)
+  if (!memberId) {
+    throw new APIError(400, "Provide a valid memberId");
+  }
+
+  // ✅ Check if the member exists
+  const member = await Member.findById({_id: memberId});  // Use memberId directly
+  if (!member) {
+    throw new APIError(404, "Member not found");
+  }
+  console.log("received member from database: ", member)
+  // ✅ Aggregation pipeline to get member with payment history
+  const memberWithPayments = await Member.aggregate([
+    {
+      $match: { _id: member._id } // Ensure ObjectId is used in aggregation
+    },
+    {
+      $lookup: {
+        from: "payments",  // The collection to join (Payment)
+        localField: "_id",  // The field from Member
+        foreignField: "memberId", // The field in Payment
+        as: "paymentHistory" // The field name for the joined payments
+      }
+    },
+    {
+      $project: {
+        name: 1,
+        contact: 1,
+        email: 1,
+        gender: 1,
+        batch: 1,
+        address: 1,
+        joinDate: 1,
+        paymentHistory: 1 // Keep the paymentHistory array as is
+      }
+    }
+  ]);
+
+  console.log("received data: ", memberWithPayments)
+  // ✅ Send response
+  res.status(200).json({
+    message: "Member with Payment History fetched successfully",
+    data: memberWithPayments[0] // Return the member data along with their payment history
+  });
+});
+
+
+export { addMember, findMember, getAllMembers, getMemberWithPaymentHistory };
