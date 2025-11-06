@@ -2,7 +2,8 @@ import { User } from "../model/user.model.js";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
-
+import { Payment } from "../model/payment.model.js";
+import { Member } from "../model/member.model.js";
 // Helper function to generate JWT (access token)
 const generateAccessToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '1h' }); // Access token expires in 1 hour
@@ -161,5 +162,38 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
   next();
 });
 
+const dashboardController = asyncHandler(async (req, res) => {
+  const now = new Date();
+  const monthStartUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
+  const monthEndUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
 
-export { signup, login, authMiddleware, refreshAccessToken };
+  console.log("UTC month range:", monthStartUTC.toISOString(), "to", monthEndUTC.toISOString());
+  const revenueResult = await Payment.aggregate([
+    {
+      $match: {
+        paymentDate: { $gte: monthStartUTC, $lte: monthEndUTC }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalRevenue: { $sum: "$amount" }
+      }
+    }
+  ]);
+
+  const totalRevenueThisMonth = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
+  const totalAdmissionsThisMonth = await Member.countDocuments({
+    joinDate: { $gte: monthStartUTC, $lte: monthEndUTC }
+  });
+
+  
+  res.status(200).json({
+    message: "Dashboard data for this month",
+    revenueThisMonth: totalRevenueThisMonth,
+    totalAdmissionsThisMonth
+  });
+});
+
+
+export { signup, login, authMiddleware, refreshAccessToken, dashboardController };
