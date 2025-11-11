@@ -164,36 +164,115 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
 
 const dashboardController = asyncHandler(async (req, res) => {
   const now = new Date();
+
+  // Start and end of the current month (in UTC)
   const monthStartUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
   const monthEndUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
 
   console.log("UTC month range:", monthStartUTC.toISOString(), "to", monthEndUTC.toISOString());
+
+  // ===== 1️⃣ Total Revenue This Month =====
   const revenueResult = await Payment.aggregate([
     {
       $match: {
-        paymentDate: { $gte: monthStartUTC, $lte: monthEndUTC }
-      }
+        paymentDate: { $gte: monthStartUTC, $lte: monthEndUTC },
+      },
     },
     {
       $group: {
         _id: null,
-        totalRevenue: { $sum: "$amount" }
-      }
-    }
+        totalRevenue: { $sum: "$amount" },
+      },
+    },
   ]);
 
   const totalRevenueThisMonth = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
+
+  // ===== 2️⃣ Total Admissions This Month =====
   const totalAdmissionsThisMonth = await Member.countDocuments({
-    joinDate: { $gte: monthStartUTC, $lte: monthEndUTC }
+    joinDate: { $gte: monthStartUTC, $lte: monthEndUTC },
   });
 
-  
+  // ===== 3️⃣ Last Week of the Month =====
+  const lastWeekStart = new Date(monthEndUTC);
+  lastWeekStart.setUTCDate(monthEndUTC.getUTCDate() - 6); // last 7 days including end of month
+  lastWeekStart.setUTCHours(0, 0, 0, 0);
+
+  const totalDueResult = await Member.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalDueAmount: { $sum: "$dueAmount" } // sum all due amounts
+        }
+      }
+    ]);
+     const totalDueAmount = totalDueResult.length > 0 ? totalDueResult[0].totalDueAmount : 0;
+  // ===== 4️⃣ Subscriptions Expiring This Week =====
+  const expiringSubscriptions = await Member.aggregate([
+    {
+      $lookup: {
+        from: "plans",
+        localField: "plan",
+        foreignField: "_id",
+        as: "planInfo",
+      },
+    },
+    { $unwind: "$planInfo" },
+    {
+      // Compute expiry date by adding duration to joinDate
+      $addFields: {
+        expiryDate: {
+          $switch: {
+            branches: [
+              {
+                case: { $eq: ["$planInfo.durationType", "month"] },
+                then: {
+                  $dateAdd: {
+                    startDate: "$joinDate",
+                    unit: "month",
+                    amount: "$planInfo.duration",
+                  },
+                },
+              },
+              {
+                case: { $eq: ["$planInfo.durationType", "days"] },
+                then: {
+                  $dateAdd: {
+                    startDate: "$joinDate",
+                    unit: "day",
+                    amount: "$planInfo.duration",
+                  },
+                },
+              },
+            ],
+            default: "$joinDate",
+          },
+        },
+      },
+    },
+    {
+      $match: {
+        expiryDate: { $gte: lastWeekStart, $lte: monthEndUTC },
+      },
+    },
+    {
+      $count: "expiringCount",
+    },
+  ]);
+
+  const expiringSubscriptionsCount =
+    expiringSubscriptions.length > 0 ? expiringSubscriptions[0].expiringCount : 0;
+
+  // ===== 5️⃣ Send Response =====
   res.status(200).json({
     message: "Dashboard data for this month",
     revenueThisMonth: totalRevenueThisMonth,
-    totalAdmissionsThisMonth
+    totalAdmissionsThisMonth,
+    expiringSubscriptions: expiringSubscriptionsCount,
+    netDueAmount:totalDueAmount
   });
 });
+
 
 
 export { signup, login, authMiddleware, refreshAccessToken, dashboardController };

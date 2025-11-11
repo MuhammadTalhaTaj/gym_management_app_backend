@@ -27,4 +27,7 @@ app.use('/enquiry', enquiryRouter)
 
 import { paymentRouter } from "./src/route/payment.route.js";
 app.use('/payment',paymentRouter)
+
+import { expenseRouter } from "./src/route/expense.route.js";
+app.use('/expense',expenseRouter)
 export default app
