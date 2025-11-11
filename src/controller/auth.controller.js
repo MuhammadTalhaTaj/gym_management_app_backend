@@ -4,6 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
 import { Payment } from "../model/payment.model.js";
 import { Member } from "../model/member.model.js";
+import { Expense } from "../model/expense.model.js";
 // Helper function to generate JWT (access token)
 const generateAccessToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '1h' }); // Access token expires in 1 hour
@@ -199,14 +200,14 @@ const dashboardController = asyncHandler(async (req, res) => {
   lastWeekStart.setUTCHours(0, 0, 0, 0);
 
   const totalDueResult = await Member.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalDueAmount: { $sum: "$dueAmount" } // sum all due amounts
-        }
+    {
+      $group: {
+        _id: null,
+        totalDueAmount: { $sum: "$dueAmount" } // sum all due amounts
       }
-    ]);
-     const totalDueAmount = totalDueResult.length > 0 ? totalDueResult[0].totalDueAmount : 0;
+    }
+  ]);
+  const totalDueAmount = totalDueResult.length > 0 ? totalDueResult[0].totalDueAmount : 0;
   // ===== 4️⃣ Subscriptions Expiring This Week =====
   const expiringSubscriptions = await Member.aggregate([
     {
@@ -263,13 +264,32 @@ const dashboardController = asyncHandler(async (req, res) => {
   const expiringSubscriptionsCount =
     expiringSubscriptions.length > 0 ? expiringSubscriptions[0].expiringCount : 0;
 
+  const expenseThisMonth = await Expense.aggregate([
+    {
+      $match: {
+        date: { $gte: monthStartUTC, $lte: monthEndUTC },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        expenses: { $sum: "$amount" },
+      },
+    },
+  ]
+  )
+  const totalExpenseThisMonth = expenseThisMonth.length > 0 ? expenseThisMonth[0].expenses : 0;
+
+
+
   // ===== 5️⃣ Send Response =====
   res.status(200).json({
     message: "Dashboard data for this month",
     revenueThisMonth: totalRevenueThisMonth,
     totalAdmissionsThisMonth,
     expiringSubscriptions: expiringSubscriptionsCount,
-    netDueAmount:totalDueAmount
+    netDueAmount: totalDueAmount,
+    expense:totalExpenseThisMonth
   });
 });
 
