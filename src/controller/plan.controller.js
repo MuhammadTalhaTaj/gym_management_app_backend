@@ -1,4 +1,5 @@
 import { Plan } from "../model/plan.model.js";
+import { User } from "../model/user.model.js";
 import { APIError } from "../utils/APIError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -26,4 +27,11 @@ const addPlan = asyncHandler(async (req, res) => {
     });
 })
 
-export {addPlan}
+const getAllPlans = asyncHandler(async(req,res)=>{
+    const planData = await Plan.find();
+    res.status(200).json({
+        message:"Plan Data Found",
+        data: planData
+    })
+})
+export {addPlan, getAllPlans}
