@@ -207,7 +207,6 @@ const dashboardController = asyncHandler(async (req, res) => {
   const totalDueAmount = totalDueResult.length > 0 ? totalDueResult[0].totalDueAmount : 0;
 
   // ===== 5️⃣ Subscriptions Expiring in Each Member’s Last 7 Days =====
-  // Define a 7-day window (the member's expiry date is within last 7 days)
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(now.getDate() - 7);
 
@@ -222,7 +221,6 @@ const dashboardController = asyncHandler(async (req, res) => {
     },
     { $unwind: "$planInfo" },
     {
-      // Compute expiry date based on plan duration and type (case-insensitive)
       $addFields: {
         expiryDate: {
           $switch: {
@@ -264,7 +262,6 @@ const dashboardController = asyncHandler(async (req, res) => {
       },
     },
     {
-      // Match members whose expiry date falls within the last 7 days
       $match: {
         expiryDate: { $gte: now, $lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) },
       },
@@ -294,7 +291,83 @@ const dashboardController = asyncHandler(async (req, res) => {
 
   const totalExpenseThisMonth = expenseThisMonth.length > 0 ? expenseThisMonth[0].expenses : 0;
 
-  // ===== 7️⃣ Send Response =====
+  // ===== 7️⃣ Members with Expired Plans =====
+  // Calculate expired plans with additional fields (dueAmount, collectedAmount, plan details)
+  const expiredMembers = await Member.aggregate([
+    {
+      $lookup: {
+        from: "plans",
+        localField: "plan",
+        foreignField: "_id",
+        as: "planInfo",
+      },
+    },
+    { $unwind: "$planInfo" },
+    {
+      $addFields: {
+        expiryDate: {
+          $switch: {
+            branches: [
+              {
+                case: { $eq: [{ $toLower: "$planInfo.durationType" }, "month"] },
+                then: {
+                  $dateAdd: {
+                    startDate: "$joinDate",
+                    unit: "month",
+                    amount: "$planInfo.duration",
+                  },
+                },
+              },
+              {
+                case: { $eq: [{ $toLower: "$planInfo.durationType" }, "week"] },
+                then: {
+                  $dateAdd: {
+                    startDate: "$joinDate",
+                    unit: "week",
+                    amount: "$planInfo.duration",
+                  },
+                },
+              },
+              {
+                case: { $eq: [{ $toLower: "$planInfo.durationType" }, "day"] },
+                then: {
+                  $dateAdd: {
+                    startDate: "$joinDate",
+                    unit: "day",
+                    amount: "$planInfo.duration",
+                  },
+                },
+              },
+            ],
+            default: "$joinDate",
+          },
+        },
+      },
+    },
+    {
+      $match: {
+        expiryDate: { $lt: now }, // Match expired plans
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        plan: 1,
+        joinDate: 1,
+        expiryDate: 1,
+        dueAmount: 1,
+        collectedAmount: 1,
+        planName: "$planInfo.name",
+        planDurationType: "$planInfo.durationType",
+        planDuration: "$planInfo.duration",
+      },
+    },
+  ]);
+
+  const expiredMembersCount = expiredMembers.length;
+
+  // ===== 8️⃣ Send Response =====
   res.status(200).json({
     message: "Dashboard data for this month",
     revenueThisMonth: totalRevenueThisMonth,
@@ -302,8 +375,12 @@ const dashboardController = asyncHandler(async (req, res) => {
     expiringSubscriptions: expiringSubscriptionsCount,
     netDueAmount: totalDueAmount,
     expense: totalExpenseThisMonth,
+    expiredMembers: expiredMembersCount, // Add expired members count
+    expiredMembersList: expiredMembers, // Return the expired members list
   });
 });
+
+
 
 
 
