@@ -166,13 +166,13 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
 const dashboardController = asyncHandler(async (req, res) => {
   const now = new Date();
 
-  // Start and end of the current month (in UTC)
+  // ===== 1️⃣ Start and end of the current month (UTC) =====
   const monthStartUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
   const monthEndUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
 
   console.log("UTC month range:", monthStartUTC.toISOString(), "to", monthEndUTC.toISOString());
 
-  // ===== 1️⃣ Total Revenue This Month =====
+  // ===== 2️⃣ Total Revenue This Month =====
   const revenueResult = await Payment.aggregate([
     {
       $match: {
@@ -189,26 +189,28 @@ const dashboardController = asyncHandler(async (req, res) => {
 
   const totalRevenueThisMonth = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
 
-  // ===== 2️⃣ Total Admissions This Month =====
+  // ===== 3️⃣ Total Admissions This Month =====
   const totalAdmissionsThisMonth = await Member.countDocuments({
     joinDate: { $gte: monthStartUTC, $lte: monthEndUTC },
   });
 
-  // ===== 3️⃣ Last Week of the Month =====
-  const lastWeekStart = new Date(monthEndUTC);
-  lastWeekStart.setUTCDate(monthEndUTC.getUTCDate() - 6); // last 7 days including end of month
-  lastWeekStart.setUTCHours(0, 0, 0, 0);
-
+  // ===== 4️⃣ Total Due Amount =====
   const totalDueResult = await Member.aggregate([
     {
       $group: {
         _id: null,
-        totalDueAmount: { $sum: "$dueAmount" } // sum all due amounts
-      }
-    }
+        totalDueAmount: { $sum: "$dueAmount" },
+      },
+    },
   ]);
+
   const totalDueAmount = totalDueResult.length > 0 ? totalDueResult[0].totalDueAmount : 0;
-  // ===== 4️⃣ Subscriptions Expiring This Week =====
+
+  // ===== 5️⃣ Subscriptions Expiring in Each Member’s Last 7 Days =====
+  // Define a 7-day window (the member's expiry date is within last 7 days)
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(now.getDate() - 7);
+
   const expiringSubscriptions = await Member.aggregate([
     {
       $lookup: {
@@ -220,13 +222,13 @@ const dashboardController = asyncHandler(async (req, res) => {
     },
     { $unwind: "$planInfo" },
     {
-      // Compute expiry date by adding duration to joinDate
+      // Compute expiry date based on plan duration and type (case-insensitive)
       $addFields: {
         expiryDate: {
           $switch: {
             branches: [
               {
-                case: { $eq: ["$planInfo.durationType", "month"] },
+                case: { $eq: [{ $toLower: "$planInfo.durationType" }, "month"] },
                 then: {
                   $dateAdd: {
                     startDate: "$joinDate",
@@ -236,7 +238,17 @@ const dashboardController = asyncHandler(async (req, res) => {
                 },
               },
               {
-                case: { $eq: ["$planInfo.durationType", "days"] },
+                case: { $eq: [{ $toLower: "$planInfo.durationType" }, "week"] },
+                then: {
+                  $dateAdd: {
+                    startDate: "$joinDate",
+                    unit: "week",
+                    amount: "$planInfo.duration",
+                  },
+                },
+              },
+              {
+                case: { $eq: [{ $toLower: "$planInfo.durationType" }, "day"] },
                 then: {
                   $dateAdd: {
                     startDate: "$joinDate",
@@ -252,8 +264,9 @@ const dashboardController = asyncHandler(async (req, res) => {
       },
     },
     {
+      // Match members whose expiry date falls within the last 7 days
       $match: {
-        expiryDate: { $gte: lastWeekStart, $lte: monthEndUTC },
+        expiryDate: { $gte: now, $lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) },
       },
     },
     {
@@ -264,6 +277,7 @@ const dashboardController = asyncHandler(async (req, res) => {
   const expiringSubscriptionsCount =
     expiringSubscriptions.length > 0 ? expiringSubscriptions[0].expiringCount : 0;
 
+  // ===== 6️⃣ Total Expense This Month =====
   const expenseThisMonth = await Expense.aggregate([
     {
       $match: {
@@ -276,22 +290,21 @@ const dashboardController = asyncHandler(async (req, res) => {
         expenses: { $sum: "$amount" },
       },
     },
-  ]
-  )
+  ]);
+
   const totalExpenseThisMonth = expenseThisMonth.length > 0 ? expenseThisMonth[0].expenses : 0;
 
-
-
-  // ===== 5️⃣ Send Response =====
+  // ===== 7️⃣ Send Response =====
   res.status(200).json({
     message: "Dashboard data for this month",
     revenueThisMonth: totalRevenueThisMonth,
     totalAdmissionsThisMonth,
     expiringSubscriptions: expiringSubscriptionsCount,
     netDueAmount: totalDueAmount,
-    expense:totalExpenseThisMonth
+    expense: totalExpenseThisMonth,
   });
 });
+
 
 
 
