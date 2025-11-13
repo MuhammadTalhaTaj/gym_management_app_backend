@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { addExpense } from "../controller/expense.controller.js";
+import { addExpense, getExpense } from "../controller/expense.controller.js";
 const expenseRouter = Router();
 expenseRouter.route('/addExpense').post(addExpense)
+expenseRouter.route('/getExpense').get(getExpense)
 export {expenseRouter}
 

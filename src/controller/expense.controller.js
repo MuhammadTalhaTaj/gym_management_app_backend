@@ -17,5 +17,12 @@ const addExpense = asyncHandler(async (req,res)=>{
     data:newExpense
    })
 })
+const getExpense = asyncHandler(async (req,res)=>{
+    const expenseData = await Expense.find({}) 
+    res.status(200).json({
+        message: "Expense Data Found",
+        data: expenseData
+    })
+})
 
-export {addExpense}
+export {addExpense, getExpense}
