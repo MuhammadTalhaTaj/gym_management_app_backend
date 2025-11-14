@@ -1,4 +1,5 @@
 import { User } from "../model/user.model.js";
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
@@ -6,349 +7,302 @@ import { Payment } from "../model/payment.model.js";
 import { Member } from "../model/member.model.js";
 import { Expense } from "../model/expense.model.js";
 // Helper function to generate JWT (access token)
-const generateAccessToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '1h' }); // Access token expires in 1 hour
+// -------------------- Config / helpers --------------------
+const generateAccessToken = (userId) =>
+  jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+const generateRefreshToken = (userId) =>
+  jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+
+// Cookie options for refresh token (adjust secure in prod)
+const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict",
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  path: "/",
 };
 
-// Helper function to generate refresh token
-const generateRefreshToken = (userId) => {
-  return jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
-};
+// Basic validators (tweak to your requirements)
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CONTACT_RE = /^\+[1-9]\d{1,14}$/;
+const PASSWORD_MIN = 8;
 
-// Signup controller
+// -------------------- SIGNUP --------------------
 const signup = asyncHandler(async (req, res) => {
-  const { name, email, contact, password, gymName, gymLocation } = req.body;
+  const { name, email, contact, password, gymName, gymLocation } = req.body || {};
 
+  // 1️⃣ Presence checks
   if (!name || !email || !contact || !password || !gymName || !gymLocation) {
     throw new APIError(400, "Missing required field");
   }
 
-  // Check if email, contact, or gymName exists
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    throw new APIError(400, "Email already in use");
+  // 2️⃣ Format checks
+  if (!EMAIL_RE.test(email)) {
+    throw new APIError(400, "Invalid email format");
   }
-
-  const existingContact = await User.findOne({ contact });
-  if (existingContact) {
-    throw new APIError(400, "Contact already in use");
+  if (!CONTACT_RE.test(contact)) {
+    throw new APIError(400, "Invalid contact format");
   }
-
-  const existingGym = await User.findOne({ gymName, gymLocation });
-  if (existingGym) {
-    throw new APIError(400, "Gym already exists");
-  }
-
-  // Create new user
-  const newUser = new User({
-    name,
-    email,
-    contact,
-    password,
-    gymName,
-    gymLocation,
-  });
-
-  // Save the new user
-  await newUser.save();
-
-  // Generate access and refresh tokens
-  const accessToken = generateAccessToken(newUser._id);
-  const refreshToken = generateRefreshToken(newUser._id);
-
-  // Save the refresh token in the database
-  newUser.refreshToken = refreshToken;
-  await newUser.save();
-
-  // Respond with the tokens and user info (without password)
-  res.status(201).json({
-    accessToken,
-    refreshToken,
-    user: {
-      name: newUser.name,
-      email: newUser.email,
-      gymName: newUser.gymName,
-      gymLocation: newUser.gymLocation,
-      contact: newUser.contact,
-    },
-  });
-});
-
-
-// Login controller
-const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-
-  // Find the user by email
-  const user = await User.findOne({ email });
-  if (!user) {
-    throw new APIError(400, "Invalid email or password");
-  }
-
-  // Check if password is correct
-  const isPasswordCorrect = await user.isPasswordCorrect(password);
-  if (!isPasswordCorrect) {
-    throw new APIError(400, "Invalid email or password");
-  }
-
-  // Generate access and refresh tokens
-  const accessToken = generateAccessToken(user._id);
-  const refreshToken = generateRefreshToken(user._id);
-
-  // Save the refresh token in the database (in case it was changed during login)
-  user.refreshToken = refreshToken;
-  await user.save();
-
-  // Respond with the tokens and user info (without password)
-  res.status(200).json({
-    accessToken,
-    refreshToken,
-    user: {
-      name: user.name,
-      email: user.email,
-      gymName: user.gymName,
-      gymLocation: user.gymLocation,
-      contact: user.contact,
-    },
-  });
-});
-
-
-// Refresh Access Token Controller
-const refreshAccessToken = asyncHandler(async (req, res) => {
-  const { refreshToken } = req.body;
-
-  if (!refreshToken) {
-    throw new APIError(400, "Refresh token is required");
+  if (password.length < PASSWORD_MIN){
+    throw new APIError(400, `Password must be at least ${PASSWORD_MIN} characters`);
   }
 
   try {
-    // Verify the refresh token
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-
-    // Find the user who owns this refresh token
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      throw new APIError(404, "User not found");
-    }
-
-    // Check if the refresh token stored in the database matches
-    if (user.refreshToken !== refreshToken) {
-      throw new APIError(403, "Invalid refresh token");
-    }
-
-    // Generate a new access token
-    const newAccessToken = generateAccessToken(user._id);
-
-    res.status(200).json({
-      success: true,
-      message: "Access token refreshed successfully",
-      accessToken: newAccessToken,
+    // 3️⃣ Check for duplicate gym using case-insensitive comparison
+    const existingGym = await User.findOne({
+      gymNameLower: gymName.toLowerCase().trim(),
+      gymLocationLower: gymLocation.toLowerCase().trim()
     });
+
+    if (existingGym) {
+      throw new APIError(400, "Gym already exists in this location");
+    }
+
+    // 4️⃣ Create new user
+    const user = new User({ 
+      name, 
+      email, 
+      contact, 
+      password, 
+      gymName, 
+      gymLocation
+    });
+    await user.save();
+
+    // 5️⃣ Generate tokens
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    // Store hashed refresh token in DB
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    // 6️⃣ Send refresh token in HttpOnly cookie
+    res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTIONS);
+
+    // 7️⃣ Respond with user info and access token
+    res.status(201).json({
+      accessToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        contact: user.contact,
+        gymName: user.gymName,
+        gymLocation: user.gymLocation,
+      },
+    });
+  } catch (err) {
+    // 8️⃣ Handle duplicate key errors (for email and contact)
+    if (err.code === 11000) {
+      const dupKey = Object.keys(err.keyValue)[0];
+      if (dupKey === "email") throw new APIError(400, "Email already in use");
+      if (dupKey === "contact") throw new APIError(400, "Contact already in use");
+      console.log("Duplicate key found: ", dupKey)
+      throw new APIError(400, "Duplicate key error");
+    }
+    
+    // 9️⃣ Handle other errors (including our custom gym duplicate error)
+    if (err instanceof APIError) {
+      throw err;
+    }
+    throw err;
+  }
+});
+
+// -------------------- LOGIN --------------------
+const login = asyncHandler(async (req, res) => {
+  const { email: rawEmail, password } = req.body || {};
+  const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
+
+  if (!email || !password) throw new APIError(400, "Email and password are required");
+
+  const user = await User.findOne({ email });
+  if (!user) throw new APIError(400, "Invalid email or password");
+
+  const isPasswordCorrect = await user.isPasswordCorrect(password);
+  if (!isPasswordCorrect) throw new APIError(400, "Invalid email or password");
+
+  const accessToken = generateAccessToken(user._id);
+  const rawRefreshToken = generateRefreshToken(user._id);
+
+  // Save refresh token (model should hash it in pre-save hook for security)
+  user.refreshToken = rawRefreshToken;
+  await user.save();
+
+  res.cookie("refreshToken", rawRefreshToken, REFRESH_COOKIE_OPTIONS);
+
+  res.status(200).json({
+    accessToken,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      contact: user.contact,
+      gymName: user.gymName,
+      gymLocation: user.gymLocation,
+    },
+  });
+});
+
+// -------------------- REFRESH ACCESS TOKEN --------------------
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const rawRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+  if (!rawRefreshToken) throw new APIError(400, "Refresh token is required");
+
+  let decoded;
+  try {
+    decoded = jwt.verify(rawRefreshToken, process.env.REFRESH_TOKEN_SECRET);
   } catch (err) {
     throw new APIError(401, "Invalid or expired refresh token");
   }
-});
 
+  const user = await User.findById(decoded.userId);
+  if (!user) throw new APIError(404, "User not found");
 
-// Middleware to protect routes (Authorization check)
-const authMiddleware = asyncHandler(async (req, res, next) => {
-  const token = req.header("Authorization")?.split(" ")[1]; // Extract token from Authorization header
-  if (!token) {
-    throw new APIError(401, "Unauthorized");
+  // If your model stores raw refresh tokens (not hashed) compare directly.
+  // If your model stores hashed refresh tokens (recommended), use bcrypt.compare.
+  let isValid;
+  if (user.refreshToken && user.refreshToken.startsWith("$2")) {
+    // looks hashed (bcrypt hash starts with $2)
+    isValid = await bcrypt.compare(rawRefreshToken, user.refreshToken);
+  } else {
+    // raw comparison fallback (less secure)
+    isValid = user.refreshToken === rawRefreshToken;
   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  req.userId = decoded.userId; // Attach userId to the request object
-  next();
+  if (!isValid) throw new APIError(403, "Invalid refresh token");
+
+  const newAccessToken = generateAccessToken(user._id);
+  res.status(200).json({
+    success: true,
+    message: "Access token refreshed successfully",
+    accessToken: newAccessToken,
+  });
 });
 
+// -------------------- LOGOUT --------------------
+const logout = asyncHandler(async (req, res) => {
+  const rawRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+
+  if (rawRefreshToken) {
+    try {
+      const decoded = jwt.verify(rawRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+      const user = await User.findById(decoded.userId);
+      if (user) {
+        user.refreshToken = undefined;
+        await user.save();
+      }
+    } catch (err) {
+      // ignore errors here; we still clear cookie
+    }
+  }
+
+  res.clearCookie("refreshToken", { path: "/" });
+  return res.status(200).json({ success: true });
+});
+
+// -------------------- AUTH MIDDLEWARE --------------------
+const authMiddleware = asyncHandler(async (req, res, next) => {
+  try {
+    const authHeader = req.header("Authorization");
+    if (!authHeader) throw new APIError(401, "Unauthorized");
+
+    const parts = authHeader.split(" ");
+    if (parts.length !== 2) throw new APIError(401, "Unauthorized");
+
+    const token = parts[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.userId;
+    next();
+  } catch (err) {
+    if (err instanceof APIError) throw err;
+    throw new APIError(401, "Invalid or expired token");
+  }
+});
+
+// -------------------- DASHBOARD CONTROLLER --------------------
+// Option A: member's last week before expiry (expiry between now and now+7days)
 const dashboardController = asyncHandler(async (req, res) => {
   const now = new Date();
+  // Use UTC date boundaries
+  const nowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds()));
 
-  // ===== 1️⃣ Start and end of the current month (UTC) =====
-  const monthStartUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
-  const monthEndUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+  const monthStartUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), 1, 0, 0, 0, 0));
+  const monthEndUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth() + 1, 0, 23, 59, 59, 999));
 
-  console.log("UTC month range:", monthStartUTC.toISOString(), "to", monthEndUTC.toISOString());
-
-  // ===== 2️⃣ Total Revenue This Month =====
+  // Total revenue this month
   const revenueResult = await Payment.aggregate([
-    {
-      $match: {
-        paymentDate: { $gte: monthStartUTC, $lte: monthEndUTC },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        totalRevenue: { $sum: "$amount" },
-      },
-    },
+    { $match: { paymentDate: { $gte: monthStartUTC, $lte: monthEndUTC } } },
+    { $group: { _id: null, totalRevenue: { $sum: "$amount" } } },
   ]);
+  const totalRevenueThisMonth = revenueResult[0]?.totalRevenue || 0;
 
-  const totalRevenueThisMonth = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
-
-  // ===== 3️⃣ Total Admissions This Month =====
+  // Total admissions this month
   const totalAdmissionsThisMonth = await Member.countDocuments({
     joinDate: { $gte: monthStartUTC, $lte: monthEndUTC },
   });
 
-  // ===== 4️⃣ Total Due Amount =====
-  const totalDueResult = await Member.aggregate([
-    {
-      $group: {
-        _id: null,
-        totalDueAmount: { $sum: "$dueAmount" },
-      },
-    },
-  ]);
+  // Total due amount
+  const totalDueResult = await Member.aggregate([{ $group: { _id: null, totalDueAmount: { $sum: "$dueAmount" } } }]);
+  const totalDueAmount = totalDueResult[0]?.totalDueAmount || 0;
 
-  const totalDueAmount = totalDueResult.length > 0 ? totalDueResult[0].totalDueAmount : 0;
+  // Subscriptions expiring in each member's last 7 days (Option A)
+  const next7Days = new Date(nowUTC.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  // ===== 5️⃣ Subscriptions Expiring in Each Member’s Last 7 Days =====
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(now.getDate() - 7);
-
-  const expiringSubscriptions = await Member.aggregate([
-    {
-      $lookup: {
-        from: "plans",
-        localField: "plan",
-        foreignField: "_id",
-        as: "planInfo",
-      },
-    },
+  const expiringPipeline = [
+    { $lookup: { from: "plans", localField: "plan", foreignField: "_id", as: "planInfo" } },
     { $unwind: "$planInfo" },
+    { $addFields: { durationTypeNormalized: { $toLower: { $trim: { input: "$planInfo.durationType" } } } } },
     {
       $addFields: {
         expiryDate: {
           $switch: {
             branches: [
-              {
-                case: { $eq: [{ $toLower: "$planInfo.durationType" }, "month"] },
-                then: {
-                  $dateAdd: {
-                    startDate: "$joinDate",
-                    unit: "month",
-                    amount: "$planInfo.duration",
-                  },
-                },
-              },
-              {
-                case: { $eq: [{ $toLower: "$planInfo.durationType" }, "week"] },
-                then: {
-                  $dateAdd: {
-                    startDate: "$joinDate",
-                    unit: "week",
-                    amount: "$planInfo.duration",
-                  },
-                },
-              },
-              {
-                case: { $eq: [{ $toLower: "$planInfo.durationType" }, "day"] },
-                then: {
-                  $dateAdd: {
-                    startDate: "$joinDate",
-                    unit: "day",
-                    amount: "$planInfo.duration",
-                  },
-                },
-              },
+              { case: { $eq: ["$durationTypeNormalized", "month"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "month", amount: "$planInfo.duration" } } },
+              { case: { $eq: ["$durationTypeNormalized", "week"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "week", amount: "$planInfo.duration" } } },
+              { case: { $eq: ["$durationTypeNormalized", "day"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "day", amount: "$planInfo.duration" } } },
             ],
             default: "$joinDate",
           },
         },
       },
     },
-    {
-      $match: {
-        expiryDate: { $gte: now, $lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) },
-      },
-    },
-    {
-      $count: "expiringCount",
-    },
-  ]);
+    { $match: { expiryDate: { $gte: nowUTC, $lte: next7Days } } },
+    { $count: "expiringCount" },
+  ];
 
-  const expiringSubscriptionsCount =
-    expiringSubscriptions.length > 0 ? expiringSubscriptions[0].expiringCount : 0;
+  const expiringSubscriptions = await Member.aggregate(expiringPipeline);
+  const expiringSubscriptionsCount = expiringSubscriptions[0]?.expiringCount || 0;
 
-  // ===== 6️⃣ Total Expense This Month =====
+  // Total expense this month
   const expenseThisMonth = await Expense.aggregate([
-    {
-      $match: {
-        date: { $gte: monthStartUTC, $lte: monthEndUTC },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        expenses: { $sum: "$amount" },
-      },
-    },
+    { $match: { date: { $gte: monthStartUTC, $lte: monthEndUTC } } },
+    { $group: { _id: null, expenses: { $sum: "$amount" } } },
   ]);
+  const totalExpenseThisMonth = expenseThisMonth[0]?.expenses || 0;
 
-  const totalExpenseThisMonth = expenseThisMonth.length > 0 ? expenseThisMonth[0].expenses : 0;
-
-  // ===== 7️⃣ Members with Expired Plans =====
-  // Calculate expired plans with additional fields (dueAmount, collectedAmount, plan details)
-  const expiredMembers = await Member.aggregate([
-    {
-      $lookup: {
-        from: "plans",
-        localField: "plan",
-        foreignField: "_id",
-        as: "planInfo",
-      },
-    },
+  // Expired members
+  const expiredPipeline = [
+    { $lookup: { from: "plans", localField: "plan", foreignField: "_id", as: "planInfo" } },
     { $unwind: "$planInfo" },
+    { $addFields: { durationTypeNormalized: { $toLower: { $trim: { input: "$planInfo.durationType" } } } } },
     {
       $addFields: {
         expiryDate: {
           $switch: {
             branches: [
-              {
-                case: { $eq: [{ $toLower: "$planInfo.durationType" }, "month"] },
-                then: {
-                  $dateAdd: {
-                    startDate: "$joinDate",
-                    unit: "month",
-                    amount: "$planInfo.duration",
-                  },
-                },
-              },
-              {
-                case: { $eq: [{ $toLower: "$planInfo.durationType" }, "week"] },
-                then: {
-                  $dateAdd: {
-                    startDate: "$joinDate",
-                    unit: "week",
-                    amount: "$planInfo.duration",
-                  },
-                },
-              },
-              {
-                case: { $eq: [{ $toLower: "$planInfo.durationType" }, "day"] },
-                then: {
-                  $dateAdd: {
-                    startDate: "$joinDate",
-                    unit: "day",
-                    amount: "$planInfo.duration",
-                  },
-                },
-              },
+              { case: { $eq: ["$durationTypeNormalized", "month"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "month", amount: "$planInfo.duration" } } },
+              { case: { $eq: ["$durationTypeNormalized", "week"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "week", amount: "$planInfo.duration" } } },
+              { case: { $eq: ["$durationTypeNormalized", "day"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "day", amount: "$planInfo.duration" } } },
             ],
             default: "$joinDate",
           },
         },
       },
     },
-    {
-      $match: {
-        expiryDate: { $lt: now }, // Match expired plans
-      },
-    },
+    { $match: { expiryDate: { $lt: nowUTC } } },
     {
       $project: {
         _id: 1,
@@ -363,11 +317,11 @@ const dashboardController = asyncHandler(async (req, res) => {
         planDuration: "$planInfo.duration",
       },
     },
-  ]);
+  ];
 
+  const expiredMembers = await Member.aggregate(expiredPipeline);
   const expiredMembersCount = expiredMembers.length;
 
-  // ===== 8️⃣ Send Response =====
   res.status(200).json({
     message: "Dashboard data for this month",
     revenueThisMonth: totalRevenueThisMonth,
@@ -375,14 +329,10 @@ const dashboardController = asyncHandler(async (req, res) => {
     expiringSubscriptions: expiringSubscriptionsCount,
     netDueAmount: totalDueAmount,
     expense: totalExpenseThisMonth,
-    expiredMembers: expiredMembersCount, // Add expired members count
-    expiredMembersList: expiredMembers, // Return the expired members list
+    expiredMembers: expiredMembersCount,
+    expiredMembersList: expiredMembers,
   });
 });
 
-
-
-
-
-
-export { signup, login, authMiddleware, refreshAccessToken, dashboardController };
+// -------------------- Export --------------------
+export { signup, login, authMiddleware, refreshAccessToken, logout, dashboardController };
