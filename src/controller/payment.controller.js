@@ -121,4 +121,4 @@ const viewPayments = asyncHandler(async (req, res) => {
 
 
 
-export { addPayment };
+export { addPayment, viewPayments };
