@@ -133,7 +133,23 @@ const findMember = asyncHandler(async (req, res) => {
 });
 
 const getAllMembers = asyncHandler(async (req, res) => {
-  const members = await Member.find()
+  const members = await Member.aggregate([
+    {
+    
+      $lookup: {
+        from: "plans",
+        localField: "plan",
+        foreignField: "_id",
+        as: "plan"
+      }
+    },
+    {
+      $unwind: {
+        path: "$plan",
+        preserveNullAndEmptyArrays: true
+      }
+    
+  }]);
   res.status(200).json({
     message: "Members found",
     data: members
