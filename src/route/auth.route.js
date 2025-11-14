@@ -1,17 +1,32 @@
+// routes/auth.routes.js
 import { Router } from "express";
-import { authMiddleware, dashboardController, login, signup } from "../controller/auth.controller.js";
-const userRouter =Router()
+import { 
+  authMiddleware, 
+  dashboardController, 
+  login, 
+  signup,
+  refreshAccessToken,
+  logout 
+} from "../controller/auth.controller.js";
 
+// auth.routes.js
+const userRouter = Router();
+
+// Public routes
 userRouter.route('/signup').post(signup)
 userRouter.route('/login').post(login)
-userRouter.route('/authenticate')
-  .get(authMiddleware, (req, res) => {
-    // If authMiddleware passes, send a success response
-    res.status(200).json({
-      success: true,
-      message: "Authentication successful",
-      userId: req.userId,  // You can attach any relevant user information here
-    });
+userRouter.route('/logout').post(logout)
+userRouter.route('/refresh-token').post(refreshAccessToken)
+
+// Protected routes (require authentication)
+userRouter.get('/authenticate', authMiddleware, (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Authentication successful",
+    userId: req.userId,
   });
-  userRouter.route('/dashboard').get(dashboardController)
-export {userRouter}
+});
+
+userRouter.get('/dashboard', authMiddleware, dashboardController);
+
+export { userRouter };
