@@ -244,4 +244,44 @@ const getMemberWithPaymentHistory = asyncHandler(async (req, res) => {
 });
 
 
-export { addMember, findMember, getAllMembers, getMemberWithPaymentHistory };
+
+// DELETE MEMBER
+const deleteMember = asyncHandler(async (req, res) => {
+  const { memberId } = req.params;
+
+  // Validate memberId
+  if (!memberId) {
+    throw new APIError(400, "Member ID is required");
+  }
+
+  // Validate if memberId is a valid MongoDB ObjectId
+  if (!mongoose.Types.ObjectId.isValid(memberId)) {
+    throw new APIError(400, "Invalid member ID format");
+  }
+
+  // Find the member and verify it belongs to the current admin
+  const member = await Member.findOne({
+    _id: memberId,
+    createdBy: req.userId // Ensure the member belongs to the current admin
+  });
+
+  if (!member) {
+    throw new APIError(404, "Member not found or you don't have permission to delete this member");
+  }
+
+  // Delete associated payments first (to maintain data integrity)
+  await Payment.deleteMany({ memberId: memberId });
+
+  // Delete the member
+  await Member.findByIdAndDelete(memberId);
+
+  res.status(200).json({
+    success: true,
+    message: "Member and associated payments deleted successfully",
+    data: {
+      deletedMemberId: memberId,
+      deletedMemberName: member.name
+    }
+  });
+});
+export { addMember, findMember, getAllMembers, getMemberWithPaymentHistory, deleteMember };

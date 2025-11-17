@@ -30,4 +30,7 @@ app.use('/payment',paymentRouter)
 
 import { expenseRouter } from "./src/route/expense.route.js";
 app.use('/expense',expenseRouter)
+
+import { staffRouter } from "./src/route/staff.route.js";
+app.use('/staff',staffRouter)
 export default app

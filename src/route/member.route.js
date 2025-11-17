@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addMember, findMember, getAllMembers, getMemberWithPaymentHistory } from "../controller/member.controller.js";
+import { addMember, deleteMember, findMember, getAllMembers, getMemberWithPaymentHistory } from "../controller/member.controller.js";
 import { authMiddleware } from "../controller/auth.controller.js";
 const memberRouter = Router()
 memberRouter.use(authMiddleware);
@@ -8,4 +8,5 @@ memberRouter.route('/addMember').post(addMember)
 memberRouter.route('/findMember').get(findMember)
 memberRouter.route('/getAllMember').get(getAllMembers)
 memberRouter.route('/getMemberPayments/:memberId').get(getMemberWithPaymentHistory)
+memberRouter.route('/deleteMember').delete(deleteMember)
 export {memberRouter}

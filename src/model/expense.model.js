@@ -1,21 +1,38 @@
 import mongoose from "mongoose";
 const expenseSchema = mongoose.Schema({
-  name:{
-    type:String,
+  name: {
+    type: String,
     required: true
   },
-  amount:{
-    type:Number,
+  amount: {
+    type: Number,
     required: true
   },
-  notes:{
-    type:String,
+  category: {
+    type: String,
+    enum: [
+      "rent",
+      "utility",
+      "equipment purchase",
+      "maintainance",
+      "salaries",
+      "training",
+      "supplies",
+      "insurance",
+      "others"
+    ],
+    trim: true,
+    lowercase: true,
+    required: true
   },
-  date:{
-    type:Date,
+  notes: {
+    type: String,
+  },
+  date: {
+    type: Date,
     required: true
   }
 
 })
 
-export const Expense= mongoose.model('Expense',expenseSchema)
+export const Expense = mongoose.model('Expense', expenseSchema)

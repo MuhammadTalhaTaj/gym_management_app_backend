@@ -1,15 +1,19 @@
 import { Expense } from "../model/expense.model.js";
+import { APIError } from "../utils/APIError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const addExpense = asyncHandler(async (req,res)=>{
 
-    const {name, amount, date,notes}=req.body;
-
+    const {name, amount, date,notes, category}=req.body;
+if(!name || !amount || !date||!category){
+  throw new APIError(400,"Missing Fields")
+}
     const newExpense = new Expense({
         name:name,
         amount:amount,
         date:date,
-        notes:notes
+        notes:notes,
+        category:category
     })
    await newExpense.save()
    res.status(201).json({
