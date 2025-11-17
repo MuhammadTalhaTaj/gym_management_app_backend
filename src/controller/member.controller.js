@@ -17,7 +17,8 @@ const addMember = asyncHandler(async (req, res) => {
     joinDate,
     admissionAmount,
     discount,
-    collectedAmount
+    collectedAmount,
+    createdBy
   } = req.body;
 
   // ✅ Validate required fields
@@ -30,7 +31,8 @@ const addMember = asyncHandler(async (req, res) => {
     !plan ||
     !joinDate ||
     !admissionAmount ||
-    !collectedAmount
+    !collectedAmount ||
+    !createdBy
   ) {
     throw new APIError(400, "Provide required fields");
   }
@@ -66,7 +68,8 @@ const addMember = asyncHandler(async (req, res) => {
     admissionAmount,
     discount,
     collectedAmount,
-    dueAmount // Dynamically calculated due amount
+    dueAmount,
+    createdBy // Dynamically calculated due amount
   });
 
   await newMember.save();
@@ -132,10 +135,41 @@ const findMember = asyncHandler(async (req, res) => {
   });
 });
 
-const getAllMembers = asyncHandler(async (req, res) => {
-  const members = await Member.aggregate([
-    {
+// const getAllMembers = asyncHandler(async (req, res) => {
+//   const members = await Member.aggregate([
+//     {
     
+//       $lookup: {
+//         from: "plans",
+//         localField: "plan",
+//         foreignField: "_id",
+//         as: "plan"
+//       }
+//     },
+//     {
+//       $unwind: {
+//         path: "$plan",
+//         preserveNullAndEmptyArrays: true
+//       }
+    
+//   }]);
+//   res.status(200).json({
+//     message: "Members found",
+//     data: members
+//   })
+// })
+
+const getAllMembers = asyncHandler(async (req, res) => {
+  const adminId = req.userId; // Use userId from auth middleware
+  
+  let members;
+
+  // Get all members created by this admin
+  members = await Member.aggregate([
+    {
+      $match: { createdBy: new mongoose.Types.ObjectId(adminId) }
+    },
+    {
       $lookup: {
         from: "plans",
         localField: "plan",
@@ -148,14 +182,19 @@ const getAllMembers = asyncHandler(async (req, res) => {
         path: "$plan",
         preserveNullAndEmptyArrays: true
       }
-    
-  }]);
-  res.status(200).json({
-    message: "Members found",
-    data: members
-  })
-})
+    },
+    {
+      $sort: { createdAt: -1 }
+    }
+  ]);
 
+  res.status(200).json({
+    success: true,
+    message: "Members retrieved successfully",
+    data: members,
+    count: members.length
+  });
+});
 const getMemberWithPaymentHistory = asyncHandler(async (req, res) => {
   const { memberId } = req.params; // Get memberId from the route parameters
   console.log("member id received: ", memberId)

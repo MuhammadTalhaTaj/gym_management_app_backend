@@ -43,7 +43,6 @@ const userSchema = new mongoose.Schema(
     }
 );
 
-// REMOVED: compound unique index for gymNameLower + gymLocationLower
 
 // pre-save: normalize fields and hash password / refreshToken
 userSchema.pre("save", async function (next) {

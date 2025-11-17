@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 const memberSchema = mongoose.Schema({
+createdBy:{
+    type:mongoose.Types.ObjectId,
+    ref: 'User',
+    required:true
+},
 name:{
     type: String,
     required:true

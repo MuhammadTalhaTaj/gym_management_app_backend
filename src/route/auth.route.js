@@ -16,7 +16,7 @@ const userRouter = Router();
 userRouter.route('/signup').post(signup)
 userRouter.route('/login').post(login)
 userRouter.route('/logout').post(logout)
-userRouter.route('/refresh-token').post(refreshAccessToken)
+userRouter.route('/refreshToken').post(refreshAccessToken)
 
 // Protected routes (require authentication)
 userRouter.get('/authenticate', authMiddleware, (req, res) => {
