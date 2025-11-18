@@ -122,7 +122,7 @@ const viewPayments = asyncHandler(async (req, res) => {
 
 
 const getAllPayments = asyncHandler(async (req, res) => {
-  const { adminId } = req.body;
+  const { adminId } = req.params;
 
   if (!adminId) {
     throw new APIError(400, "Admin id is required")
@@ -132,31 +132,31 @@ const getAllPayments = asyncHandler(async (req, res) => {
     throw new APIError(400, "Admin id is not in valid format")
   }
 
-  const data = await User.aggregate([
+  const id = new mongoose.Types.ObjectId(adminId);
+
+  const data = await Member.aggregate([
     {
-      $lookup: {
-        from: "Member",
-        localField: "_id",
-        foreignField: "createdBy",
-        as: "members"
+      $match: {
+        createdBy: id
       }
     },
     {
       $lookup: {
-        from: "Payment",
-        localField: "members._id",
+        from: "payments",
+        localField: "_id",
         foreignField: "memberId",
         as: "payments"
       }
     }
-  ])
+  ]);
 
-  if( !data || data.length == 0){
-    throw new APIError(404,"No record found")
+
+  if (!data || data.length == 0) {
+    throw new APIError(404, "No record found")
   }
 
   res.status(200).json({
-    message:"Record found.",
+    message: "Record found.",
     data
   })
 
