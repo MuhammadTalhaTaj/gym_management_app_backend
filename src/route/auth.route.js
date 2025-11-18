@@ -1,13 +1,13 @@
 // routes/auth.routes.js
 import { Router } from "express";
-import { 
-  authMiddleware, 
+import {  
   dashboardController, 
   login, 
   signup,
   refreshAccessToken,
   logout 
 } from "../controller/auth.controller.js";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 
 // auth.routes.js
 const userRouter = Router();

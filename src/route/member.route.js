@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { addMember, deleteMember, findMember, getAllMembers, getMemberWithPaymentHistory } from "../controller/member.controller.js";
-import { authMiddleware } from "../controller/auth.controller.js";
+// import { authMiddleware } from "../controller/auth.controller.js";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 const memberRouter = Router()
 memberRouter.use(authMiddleware);
 

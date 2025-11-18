@@ -3,7 +3,8 @@ import { Member } from "../model/member.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
 import { Payment } from "../model/payment.model.js";
-
+import { User } from "../model/user.model.js";
+import mongoose from "mongoose"
 const addPayment = asyncHandler(async (req, res) => {
   const { amount, memberId, plan, paymentDate } = req.body;
 
@@ -70,7 +71,7 @@ const viewPayments = asyncHandler(async (req, res) => {
   const memberHistory = await Member.aggregate([
     // Match the memberId to ensure we are retrieving the correct member
     { $match: { _id: mongoose.Types.ObjectId(memberId) } },
-    
+
     // Lookup to join Payments with the Member data based on memberId
     {
       $lookup: {
@@ -80,7 +81,7 @@ const viewPayments = asyncHandler(async (req, res) => {
         as: 'payments' // The alias for the array of payments in the result
       }
     },
-    
+
     // Optionally, unwind the payments array if you want to return a single payment object for each member (remove if you want all payments in an array)
     {
       $unwind: {
@@ -88,7 +89,7 @@ const viewPayments = asyncHandler(async (req, res) => {
         preserveNullAndEmptyArrays: true // If there are no payments, member data will still be returned
       }
     },
-    
+
     // Optionally, project specific fields you want to return in the result
     {
       $project: {
@@ -120,5 +121,46 @@ const viewPayments = asyncHandler(async (req, res) => {
 });
 
 
+const getAllPayments = asyncHandler(async (req, res) => {
+  const { adminId } = req.body;
 
-export { addPayment, viewPayments };
+  if (!adminId) {
+    throw new APIError(400, "Admin id is required")
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(adminId)) {
+    throw new APIError(400, "Admin id is not in valid format")
+  }
+
+  const data = await User.aggregate([
+    {
+      $lookup: {
+        from: "Member",
+        localField: "_id",
+        foreignField: "createdBy",
+        as: "members"
+      }
+    },
+    {
+      $lookup: {
+        from: "Payment",
+        localField: "members._id",
+        foreignField: "memberId",
+        as: "payments"
+      }
+    }
+  ])
+
+  if( !data || data.length == 0){
+    throw new APIError(404,"No record found")
+  }
+
+  res.status(200).json({
+    message:"Record found.",
+    data
+  })
+
+})
+
+
+export { addPayment, viewPayments, getAllPayments };

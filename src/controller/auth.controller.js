@@ -171,25 +171,6 @@ const logout = asyncHandler(async (req, res) => {
   return res.status(200).json({ success: true });
 });
 
-// -------------------- AUTH MIDDLEWARE --------------------
-const authMiddleware = asyncHandler(async (req, res, next) => {
-  try {
-    const authHeader = req.header("Authorization");
-    if (!authHeader) throw new APIError(401, "Unauthorized");
-
-    const parts = authHeader.split(" ");
-    if (parts.length !== 2) throw new APIError(401, "Unauthorized");
-
-    const token = parts[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.userId;
-    next();
-  } catch (err) {
-    if (err instanceof APIError) throw err;
-    throw new APIError(401, "Invalid or expired token");
-  }
-});
-
 // -------------------- DASHBOARD CONTROLLER --------------------
 // Option A: member's last week before expiry (expiry between now and now+7days)
 const dashboardController = asyncHandler(async (req, res) => {
@@ -303,4 +284,4 @@ const dashboardController = asyncHandler(async (req, res) => {
 });
 
 // -------------------- Export --------------------
-export { signup, login, authMiddleware, refreshAccessToken, logout, dashboardController };
+export { signup, login, refreshAccessToken, logout, dashboardController };

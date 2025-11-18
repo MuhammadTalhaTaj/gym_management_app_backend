@@ -44,38 +44,38 @@ const userSchema = new mongoose.Schema(
 );
 
 
-// pre-save: normalize fields and hash password / refreshToken
-userSchema.pre("save", async function (next) {
-    // normalize stored fields
-    if (this.isModified("email") && typeof this.email === "string") {
-        this.email = this.email.trim().toLowerCase();
-    }
-    if (this.isModified("gymName") && typeof this.gymName === "string") {
-        this.gymName = this.gymName.trim();
-        this.gymNameLower = this.gymName.toLowerCase();
-    }
-    if (this.isModified("gymLocation") && typeof this.gymLocation === "string") {
-        this.gymLocation = this.gymLocation.trim();
-        this.gymLocationLower = this.gymLocation.toLowerCase();
-    }
-    if (this.isModified("contact") && typeof this.contact === "string") {
-        this.contact = this.contact.trim();
-    }
+// // pre-save: normalize fields and hash password / refreshToken
+// userSchema.pre("save", async function (next) {
+//     // normalize stored fields
+//     if (this.isModified("email") && typeof this.email === "string") {
+//         this.email = this.email.trim().toLowerCase();
+//     }
+//     if (this.isModified("gymName") && typeof this.gymName === "string") {
+//         this.gymName = this.gymName.trim();
+//         this.gymNameLower = this.gymName.toLowerCase();
+//     }
+//     if (this.isModified("gymLocation") && typeof this.gymLocation === "string") {
+//         this.gymLocation = this.gymLocation.trim();
+//         this.gymLocationLower = this.gymLocation.toLowerCase();
+//     }
+//     if (this.isModified("contact") && typeof this.contact === "string") {
+//         this.contact = this.contact.trim();
+//     }
 
-    // hash password
-    if (this.isModified("password")) {
-        const saltRounds = 10;
-        this.password = await bcrypt.hash(this.password, saltRounds);
-    }
+//     // hash password
+//     if (this.isModified("password")) {
+//         const saltRounds = 10;
+//         this.password = await bcrypt.hash(this.password, saltRounds);
+//     }
 
-    // hash refreshToken if changed (store hashed refresh token)
-    if (this.isModified("refreshToken") && this.refreshToken) {
-        const saltRounds = 10;
-        this.refreshToken = await bcrypt.hash(this.refreshToken, saltRounds);
-    }
+//     // hash refreshToken if changed (store hashed refresh token)
+//     if (this.isModified("refreshToken") && this.refreshToken) {
+//         const saltRounds = 10;
+//         this.refreshToken = await bcrypt.hash(this.refreshToken, saltRounds);
+//     }
 
-    next();
-});
+//     next();
+// });
 
 // instance method to compare password
 userSchema.methods.isPasswordCorrect = async function (plain) {
