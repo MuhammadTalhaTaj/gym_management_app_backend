@@ -6,7 +6,7 @@ import { APIError } from "../utils/APIError.js";
 import { Payment } from "../model/payment.model.js";
 import { Member } from "../model/member.model.js";
 import { Expense } from "../model/expense.model.js";
-import {EMAIL_RE,CONTACT_RE,PASSWORD_MIN, REFRESH_COOKIE_OPTIONS, generateAccessToken, generateRefreshToken} from "../utils/helpers.util.js"
+import { EMAIL_RE, CONTACT_RE, PASSWORD_MIN, REFRESH_COOKIE_OPTIONS, generateAccessToken, generateRefreshToken } from "../utils/helpers.util.js"
 // -------------------- SIGNUP --------------------
 const signup = asyncHandler(async (req, res) => {
   const { name, email, contact, password, gymName, gymLocation } = req.body || {};
@@ -23,7 +23,7 @@ const signup = asyncHandler(async (req, res) => {
   if (!CONTACT_RE.test(contact)) {
     throw new APIError(400, "Invalid contact format");
   }
-  if (password.length < PASSWORD_MIN){
+  if (password.length < PASSWORD_MIN) {
     throw new APIError(400, `Password must be at least ${PASSWORD_MIN} characters`);
   }
 
@@ -39,12 +39,12 @@ const signup = asyncHandler(async (req, res) => {
     }
 
     // 4️⃣ Create new user
-    const user = new User({ 
-      name, 
-      email, 
-      contact, 
-      password, 
-      gymName, 
+    const user = new User({
+      name,
+      email,
+      contact,
+      password,
+      gymName,
       gymLocation
     });
     await user.save();
@@ -81,7 +81,7 @@ const signup = asyncHandler(async (req, res) => {
       console.log("Duplicate key found: ", dupKey)
       throw new APIError(400, "Duplicate key error");
     }
-    
+
     // 9️⃣ Handle other errors (including our custom gym duplicate error)
     if (err instanceof APIError) {
       throw err;
@@ -114,7 +114,6 @@ const login = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     accessToken,
-    rawRefreshToken,
     user: {
       id: user._id,
       name: user.name,
@@ -128,37 +127,26 @@ const login = asyncHandler(async (req, res) => {
 
 // -------------------- REFRESH ACCESS TOKEN --------------------
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const rawRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
-  if (!rawRefreshToken) throw new APIError(400, "Refresh token is required");
+  const rawAccessToken =
+    req.cookies?.refreshToken ||
+    (req.headers?.authorization?.startsWith("Bearer ")
+      ? req.headers.authorization.split(" ")[1]
+      : null);
+
+  if (!rawAccessToken) throw new APIError(400, "Refresh token is required");
 
   let decoded;
-  try {
-    decoded = jwt.verify(rawRefreshToken, process.env.REFRESH_TOKEN_SECRET);
-  } catch (err) {
-    throw new APIError(401, "Invalid or expired refresh token");
-  }
+
+  decoded = jwt.verify(rawAccessToken, process.env.JWT_SECRET);
 
   const user = await User.findById(decoded.userId);
   if (!user) throw new APIError(404, "User not found");
-
-  // If your model stores raw refresh tokens (not hashed) compare directly.
-  // If your model stores hashed refresh tokens (recommended), use bcrypt.compare.
-  let isValid;
-  if (user.refreshToken && user.refreshToken.startsWith("$2")) {
-    // looks hashed (bcrypt hash starts with $2)
-    isValid = await bcrypt.compare(rawRefreshToken, user.refreshToken);
-  } else {
-    // raw comparison fallback (less secure)
-    isValid = user.refreshToken === rawRefreshToken;
-  }
-
-  if (!isValid) throw new APIError(403, "Invalid refresh token");
 
   const newAccessToken = generateAccessToken(user._id);
   res.status(200).json({
     success: true,
     message: "Access token refreshed successfully",
-    accessToken: newAccessToken,
+    accessToken: newAccessToken
   });
 });
 
