@@ -3,8 +3,8 @@ import { Member } from "../model/member.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
 import { Payment } from "../model/payment.model.js";
-import { User } from "../model/user.model.js";
 import mongoose from "mongoose"
+
 const addPayment = asyncHandler(async (req, res) => {
   const { amount, memberId, plan, paymentDate } = req.body;
 
@@ -120,7 +120,6 @@ const viewPayments = asyncHandler(async (req, res) => {
   });
 });
 
-
 const getAllPayments = asyncHandler(async (req, res) => {
   const { adminId } = req.params;
 
@@ -161,6 +160,5 @@ const getAllPayments = asyncHandler(async (req, res) => {
   })
 
 })
-
 
 export { addPayment, viewPayments, getAllPayments };

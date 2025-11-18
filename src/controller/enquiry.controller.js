@@ -1,77 +1,114 @@
-import { Enquiry } from "../model/enquiry.model.js";
+import mongoose from "mongoose";
+import { Enquiry } from "../model/enquiry.model.js"
 import { APIError } from "../utils/APIError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-const addEnquiry = asyncHandler(async(req, res)=>{
-    const{name, contact,remark, followUp, category, status}= req.body;
-    if (!name || !contact || !followUp){
-        throw new APIError(400,"provide required fields")
-    }
-    const existingEnquiry = await Enquiry.findOne({name,contact,followUp, status:"open", category })
-    if(existingEnquiry){
-        throw new APIError(409,"Enquiry already exists")
-    }
-    const newEnquiry = new Enquiry({
-        name,
-        contact,
-        remark,
-        followUp,
-        category,
-        status
-    });
-   await newEnquiry.save();
-   res.status(201).json({
-    message:"Enquiry added successfully",
+import { User } from "../model/user.model.js";
+import { Staff } from "../model/staff.model.js";
+
+
+const addEnquiry = asyncHandler(async (req, res) => {
+  const { name, contact, remark = "", followUp, category, status, createdBy } = req.body;
+
+  if (!name || !contact || !followUp || !createdBy) {
+    throw new APIError(400, "Provide all required fields");
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(createdBy)) {
+    throw new APIError(400, "Creator id is not in valid format");
+  }
+
+  const validCategories = ["discussion", "payment", "complaint", "other"];
+  if (category && !validCategories.includes(category)) {
+    throw new APIError(400, "Invalid category value");
+  }
+
+  const validStatus = ["open", "closed"];
+  if (status && !validStatus.includes(status)) {
+    throw new APIError(400, "Invalid status value");
+  }
+
+  const creatorExists = await Promise.any([
+    User.exists({ _id: createdBy }),
+    Staff.exists({ _id: createdBy })
+  ]).catch(() => null);
+
+  if (!creatorExists) {
+    throw new APIError(404, "No creator exists");
+  }
+
+  const duplicate = await Enquiry.exists({
+    name,
+    contact,
+    followUp,
+    category,
+    status: status || "open"
+  });
+
+  if (duplicate) {
+    throw new APIError(409, "Enquiry already exists");
+  }
+
+  const newEnquiry = await Enquiry.create({
+    name,
+    contact,
+    remark,
+    followUp,
+    category,
+    status,
+    createdBy
+  });
+
+  res.status(201).json({
+    message: "Enquiry added successfully",
     data: newEnquiry
-   })
+  });
 });
+
 
 const getEnquiries = asyncHandler(async (req, res) => {
+    const {creatorId} = req.params;
 
-    // Extract query params
-    const { search, status, page = 1, limit = 20 } = req.query;
-
-    let query = {};
-
-    // Search by name, email, or message
-    if (search) {
-        query.$or = [
-            { name: { $regex: search, $options: "i" } },
-            { email: { $regex: search, $options: "i" } },
-            { message: { $regex: search, $options: "i" } }
-        ];
+    if(!creatorId){
+        throw new APIError(400,"Creator id is missing")
+    }
+    if(!mongoose.Types.ObjectId.isValid(creatorId)){
+        throw new APIError(400,"Creator id is not in valid format")
     }
 
-    // Filter by status (optional)
-    if (status) {
-        query.status = status;
+    const enquiries = await Enquiry.find({createdBy: creatorId})
+    if(!enquiries || enquiries.length == 0){
+        throw new APIError(404, "Enquiries not found")
     }
 
-    // Validate pagination values
-    const pageNum = Number(page);
-    const limitNum = Math.min(Number(limit), 100); // Maximum 100 per page
-
-    if (isNaN(pageNum) || isNaN(limitNum)) {
-        return res.status(400).json({ message: "Page and limit must be valid numbers" });
-    }
-
-    // Fetch enquiries with pagination & sorting
-    const enquiries = await Enquiry.find(query)
-        .skip((pageNum - 1) * limitNum)
-        .limit(limitNum)
-        .sort({ createdAt: -1 });
-
-    // Count total documents for pagination
-    const total = await Enquiry.countDocuments(query);
-
-    // Response
     res.status(200).json({
-        message: "Enquiry Data",
-        total,
-        page: pageNum,
-        limit: limitNum,
-        data: enquiries
-    });
+        message: "enquiries fetched successfully",
+        enquiries
+    })
 });
 
+const deleteEnquiry = asyncHandler(async (req, res) => {
+    const { adminId, enquiryId } = req.body
 
-export {addEnquiry, getEnquiries}
+    if (!adminId || !enquiryId) {
+        throw new APIError(400, "Provide admin id and enquiry id")
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(adminId) || !mongoose.Types.ObjectId.isValid(enquiryId)) {
+        throw new APIError(400, "Admin or Enquiry id is not in valid format")
+    }
+
+    const admin = await User.exists({ _id: adminId })
+    if (!admin) {
+        throw new APIError(404, "Admin not found")
+    }
+    const result = await Enquiry.deleteOne({ _id: enquiryId, createdBy: adminId })
+
+    if (result.deletedCount === 0) {
+        throw new APIError(404, "Enquiry not found or not created by this admin");
+    }
+    res.status(200).json({
+        message: "Deleted successfully"
+    })
+})
+
+export { addEnquiry, getEnquiries, deleteEnquiry }
