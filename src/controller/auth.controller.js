@@ -1,4 +1,4 @@
-import { User } from "../model/user.model.js";
+import { Admin } from "../model/admin.model.js";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -29,7 +29,7 @@ const signup = asyncHandler(async (req, res) => {
 
   try {
     // 3️⃣ Check for duplicate gym using case-insensitive comparison
-    const existingGym = await User.findOne({
+    const existingGym = await Admin.findOne({
       gymNameLower: gymName.toLowerCase().trim(),
       gymLocationLower: gymLocation.toLowerCase().trim()
     });
@@ -38,8 +38,8 @@ const signup = asyncHandler(async (req, res) => {
       throw new APIError(400, "Gym already exists in this location");
     }
 
-    // 4️⃣ Create new user
-    const user = new User({
+    // 4️⃣ Create new admin
+    const admin = new Admin({
       name,
       email,
       contact,
@@ -47,29 +47,29 @@ const signup = asyncHandler(async (req, res) => {
       gymName,
       gymLocation
     });
-    await user.save();
+    await admin.save();
 
     // 5️⃣ Generate tokens
-    const accessToken = generateAccessToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+    const accessToken = generateAccessToken(admin._id);
+    const refreshToken = generateRefreshToken(admin._id);
 
     // Store hashed refresh token in DB
-    user.refreshToken = refreshToken;
-    await user.save();
+    admin.refreshToken = refreshToken;
+    await admin.save();
 
     // 6️⃣ Send refresh token in HttpOnly cookie
     res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTIONS);
 
-    // 7️⃣ Respond with user info and access token
+    // 7️⃣ Respond with admin info and access token
     res.status(201).json({
       accessToken,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        contact: user.contact,
-        gymName: user.gymName,
-        gymLocation: user.gymLocation,
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        contact: admin.contact,
+        gymName: admin.gymName,
+        gymLocation: admin.gymLocation,
       },
     });
   } catch (err) {
@@ -97,30 +97,30 @@ const login = asyncHandler(async (req, res) => {
 
   if (!email || !password) throw new APIError(400, "Email and password are required");
 
-  const user = await User.findOne({ email });
-  if (!user) throw new APIError(404, "User not found");
+  const admin = await Admin.findOne({ email });
+  if (!admin) throw new APIError(404, "Admin not found");
 
-  const isPasswordCorrect = await user.isPasswordCorrect(password);
+  const isPasswordCorrect = await admin.isPasswordCorrect(password);
   if (!isPasswordCorrect) throw new APIError(400, "Invalid email or password");
 
-  const accessToken = generateAccessToken(user._id);
-  const rawRefreshToken = generateRefreshToken(user._id);
+  const accessToken = generateAccessToken(admin._id);
+  const rawRefreshToken = generateRefreshToken(admin._id);
 
   // Save refresh token (model should hash it in pre-save hook for security)
-  user.refreshToken = rawRefreshToken;
-  await user.save();
+  admin.refreshToken = rawRefreshToken;
+  await admin.save();
 
   res.cookie("refreshToken", rawRefreshToken, REFRESH_COOKIE_OPTIONS);
 
   res.status(200).json({
     accessToken,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      contact: user.contact,
-      gymName: user.gymName,
-      gymLocation: user.gymLocation,
+    admin: {
+      id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      contact: admin.contact,
+      gymName: admin.gymName,
+      gymLocation: admin.gymLocation,
     },
   });
 });
@@ -139,10 +139,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
   decoded = jwt.verify(rawAccessToken, process.env.JWT_SECRET);
 
-  const user = await User.findById(decoded.userId);
-  if (!user) throw new APIError(404, "User not found");
+  const admin = await Admin.findById(decoded.userId);
+  if (!admin) throw new APIError(404, "Admin not found");
 
-  const newAccessToken = generateAccessToken(user._id);
+  const newAccessToken = generateAccessToken(admin._id);
   res.status(200).json({
     success: true,
     message: "Access token refreshed successfully",
@@ -157,10 +157,10 @@ const logout = asyncHandler(async (req, res) => {
   if (rawRefreshToken) {
     try {
       const decoded = jwt.verify(rawRefreshToken, process.env.REFRESH_TOKEN_SECRET);
-      const user = await User.findById(decoded.userId);
-      if (user) {
-        user.refreshToken = undefined;
-        await user.save();
+      const admin = await Admin.findById(decoded.userId);
+      if (admin) {
+        admin.refreshToken = undefined;
+        await admin.save();
       }
     } catch (err) {
       // ignore errors here; we still clear cookie

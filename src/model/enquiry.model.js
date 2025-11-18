@@ -1,35 +1,42 @@
 import mongoose from "mongoose";
 const enquirySchema = mongoose.Schema({
-    name:{
-        type:String,
+    name: {
+        type: String,
         required: true
     },
-    contact:{
-        type:String,
+    contact: {
+        type: String,
         required: true
     },
-    remark:{
-        type:String,
+    remark: {
+        type: String,
         desfault: ""
     },
-    followUp:{
+    followUp: {
         type: Date,
-        required:true
+        required: true
     },
-    category:{
-        type:String,
-        enum:["discussion", "payment", "complaint","other"],
+    category: {
+        type: String,
+        enum: ["discussion", "payment", "complaint", "other"],
         default: "discussion"
     },
-    status:{
-        type:String,
-        enum:["open", "closed"],
+    status: {
+        type: String,
+        enum: ["open", "closed"],
         default: "open",
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true
-  }
-},{timestamps:true})
-export const Enquiry= mongoose.model('Enquiry', enquirySchema);
+    },
+
+    createdByModel: {
+        type: String,
+        required: true,
+        enum: ["User", "Staff"]
+    },
+
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        refPath: "createdByModel" 
+    }
+}, { timestamps: true })
+export const Enquiry = mongoose.model('Enquiry', enquirySchema);

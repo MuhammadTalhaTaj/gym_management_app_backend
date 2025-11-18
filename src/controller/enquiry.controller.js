@@ -2,81 +2,92 @@ import mongoose from "mongoose";
 import { Enquiry } from "../model/enquiry.model.js"
 import { APIError } from "../utils/APIError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { User } from "../model/user.model.js";
+import { Admin } from "../model/admin.model.js";
 import { Staff } from "../model/staff.model.js";
 
 
 const addEnquiry = asyncHandler(async (req, res) => {
-  const { name, contact, remark = "", followUp, category, status, createdBy } = req.body;
+    const { name, contact, remark = "", followUp, category, status, creatorId, currentUser } = req.body;
 
-  if (!name || !contact || !followUp || !createdBy) {
-    throw new APIError(400, "Provide all required fields");
-  }
+    if (!name || !contact || !followUp || !creatorId || !currentUser) {
+        throw new APIError(400, "Provide all required fields");
+    }
 
-  if (!mongoose.Types.ObjectId.isValid(createdBy)) {
-    throw new APIError(400, "Creator id is not in valid format");
-  }
+    if (!mongoose.Types.ObjectId.isValid(creatorId)) {
+        throw new APIError(400, "Creator id is not in valid format");
+    }
 
-  const validCategories = ["discussion", "payment", "complaint", "other"];
-  if (category && !validCategories.includes(category)) {
-    throw new APIError(400, "Invalid category value");
-  }
+    const validCategories = ["discussion", "payment", "complaint", "other"];
+    if (category && !validCategories.includes(category)) {
+        throw new APIError(400, "Invalid category value");
+    }
 
-  const validStatus = ["open", "closed"];
-  if (status && !validStatus.includes(status)) {
-    throw new APIError(400, "Invalid status value");
-  }
+    const validStatus = ["open", "closed"];
+    if (status && !validStatus.includes(status)) {
+        throw new APIError(400, "Invalid status value");
+    }
 
-  const creatorExists = await Promise.any([
-    User.exists({ _id: createdBy }),
-    Staff.exists({ _id: createdBy })
-  ]).catch(() => null);
+    if (!["Admin", "Staff"].includes(currentUser)) {
+        throw new APIError(400, "Current user must be admin or staff.");
+    }
 
-  if (!creatorExists) {
-    throw new APIError(404, "No creator exists");
-  }
+    let creator;
+    if (currentUser == "Staff") {
+        creator = await Staff.findOne({ _id: creatorId })
+        if (creator?.permission == "view") {
+            throw new APIError(403, "User is not allowed to add enquiry.")
+        }
+    }
+    else {
+        creator = await Admin.findOne({ _id: creatorId })
+    }
 
-  const duplicate = await Enquiry.exists({
-    name,
-    contact,
-    followUp,
-    category,
-    status: status || "open"
-  });
+    if (!creator) {
+        throw new APIError(404, "No creator exists");
+    }
 
-  if (duplicate) {
-    throw new APIError(409, "Enquiry already exists");
-  }
+    const duplicate = await Enquiry.exists({
+        name,
+        contact,
+        followUp,
+        category,
+        status: status || "open"
+    });
 
-  const newEnquiry = await Enquiry.create({
-    name,
-    contact,
-    remark,
-    followUp,
-    category,
-    status,
-    createdBy
-  });
+    if (duplicate) {
+        throw new APIError(409, "Enquiry already exists");
+    }
 
-  res.status(201).json({
-    message: "Enquiry added successfully",
-    data: newEnquiry
-  });
+    const newEnquiry = await Enquiry.create({
+        name,
+        contact,
+        remark,
+        followUp,
+        category,
+        status,
+        createdBy,
+        createdByModel: currentUser
+    });
+
+    res.status(201).json({
+        message: "Enquiry added successfully",
+        data: newEnquiry
+    });
 });
 
 
 const getEnquiries = asyncHandler(async (req, res) => {
-    const {creatorId} = req.params;
+    const { creatorId } = req.params;
 
-    if(!creatorId){
-        throw new APIError(400,"Creator id is missing")
+    if (!creatorId) {
+        throw new APIError(400, "Creator id is missing")
     }
-    if(!mongoose.Types.ObjectId.isValid(creatorId)){
-        throw new APIError(400,"Creator id is not in valid format")
+    if (!mongoose.Types.ObjectId.isValid(creatorId)) {
+        throw new APIError(400, "Creator id is not in valid format")
     }
 
-    const enquiries = await Enquiry.find({createdBy: creatorId})
-    if(!enquiries || enquiries.length == 0){
+    const enquiries = await Enquiry.find({ createdBy: creatorId })
+    if (!enquiries || enquiries.length == 0) {
         throw new APIError(404, "Enquiries not found")
     }
 
@@ -87,28 +98,83 @@ const getEnquiries = asyncHandler(async (req, res) => {
 });
 
 const deleteEnquiry = asyncHandler(async (req, res) => {
-    const { adminId, enquiryId } = req.body
+    const { id, enquiryId, currentUser } = req.body
 
-    if (!adminId || !enquiryId) {
-        throw new APIError(400, "Provide admin id and enquiry id")
+    if (!id || !enquiryId || !currentUser) {
+        throw new APIError(400, "Provide all fields")
     }
 
-    if (!mongoose.Types.ObjectId.isValid(adminId) || !mongoose.Types.ObjectId.isValid(enquiryId)) {
+    if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(enquiryId)) {
         throw new APIError(400, "Admin or Enquiry id is not in valid format")
     }
 
-    const admin = await User.exists({ _id: adminId })
-    if (!admin) {
-        throw new APIError(404, "Admin not found")
+    if (!["Admin", "Staff"].includes(currentUser)) {
+        throw new APIError(400, "Current user must be admin or staff.");
     }
-    const result = await Enquiry.deleteOne({ _id: enquiryId, createdBy: adminId })
+    let user;
+    if (currentUser == "Staff") {
+        user = await Staff.findOne({ _id: id })
+        if (user?.permission !== "all") {
+            throw new APIError(403, "User is not allowed to delete enquiry.")
+        }
+    }
+    else {
+        user = await Admin.findOne({ _id: id })
+    }
+
+    if (!user) {
+        throw new APIError(404, "User not found")
+    }
+    const result = await Enquiry.deleteOne({ _id: enquiryId })
 
     if (result.deletedCount === 0) {
-        throw new APIError(404, "Enquiry not found or not created by this admin");
+        throw new APIError(404, "Enquiry not found");
     }
     res.status(200).json({
         message: "Deleted successfully"
     })
 })
 
-export { addEnquiry, getEnquiries, deleteEnquiry }
+const updateEnquiry = asyncHandler(async (req, res) => {
+    const { userId, currentUser, enquiryId, status } = req.body
+
+    if (!currentUser || !enquiryId || !status) {
+        throw new APIError(400, "Provide all fields")
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(enquiryId)) {
+        throw new APIError(400, "Enquiry id is not in valid format")
+    }
+
+    if (!["Admin", "Staff"].includes(currentUser)) {
+        throw new APIError(400, "Current user must be admin or staff.");
+    }
+
+    let user;
+    if (currentUser == "Staff") {
+        user = await Staff.findOne({ _id: userId })
+        if (user?.permission !== "all" || user?.permission !== "view+add+update") {
+            throw new APIError(403, "User is not allowed to update enquiry.")
+        }
+    }
+    else {
+        user = await Admin.findOne({ _id: userId })
+    }
+    if (!user) {
+        throw new APIError(404, "User not found")
+    }
+
+    const updatedEnquiry = await Enquiry.findByIdAndUpdate(
+        enquiryId,
+        { $set: { status: status } },
+        { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+        message: "Updated successfully",
+        enquiry: updatedEnquiry
+    });
+
+})
+
+export { addEnquiry, getEnquiries, deleteEnquiry, updateEnquiry }

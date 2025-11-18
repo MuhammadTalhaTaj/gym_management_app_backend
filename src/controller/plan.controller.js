@@ -1,5 +1,5 @@
 import { Plan } from "../model/plan.model.js";
-import { User } from "../model/user.model.js";
+import { Admin } from "../model/admin.model.js";
 import { APIError } from "../utils/APIError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 

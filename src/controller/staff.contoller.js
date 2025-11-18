@@ -1,6 +1,4 @@
 import { Staff } from "../model/staff.model.js";
-import bcrypt from "bcrypt";
-import mongoose from "mongoose";
 import { EMAIL_RE, CONTACT_RE, PASSWORD_MIN, REFRESH_COOKIE_OPTIONS, generateAccessToken, generateRefreshToken } from "../utils/helpers.util.js"
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
@@ -122,7 +120,7 @@ const staffRefreshAccessToken = asyncHandler(async (req, res) => {
   decoded = jwt.verify(rawAccessToken, process.env.JWT_SECRET);
 
   const staff = await Staff.findById(decoded.userId);
-  if (!staff) throw new APIError(404, "User not found");
+  if (!staff) throw new APIError(404, "Admin not found");
 
   const newAccessToken = generateAccessToken(staff._id);
   res.status(200).json({
