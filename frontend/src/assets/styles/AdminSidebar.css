@@ -1,0 +1,138 @@
+.adminSidebar h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    margin-left: 1.5rem;
+}
+
+.adminSidebar {
+    padding: 0rem 1rem;
+    width: 24vw;
+    max-width: 24vw;
+    height: auto;
+    background-color: var(--primary-100);
+}
+
+.adminSidebar ul {
+    list-style: none;
+    display: flex;
+    /* border: 2px solid red; */
+    padding: 0rem 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 4rem;
+}
+
+.adminSidebar ul li {
+    padding: 0.7rem 1.3rem;
+    padding-right: 0rem;
+    width: 16vw;
+    border-radius: 0.5rem;
+    background-color: var(--primary-100);
+}
+
+.adminSidebar ul li a {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--primary-300);
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 600;
+    /* text-align: center; */
+}
+
+.adminSidebar ul li:hover {
+    background-color: var(--primary-200);
+    color: white;
+}
+
+.adminSidebar ul li:hover a {
+    color: white;
+}
+.adminSidebar ul li:hover .adminSidebarIcon{
+    color: white;
+}
+.adminSidebar ul li.active-link {
+    color: var(--secondary-100);
+    background-color: var(--secondary-200);
+}
+
+.adminSidebar ul li.active-link a {
+    color: var(--secondary-100);
+}
+
+
+.burger-btn {
+    display: none;
+}
+.sidebarAdminUl{
+    /* border: 2px solid blue; */
+    display: flex;
+    flex-direction: column;
+    height: 90%;
+    justify-content: space-between;
+}
+@media all and (max-width:700px) {
+    .adminSidebar {
+        /* border: 2px solid blue; */
+        min-width: 100vw;
+        height: 10vh;
+    }
+
+    .sidebarAdminUl {
+        width: 100vw;
+        flex-direction: column;
+        background-color: var(--primary-100);
+        position: absolute;
+        overflow-y: auto;
+        max-height: 45vh;
+        display: none;
+    }
+    .adminSidebar h1{
+        margin: 0;
+    }
+    .adminSidebar ul li {
+        padding: 0.8rem 8rem;
+        padding-left: 1rem;
+    }
+
+    .sidebarAdminUl.menu.open {
+        display: flex;
+        gap: 0rem;
+        top: 10vh;
+        left: 0;
+    }
+
+    .burger-btn {
+        /* border: 2px solid blue; */
+        display: inline;
+        height: 2rem;
+    }
+
+    .adminSidebar h1 {
+        /* border: 2px solid blue; */
+        width: 50%;
+        display: inline-block;
+    }
+
+    .adminSidebar {
+        /* border: 2px solid green; */
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0rem 1rem;
+    }
+
+    .adminSidebar.expanded {
+    margin-bottom: 45vh; 
+  }
+}
+.adminSidebar ul li:hover .adminSidebarIcon {
+    color: white !important;
+}
+
+/* Prevent hover from overriding active icon color */
+.adminSidebar ul li.active-link:hover .adminSidebarIcon {
+    color: var(--secondary-100) !important;
+}

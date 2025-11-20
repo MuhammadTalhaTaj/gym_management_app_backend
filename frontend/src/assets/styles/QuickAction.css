@@ -1,0 +1,54 @@
+.actionUserIcon{
+    color: #2F5DAA;
+}
+.actionUsersIcon{
+    color: #F59E0B;
+}
+.actionRegisterIcon{
+    color: #10B981;
+}
+.actionEnvelopeIcon{
+    color: #F97316;
+}
+.actionCreditIcon{
+    color: var(--tertiary-100);
+}
+.actionReceiptIcon{
+  color: var(--tertiary-400);  
+}
+.quickAction li a{
+    color: white;
+    font-weight: 500;
+}
+.quickAction ul{
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    display: flex;
+}
+.quickAction ul li{
+    padding: 1rem 1rem;
+    border-radius: 1rem;
+    width: 100%;
+    background-color: var(--primary-200);
+    /* display: flex; */
+    
+}
+.quickAction ul li a{
+display: flex;
+gap: 1rem;
+align-items: center;
+}
+.quickAction h2{
+    margin-bottom: 2rem;
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: white;
+}
+.quickAction{
+    margin-top: 2rem;
+    padding: 1rem 1rem;
+    border-radius: 1rem;
+    background-color: var(--primary-100);
+    width: auto;
+}

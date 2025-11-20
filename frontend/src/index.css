@@ -1,0 +1,37 @@
+@import "tailwindcss";
+:root{
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  --primary-100:#364659;
+  --primary-200:#1E293B;
+  --primary-300:#8C9BB0;
+  --secondary-100: #EC9A0E;
+  --secondary-200:#595446;
+  --tertiary-100: #F24949;
+  --tertiary-100-30: #584252;
+  --tertiary-200: #F47117; 
+  --tertiary-200-30: #5A4B48; 
+  --tertiary-300: #11BF7F; 
+  --tertiary-300-30: #2B595E;
+  --tertiary-400: #3D8BF2; 
+  --tertiary-400-30: #344E75; 
+  --tertiary-500: #94A3B8;
+  --tertiary-600: #1E293B; 
+}
+body{
+  padding: 0;
+  margin: 0;
+}
+.adminMain{
+  display: flex;
+  margin: 0;
+  justify-content: space-between;
+  padding: 0;
+  /* border: 2px solid blue; */
+}
+@media all and (max-width:700px) {
+  .adminMain{
+    flex-direction: column;
+  }
+}

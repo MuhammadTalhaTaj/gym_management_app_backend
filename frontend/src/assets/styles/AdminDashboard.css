@@ -1,0 +1,12 @@
+.adminDashboardWrapper{
+    background-color: var(--primary-200);
+    padding: 0rem 2rem;
+    /* border: 2px solid blue; */
+    width: 76vw;
+}
+@media all and (max-width:700px) {
+    .adminDashboardWrapper{
+        width: 100vw;
+        padding: 0rem 1rem;
+    }
+}

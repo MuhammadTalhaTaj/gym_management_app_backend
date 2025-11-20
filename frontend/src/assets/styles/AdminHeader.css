@@ -1,0 +1,56 @@
+.adminHeader{
+    padding: 1rem 0;
+    display: flex;
+    /* width: 100%; */
+    align-items: center;
+    justify-content: space-between;
+}
+.adminHeader1 h1{
+    font-size: 2rem;
+    font-weight: 800;
+    color: white;
+}
+.adminHeader1 sub{
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--primary-300);
+}
+.adminHeader2 input{
+    background-color: var(--primary-100);
+    color: var(--primary-300);
+    padding: 0.5rem 1rem;
+    width: 100%;
+    border-radius: 0.5rem;
+}
+.adminHeader3{
+    color: var(--primary-300);
+    display: flex;
+    align-items: center;
+    gap: 1.4rem;
+    position: relative;
+}
+.adminNotificationIcon {
+  position: relative;
+}
+.adminUnreadDot {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.4rem;
+  width: 0.4rem;
+  height: 0.4rem;
+  background-color: var(--tertiary-100);
+  border-radius: 50%;
+}
+.userIcon{
+    border-radius: 50%;
+    padding: 1rem 1rem;
+    border: 1px solid var(--primary-300);
+}
+@media all and (max-width:700px) {
+.adminHeader{
+    max-width: 100%;
+    gap: 2rem;
+    text-align: center;
+    flex-direction: column;
+}
+}
