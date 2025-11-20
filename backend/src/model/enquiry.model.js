@@ -27,16 +27,10 @@ const enquirySchema = mongoose.Schema({
         default: "open",
     },
 
-    createdByModel: {
-        type: String,
-        required: true,
-        enum: ["User", "Staff"]
-    },
-
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
-        refPath: "createdByModel" 
+        ref: "Admin" 
     }
 }, { timestamps: true })
 export const Enquiry = mongoose.model('Enquiry', enquirySchema);

@@ -7,9 +7,9 @@ import { Staff } from "../model/staff.model.js";
 
 
 const addEnquiry = asyncHandler(async (req, res) => {
-    const { name, contact, remark = "", followUp, category, status, creatorId, currentUser } = req.body;
+    const { name, contact, remark = "", followUp, category, status, creatorId, currentUser, adminId } = req.body;
 
-    if (!name || !contact || !followUp || !creatorId || !currentUser) {
+    if (!name || !contact || !followUp || !creatorId || !currentUser || !adminId) {
         throw new APIError(400, "Provide all required fields");
     }
 
@@ -65,8 +65,7 @@ const addEnquiry = asyncHandler(async (req, res) => {
         followUp,
         category,
         status,
-        createdBy,
-        createdByModel: currentUser
+        createdBy: adminId
     });
 
     res.status(201).json({
