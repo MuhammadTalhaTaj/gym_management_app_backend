@@ -5,7 +5,7 @@ const staffSchema = new mongoose.Schema(
   {
     createdBy:{
         type:mongoose.Types.ObjectId,
-        ref: 'User',
+        ref: 'Admin',
         required:true
     },
     name: {
@@ -49,31 +49,31 @@ const staffSchema = new mongoose.Schema(
 );
 
 // ---------- PRE SAVE ----------
-staffSchema.pre("save", async function (next) {
-  // Sanitize email
-  if (this.isModified("email") && typeof this.email === "string") {
-    this.email = this.email.trim().toLowerCase();
-  }
+// staffSchema.pre("save", async function (next) {
+//   // Sanitize email
+//   if (this.isModified("email") && typeof this.email === "string") {
+//     this.email = this.email.trim().toLowerCase();
+//   }
 
-  // Sanitize contact
-  if (this.isModified("contact") && typeof this.contact === "string") {
-    this.contact = this.contact.trim();
-  }
+//   // Sanitize contact
+//   if (this.isModified("contact") && typeof this.contact === "string") {
+//     this.contact = this.contact.trim();
+//   }
 
-  // Hash password
-  if (this.isModified("password")) {
-    const saltRounds = 10;
-    this.password = await bcrypt.hash(this.password, saltRounds);
-  }
+//   // Hash password
+//   if (this.isModified("password")) {
+//     const saltRounds = 10;
+//     this.password = await bcrypt.hash(this.password, saltRounds);
+//   }
 
-  // Hash refresh token
-  if (this.isModified("refreshToken") && this.refreshToken) {
-    const saltRounds = 10;
-    this.refreshToken = await bcrypt.hash(this.refreshToken, saltRounds);
-  }
+//   // Hash refresh token
+//   if (this.isModified("refreshToken") && this.refreshToken) {
+//     const saltRounds = 10;
+//     this.refreshToken = await bcrypt.hash(this.refreshToken, saltRounds);
+//   }
 
-  next();
-});
+//   next();
+// });
 
 // ---------- METHODS ----------
 staffSchema.methods.isPasswordCorrect = function (plain) {

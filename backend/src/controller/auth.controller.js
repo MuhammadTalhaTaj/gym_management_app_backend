@@ -6,7 +6,7 @@ import { APIError } from "../utils/APIError.js";
 import { Payment } from "../model/payment.model.js";
 import { Member } from "../model/member.model.js";
 import { Expense } from "../model/expense.model.js";
-import { EMAIL_RE, CONTACT_RE, PASSWORD_MIN, REFRESH_COOKIE_OPTIONS, generateAccessToken, generateRefreshToken } from "../utils/helpers.util.js"
+import { EMAIL_RE, CONTACT_RE, PASSWORD_MIN, ACCESS_COOKIE_OPTIONS, generateAccessToken, generateRefreshToken } from "../utils/helpers.util.js"
 // -------------------- SIGNUP --------------------
 const signup = asyncHandler(async (req, res) => {
   const { name, email, contact, password, gymName, gymLocation } = req.body || {};
@@ -92,10 +92,10 @@ const signup = asyncHandler(async (req, res) => {
 
 // -------------------- LOGIN --------------------
 const login = asyncHandler(async (req, res) => {
-  const { email: rawEmail, password, role } = req.body || {};
+  const { email: rawEmail, password } = req.body || {};
   const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
 
-  if (!email || !password || !role) throw new APIError(400, "Provide all fields");
+  if (!email || !password) throw new APIError(400, "Provide all fields");
 
   
   const admin = await Admin.findOne({ email });
@@ -111,7 +111,7 @@ const login = asyncHandler(async (req, res) => {
   admin.refreshToken = rawRefreshToken;
   await admin.save();
 
-  res.cookie("refreshToken", rawRefreshToken, REFRESH_COOKIE_OPTIONS);
+  res.cookie("accessToken", accessToken, ACCESS_COOKIE_OPTIONS);
 
   res.status(200).json({
     accessToken,
