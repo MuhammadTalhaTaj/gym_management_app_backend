@@ -92,11 +92,12 @@ const signup = asyncHandler(async (req, res) => {
 
 // -------------------- LOGIN --------------------
 const login = asyncHandler(async (req, res) => {
-  const { email: rawEmail, password } = req.body || {};
+  const { email: rawEmail, password, role } = req.body || {};
   const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
 
-  if (!email || !password) throw new APIError(400, "Email and password are required");
+  if (!email || !password || !role) throw new APIError(400, "Provide all fields");
 
+  
   const admin = await Admin.findOne({ email });
   if (!admin) throw new APIError(404, "Admin not found");
 
