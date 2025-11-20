@@ -116,6 +116,14 @@ const InputField = ({ label, type, placeholder, icon: Icon, value, onChange }: a
   );
 };
 
+// ============= SOCIAL LOGIN BUTTON =============
+// const SocialLoginButton = ({ provider, icon }: any) => (
+//   <button className="flex items-center justify-center w-full px-4 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+//     {icon}
+//     <span className="ml-2 text-[var(--primary-200)] font-medium">{provider}</span>
+//   </button>
+// );
+
 // ============= FEATURE ITEM COMPONENT =============
 const FeatureItem = ({ icon, title }: any) => (
   <div className="flex items-center space-x-3 mb-4">
@@ -146,9 +154,6 @@ const Testimonial = ({ quote, author }: any) => (
 const LoginForm = ({ data }: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  // new: role selection
-  const [role, setRole] = useState<'Admin' | 'Staff'>('Admin');
-
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -160,7 +165,7 @@ const LoginForm = ({ data }: any) => {
     setLoading(true);
 
     try {
-      await loginRequest({ email, password, role }, rememberMe);
+      await loginRequest({ email, password }, rememberMe);
       // res has { accessToken, refreshToken, user }
       // navigate to dashboard
       navigate('/dashboard');
@@ -205,39 +210,6 @@ const LoginForm = ({ data }: any) => {
             onChange={(e: any) => setPassword(e.target.value)}
           />
 
-          {/* NEW: Role radio buttons (Admin / Staff) */}
-          <div className="mb-4">
-            <label className="flex items-center text-sm font-medium text-[var(--primary-200)] mb-2">
-              Role
-            </label>
-            <div className="flex items-center space-x-4">
-              <label className="flex items-center cursor-pointer text-[var(--primary-300)]">
-                <input
-                  type="radio"
-                  name="role"
-                  value="Admin"
-                  checked={role === 'Admin'}
-                  onChange={() => setRole('Admin')}
-                  className="w-4 h-4 text-[var(--tertiary-400)] border-gray-300 rounded focus:ring-[var(--tertiary-400)]"
-                />
-                <span className="ml-2 text-sm">Admin</span>
-              </label>
-
-              <label className="flex items-center cursor-pointer text-[var(--primary-300)]">
-                <input
-                  type="radio"
-                  name="role"
-                  value="Staff"
-                  checked={role === 'Staff'}
-                  onChange={() => setRole('Staff')}
-                  className="w-4 h-4 text-[var(--tertiary-400)] border-gray-300 rounded focus:ring-[var(--tertiary-400)]"
-                />
-                <span className="ml-2 text-sm">Staff</span>
-              </label>
-            </div>
-          </div>
-          {/* END role radios */}
-
           <div className="flex items-center justify-between mb-6">
             <label className="flex items-center cursor-pointer">
               <input
@@ -267,6 +239,41 @@ const LoginForm = ({ data }: any) => {
               {error}
             </div>
           )}
+
+          {/* <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-[var(--primary-300)]">Or continue with</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <SocialLoginButton 
+              provider="Google" 
+              icon={
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115Z"/>
+                  <path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 0 1-6.723-4.823l-4.04 3.067A11.965 11.965 0 0 0 12 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/>
+                  <path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.62-5.096 3.62-9 0-.71-.109-1.473-.272-2.182H12v4.637h6.436c-.317 1.559-1.17 2.766-2.395 3.558L19.834 21Z"/>
+                  <path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 0 1 4.909 12c0-.782.125-1.533.357-2.235L1.24 6.65A11.934 11.934 0 0 0 0 12c0 1.92.445 3.73 1.237 5.335l4.04-3.067Z"/>
+                </svg>
+              }
+            />
+            <SocialLoginButton 
+              provider="Microsoft" 
+              icon={
+                <svg className="w-5 h-5" viewBox="0 0 23 23">
+                  <path fill="#f3f3f3" d="M0 0h23v23H0z"/>
+                  <path fill="#f35325" d="M1 1h10v10H1z"/>
+                  <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                  <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                  <path fill="#ffba08" d="M12 12h10v10H12z"/>
+                </svg>
+              }
+            />
+          </div> */}
 
           <p className="text-center text-sm text-[var(--primary-300)]">
             Don't have an account?{' '}
