@@ -6,14 +6,15 @@ import '../assets/styles/AdminDashboardStats.css'
 function AdminDashboardStats() {
   const { data, loading, } = useDashboardData()
 
+  console.log("Data: ",data)
   const displayRevenue =
-    loading ? 'Loading...' : data?.revenueThisMonth ?? 1250
+    loading ? 'Loading...' : data?.revenueThisMonth ?? 0
   const displayAdmissions =
-    loading ? '...' : data?.totalAdmissionsThisMonth ?? 15
+    loading ? '...' : data?.totalAdmissionsThisMonth ?? 0
   const displayExpiring =
-    loading ? '...' : data?.expiringSubscriptions ?? 8
+    loading ? '...' : data?.expiringSubscriptions ?? 0
   const displayDue =
-    loading ? '...' : data?.netDueAmount ?? 875.5
+    loading ? '...' : data?.netDueAmount ?? 0
 
   return (
     <div className='adminDashboardStats'>

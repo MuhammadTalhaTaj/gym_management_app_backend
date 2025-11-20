@@ -27,6 +27,6 @@ userRouter.get('/authenticate', authMiddleware, (req, res) => {
   });
 });
 
-userRouter.get('/dashboard', authMiddleware, dashboardController);
+userRouter.get('/dashboard/:adminId', authMiddleware, dashboardController);
 
 export { userRouter };

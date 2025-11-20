@@ -1,7 +1,8 @@
 // src/pages/AdminMemberTable.tsx
-import  { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 import { apiRequest } from '../config/api'; // uses your existing apiRequest helper
+import { useDashboardData } from '../hooks/useDashboardData';
 
 // Data file - membersData.js (fallback)
 const membersData = [
@@ -82,6 +83,8 @@ const ActionButton = ({ icon: Icon, onClick, label }: any) => {
 
 // Member Row Component (unchanged)
 const MemberRow = ({ member, onView, onEdit, onDelete }: any) => {
+  const expiryDate = "2025-11-10T05:35:00.000Z";
+  const formattedDate = new Date(expiryDate).toISOString().slice(0, 10);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[2fr_1.5fr_1.5fr_1.2fr_1.2fr_1fr] gap-4 lg:gap-6 items-center py-6 px-4 lg:px-6 border-b border-slate-700/50 hover:bg-slate-700/20 transition-colors">
       {/* Member Info */}
@@ -90,16 +93,10 @@ const MemberRow = ({ member, onView, onEdit, onDelete }: any) => {
         <h3 className="text-slate-200 font-medium text-base lg:text-lg">{member.name}</h3>
       </div>
 
-      {/* Contact */}
-      {/* <div className="lg:block">
-        <span className="lg:hidden text-slate-400 text-sm mr-2">Contact:</span>
-        <span className="text-slate-300 text-sm lg:text-base">{member.contact}</span>
-      </div> */}
-
       {/* Plan */}
       <div className="lg:block">
         <span className="lg:hidden text-slate-400 text-sm mr-2">Plan:</span>
-        <span className="text-slate-400 text-sm lg:text-base">{member.plan}</span>
+        <span className="text-slate-400 text-sm lg:text-base">{member.planName}</span>
       </div>
 
       {/* Status */}
@@ -111,7 +108,7 @@ const MemberRow = ({ member, onView, onEdit, onDelete }: any) => {
       {/* Expiry Date */}
       <div className="lg:block">
         <span className="lg:hidden text-slate-400 text-sm mr-2">Expires:</span>
-        <span className="text-slate-400 text-sm lg:text-base">{member.expiryDate}</span>
+        <span className="text-slate-400 text-sm lg:text-base">{formattedDate}</span>
       </div>
 
       {/* Actions */}
@@ -175,58 +172,59 @@ const normalizeMember = (raw: any, idx: number) => {
 
 // Main Component (fetches expired members from dashboard controller)
 const AdminMemberTable = () => {
+  const { data, loading } = useDashboardData()
   const [members, setMembers] = useState<any[]>(membersData);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
+  // useEffect(() => {
+  //   let mounted = true;
 
-    const loadMembers = async () => {
-      setLoading(true);
+  //   const loadMembers = async () => {
+  //     // setLoading(true);
 
-      try {
-        // call dashboard endpoint that returns expiredMembersList
-        const data = await apiRequest({
-          method: 'GET',
-          endpoint: '/auth/dashboard'
-        });
+  //     try {
+  //       // call dashboard endpoint that returns expiredMembersList
+  //       const data = await apiRequest({
+  //         method: 'GET',
+  //         endpoint: '/auth/dashboard'
+  //       });
 
-        // possible keys where expired list is returned
-        let rawList: any[] = [];
-        if (Array.isArray(data.expiredMembersList)) rawList = data.expiredMembersList;
-        else if (Array.isArray(data.expiredMembers)) rawList = data.expiredMembers;
-        else if (Array.isArray(data.data)) rawList = data.data;
-        else {
-          // try to find any array inside response
-          const values = Object.values(data || {});
-          const firstArray = values.find(v => Array.isArray(v));
-          if (Array.isArray(firstArray)) rawList = firstArray as any[];
-        }
+  //       // possible keys where expired list is returned
+  //       let rawList: any[] = [];
+  //       if (Array.isArray(data.expiredMembersList)) rawList = data.expiredMembersList;
+  //       else if (Array.isArray(data.expiredMembers)) rawList = data.expiredMembers;
+  //       else if (Array.isArray(data.data)) rawList = data.data;
+  //       else {
+  //         // try to find any array inside response
+  //         const values = Object.values(data || {});
+  //         const firstArray = values.find(v => Array.isArray(v));
+  //         if (Array.isArray(firstArray)) rawList = firstArray as any[];
+  //       }
 
-        if (!Array.isArray(rawList) || rawList.length === 0) {
-          // no expired members returned -> use fallback (membersData)
-          if (mounted) {
-            setMembers(membersData);
-          }
-          setLoading(false);
-          return;
-        }
+  //       if (!Array.isArray(rawList) || rawList.length === 0) {
+  //         // no expired members returned -> use fallback (membersData)
+  //         if (mounted) {
+  //           setMembers(membersData);
+  //         }
+  //         // setLoading(false);
+  //         return;
+  //       }
 
-        // normalize and set members
-        const normalized = rawList.map((r, i) => normalizeMember(r, i));
-        if (mounted) setMembers(normalized);
-      } catch (err) {
-        // on any error (network, auth, 5xx), fallback to provided membersData
-        console.warn('Failed to fetch expired members from /auth/dashboard — using fallback membersData', err);
-        if (mounted) setMembers(membersData);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
+  //       // normalize and set members
+  //       const normalized = rawList.map((r, i) => normalizeMember(r, i));
+  //       if (mounted) setMembers(normalized);
+  //     } catch (err) {
+  //       // on any error (network, auth, 5xx), fallback to provided membersData
+  //       console.warn('Failed to fetch expired members from /auth/dashboard — using fallback membersData', err);
+  //       if (mounted) setMembers(membersData);
+  //     } finally {
+  //       // if (mounted) setLoading(false);
+  //     }
+  //   };
 
-    loadMembers();
-    return () => { mounted = false; };
-  }, []);
+  //   loadMembers();
+  //   return () => { mounted = false; };
+  // }, []);
 
   const handleView = (id: any) => { console.log('View member:', id); };
   const handleEdit = (id: any) => { console.log('Edit member:', id); };
@@ -246,7 +244,7 @@ const AdminMemberTable = () => {
 
           {/* Member Rows */}
           <div className="divide-y divide-slate-700/50">
-            {members.map((member) => (
+            {data?.expiredMembersList.map((member) => (
               <MemberRow
                 key={member.id}
                 member={{ ...member, status: 'Expired', statusType: 'danger' }}

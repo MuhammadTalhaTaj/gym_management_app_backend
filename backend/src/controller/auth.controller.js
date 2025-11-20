@@ -39,14 +39,14 @@ const signup = asyncHandler(async (req, res) => {
       throw new APIError(400, "Gym already exists in this location");
     }
 
-    const hashedPassword = await bcrypt.hash(password,10)
+    const hashedPassword = await bcrypt.hash(password, 10)
 
     // 4️⃣ Create new admin
     const admin = new Admin({
       name,
       email,
       contact,
-      password:hashedPassword,
+      password: hashedPassword,
       gymName,
       gymLocation
     });
@@ -92,7 +92,7 @@ const login = asyncHandler(async (req, res) => {
 
   if (!email || !password) throw new APIError(400, "Provide all fields");
 
-  
+
   const admin = await Admin.findOne({ email });
   if (!admin) throw new APIError(404, "Admin not found");
 
@@ -170,33 +170,34 @@ const logout = asyncHandler(async (req, res) => {
 // -------------------- DASHBOARD CONTROLLER --------------------
 // Option A: member's last week before expiry (expiry between now and now+7days)
 const dashboardController = asyncHandler(async (req, res) => {
-  const now = new Date();
-  // Use UTC date boundaries
-  const nowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds()));
+  const { adminId } = req.params;
+  const membersMatchAdmin = { createdBy: new mongoose.Types.ObjectId(adminId) };
 
+  const now = new Date();
+  const nowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds()));
   const monthStartUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), 1, 0, 0, 0, 0));
   const monthEndUTC = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth() + 1, 0, 23, 59, 59, 999));
 
-  // Total revenue this month
   const revenueResult = await Payment.aggregate([
-    { $match: { paymentDate: { $gte: monthStartUTC, $lte: monthEndUTC } } },
+    { $match: { paymentDate: { $gte: monthStartUTC, $lte: monthEndUTC }, createdBy: new mongoose.Types.ObjectId(adminId) } },
     { $group: { _id: null, totalRevenue: { $sum: "$amount" } } },
   ]);
   const totalRevenueThisMonth = revenueResult[0]?.totalRevenue || 0;
 
-  // Total admissions this month
   const totalAdmissionsThisMonth = await Member.countDocuments({
     joinDate: { $gte: monthStartUTC, $lte: monthEndUTC },
+    createdBy: new mongoose.Types.ObjectId(adminId)
   });
 
-  // Total due amount
-  const totalDueResult = await Member.aggregate([{ $group: { _id: null, totalDueAmount: { $sum: "$dueAmount" } } }]);
+  const totalDueResult = await Member.aggregate([
+    { $match: membersMatchAdmin },
+    { $group: { _id: null, totalDueAmount: { $sum: "$dueAmount" } } }
+  ]);
   const totalDueAmount = totalDueResult[0]?.totalDueAmount || 0;
 
-  // Subscriptions expiring in each member's last 7 days (Option A)
   const next7Days = new Date(nowUTC.getTime() + 7 * 24 * 60 * 60 * 1000);
-
   const expiringPipeline = [
+    { $match: membersMatchAdmin },
     { $lookup: { from: "plans", localField: "plan", foreignField: "_id", as: "planInfo" } },
     { $unwind: "$planInfo" },
     { $addFields: { durationTypeNormalized: { $toLower: { $trim: { input: "$planInfo.durationType" } } } } },
@@ -207,29 +208,26 @@ const dashboardController = asyncHandler(async (req, res) => {
             branches: [
               { case: { $eq: ["$durationTypeNormalized", "month"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "month", amount: "$planInfo.duration" } } },
               { case: { $eq: ["$durationTypeNormalized", "week"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "week", amount: "$planInfo.duration" } } },
-              { case: { $eq: ["$durationTypeNormalized", "day"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "day", amount: "$planInfo.duration" } } },
-            ],
-            default: "$joinDate",
-          },
-        },
-      },
+              { case: { $eq: ["$durationTypeNormalized", "day"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "day", amount: "$planInfo.duration" } } }
+            ], default: "$joinDate"
+          }
+        }
+      }
     },
     { $match: { expiryDate: { $gte: nowUTC, $lte: next7Days } } },
     { $count: "expiringCount" },
   ];
-
   const expiringSubscriptions = await Member.aggregate(expiringPipeline);
   const expiringSubscriptionsCount = expiringSubscriptions[0]?.expiringCount || 0;
 
-  // Total expense this month
   const expenseThisMonth = await Expense.aggregate([
-    { $match: { date: { $gte: monthStartUTC, $lte: monthEndUTC } } },
+    { $match: { date: { $gte: monthStartUTC, $lte: monthEndUTC }, createdBy: new mongoose.Types.ObjectId(adminId) } },
     { $group: { _id: null, expenses: { $sum: "$amount" } } },
   ]);
   const totalExpenseThisMonth = expenseThisMonth[0]?.expenses || 0;
 
-  // Expired members
   const expiredPipeline = [
+    { $match: membersMatchAdmin },
     { $lookup: { from: "plans", localField: "plan", foreignField: "_id", as: "planInfo" } },
     { $unwind: "$planInfo" },
     { $addFields: { durationTypeNormalized: { $toLower: { $trim: { input: "$planInfo.durationType" } } } } },
@@ -240,12 +238,11 @@ const dashboardController = asyncHandler(async (req, res) => {
             branches: [
               { case: { $eq: ["$durationTypeNormalized", "month"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "month", amount: "$planInfo.duration" } } },
               { case: { $eq: ["$durationTypeNormalized", "week"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "week", amount: "$planInfo.duration" } } },
-              { case: { $eq: ["$durationTypeNormalized", "day"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "day", amount: "$planInfo.duration" } } },
-            ],
-            default: "$joinDate",
-          },
-        },
-      },
+              { case: { $eq: ["$durationTypeNormalized", "day"] }, then: { $dateAdd: { startDate: "$joinDate", unit: "day", amount: "$planInfo.duration" } } }
+            ], default: "$joinDate"
+          }
+        }
+      }
     },
     { $match: { expiryDate: { $lt: nowUTC } } },
     {
@@ -260,10 +257,9 @@ const dashboardController = asyncHandler(async (req, res) => {
         planName: "$planInfo.name",
         planDurationType: "$planInfo.durationType",
         planDuration: "$planInfo.duration",
-      },
+      }
     },
   ];
-
   const expiredMembers = await Member.aggregate(expiredPipeline);
   const expiredMembersCount = expiredMembers.length;
 
@@ -278,6 +274,7 @@ const dashboardController = asyncHandler(async (req, res) => {
     expiredMembersList: expiredMembers,
   });
 });
+
 
 // -------------------- Export --------------------
 export { signup, login, refreshAccessToken, logout, dashboardController };

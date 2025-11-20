@@ -8,6 +8,8 @@ export interface DashboardData {
   expiringSubscriptions: number
   netDueAmount: number
   expense: number
+  expiredMembersList: any[],
+  expiredMembers: number
 }
 
 export function useDashboardData() {
@@ -22,12 +24,13 @@ export function useDashboardData() {
       try {
         const res = await apiRequest<DashboardData>({
           method: 'GET',
-          endpoint: '/auth/dashboard',
+          endpoint: '/auth/dashboard/'+localStorage.getItem("userId"),
         })
+        console.log("Admin Data: ",res)
         setData(res)
       } catch (err: any) {
-        console.error('Dashboard fetch error:', err)
-        setError(err?.message || 'Failed to load dashboard data')
+        // console.error('Dashboard fetch error:', err)
+        // setError(err?.message || 'Failed to load dashboard data')
       } finally {
         setLoading(false)
       }
