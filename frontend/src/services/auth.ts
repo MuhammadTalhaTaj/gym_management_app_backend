@@ -12,61 +12,44 @@ export interface LoginPayload {
  * If remember === true -> localStorage, else sessionStorage.
  */
 export async function loginRequest(payload: LoginPayload, remember = false) {
+  if (!payload.role) {
+    throw new Error("Role is required in payload");
+  }
+  // Determine endpoint based on role
+  const endpoint = payload.role === "Admin" ? "/auth/login" : "/staff/login";
+
+  const { role, ...payloadWithoutRole } = payload;
+  // Make API request
   const data = await apiRequest({
     method: "POST",
-    endpoint: "/auth/login",
-    body: payload
+    endpoint,
+    body: payloadWithoutRole,
   });
 
-  // backend returns { accessToken, refreshToken, user: { ... } } (common shape)
-  const { accessToken, refreshToken, user } = data;
+  // Extract accessToken and user dynamically
+  const accessToken = data.accessToken;
+  const user = payload.role === "Admin" ? data.admin : data.staff;
 
-  // use localStorage when remember=true, otherwise sessionStorage
+  // Choose storage based on "remember"
   const storage = remember ? localStorage : sessionStorage;
 
+  // Persist tokens and user info
   storage.setItem("accessToken", accessToken);
-  storage.setItem("refreshToken", refreshToken);
+  storage.setItem("role", payload.role);
+  storage.setItem("user", JSON.stringify(user));
+  storage.setItem("userId", String(user._id ?? ""));
 
-  // ensure user object exists
-  const userObj = user || {};
-
-  // Determine role: prefer role sent by backend (user.role or data.role), otherwise fallback to payload.role
-  const roleFromServer = (userObj && (userObj.role || (data as any).role)) || payload.role || '';
-
-  // attach role to userObj if not present
-  if (roleFromServer && !userObj.role) {
-    userObj.role = roleFromServer;
-  }
-
-  // persist user and ids
-  storage.setItem("user", JSON.stringify(userObj));
-  // always set local userId and role as well so other parts can read even if sessionStorage used.
-  try {
-    storage.setItem("userId", String(userObj.id ?? (userObj as any).userId ?? ''));
-  } catch (e) {
-    // ignore storage write errors
-  }
-
-  // persist role (in chosen storage) and also ensure it's available in localStorage as requested
-  if (roleFromServer) {
-    storage.setItem("role", roleFromServer);
-    try {
-      localStorage.setItem("role", roleFromServer); // also store in localStorage for easy access
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  // also save in localStorage if remember === true (redundant but explicit)
-  if (remember) {
+  // If remember is true, ensure localStorage has the same info (explicit)
+  if (remember && storage !== localStorage) {
     localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
-    localStorage.setItem("user", JSON.stringify(userObj));
-    localStorage.setItem("userId", String(userObj.id ?? ''));
+    localStorage.setItem("role", payload.role);
+    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("userId", String(user._id ?? ""));
   }
 
-  return { accessToken, refreshToken, user: userObj };
+  return { accessToken, user };
 }
+
 
 /**
  * helper to clear auth (logout)
