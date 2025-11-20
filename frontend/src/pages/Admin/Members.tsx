@@ -265,7 +265,7 @@ export const TableRow = ({ member }: { member: any }) => {
   const planDuration = plan ? `${plan.duration ?? ''} ${plan.durationType ?? ''}` : '';
 
   // --- Calculate expiry date ---
-  let expiryDate = null;
+  let expiryDate: Date | null = null;
   if (plan && member.joinDate) {
     const joinDate = new Date(member.joinDate);
     const duration = Number(plan.duration) || 0;
@@ -290,10 +290,11 @@ export const TableRow = ({ member }: { member: any }) => {
   // --- Compute status dynamically ---
   const status = expiryDate && expiryDate < new Date() ? 'Expired' : 'Active';
 
-  // Format expiry date for display
+  // --- Format expiry date as YYYY-MM-DD ---
   const expiryDateStr = expiryDate
-    ? expiryDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    : '—';
+    ? expiryDate.toISOString().split('T')[0]
+    : '—'; // e.g., "2025-11-15"
+
 
   return (
     <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
