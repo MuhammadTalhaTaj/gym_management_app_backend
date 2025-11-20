@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Search, Eye, Edit2, Trash2, ChevronLeft } from 'lucide-react';
 import { apiRequest } from '../../config/api';
 
-interface Avatar{
+interface Avatar {
   initials: any;
   name: String;
 }
@@ -78,8 +78,8 @@ interface StatusBadgeProps {
 }
 
 // Status Badge
-const StatusBadge = ({ status }:StatusBadgeProps) => {
-  const styles:Record<'Open' | 'Closed', string>  = {
+const StatusBadge = ({ status }: StatusBadgeProps) => {
+  const styles: Record<'Open' | 'Closed', string> = {
     Open: 'bg-[var(--tertiary-300-30)] text-[var(--tertiary-300)]',
     Closed: 'bg-[var(--primary-300)] bg-opacity-30 text-[var(--tertiary-500)]'
   };
@@ -90,7 +90,7 @@ const StatusBadge = ({ status }:StatusBadgeProps) => {
 
 
 // Avatar
-const Avatar = ({ initials, name }:Avatar) => {
+const Avatar = ({ initials, name }: Avatar) => {
   const colors = ['bg-blue-500', 'bg-purple-500', 'bg-pink-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500'];
   const firstChar = (name && name.length > 0) ? name[0] : 'A';
   const colorIndex = firstChar.charCodeAt(0) % colors.length;
@@ -105,7 +105,7 @@ const ActionButton = ({ icon: Icon, onClick, className = '' }: any) => (
 );
 
 // Table Row
-const TableRow = ({ enquiry, onViewRemark } :any) => (
+const TableRow = ({ enquiry, onViewRemark }: any) => (
   <tr className="border-b border-[var(--primary-300)] border-opacity-20 hover:bg-[var(--tertiary-400-30)] hover:bg-opacity-10 transition-colors">
     <td className="py-4 px-4">
       <div className="flex items-center gap-3">
@@ -136,50 +136,55 @@ const Enquiries = () => {
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [categoryFilter, setCategoryFilter] = useState('All Categories');
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
-  const [enquiries, setEnquiries] = useState(dashboardData.enquiries);
+  const [enquiries, setEnquiries] = useState<any[]>([]);
   const [remarkModal, setRemarkModal] = useState({ visible: false, remark: '', name: '' });
-
+  const [stats, setStats] = useState([
+    { id: 1, icon: '📧', label: 'Total Enquiries', value: 0 },
+    { id: 2, icon: '📂', label: 'Open Status', value: 0 },
+    { id: 3, icon: '💳', label: 'Payment Category', value: 0 },
+    { id: 4, icon: '⚠️', label: 'Complaints', value: 0 }
+  ]);
+  const userId = localStorage.getItem("userId");
   // Fetch enquiries from API
   useEffect(() => {
     const fetchEnquiries = async () => {
       try {
-        const data = await apiRequest({
+        const res = await apiRequest({
           method: 'GET',
-          endpoint: '/enquiry/getEnquiries',
-          mapFn: (res: { data: any[] }) =>
-            (res.data || []).map((e: any) => ({
-              id: e._id,
-              name: e.name || 'Unknown',
-              email: e.email || '',
-              contact: e.contact || '',
-              category: e.category ? (e.category.charAt(0).toUpperCase() + e.category.slice(1)) : 'Other',
-              status: e.status ? (e.status.charAt(0).toUpperCase() + e.status.slice(1)) : 'Open',
-              followUp: e.followUp ? (() => {
-                const d = new Date(e.followUp);
-                return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
-              })() : 'N/A',
-              created: e.createdAt ? (() => {
-                const d = new Date(e.createdAt);
-                return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
-              })() : 'N/A',
-              avatar: e.name ? e.name.split(' ').map((n: string) => n[0]).join('') : 'U', // explicitly type `n`
-              remark: e.remark || ''
-            }))
-
+          endpoint: '/enquiry/getEnquiries/' + userId,
         });
-        if (Array.isArray(data) && data.length) setEnquiries(data);
+        console.log("Response: ",res)
+        const enquiries = res.enquiries;
+
+        // Total enquiries
+        const totalEnquiries = enquiries.length;
+
+        // Count by status
+        const openStatus = enquiries.filter((e: any) => e.status === "open").length;
+
+        const paymentCategory = enquiries.filter((e: any) => e.category === "payment").length;
+
+        const complaints = enquiries.filter((e: any) => e.category === "complaint").length;
+
+        // Update state
+        setStats([
+          { id: 1, icon: '📧', label: 'Total Enquiries', value: totalEnquiries },
+          { id: 2, icon: '📂', label: 'Open Status', value: openStatus },
+          { id: 3, icon: '💳', label: 'Payment Category', value: paymentCategory },
+          { id: 4, icon: '⚠️', label: 'Complaints', value: complaints }
+        ]);
+
+        setEnquiries(enquiries);
+
       } catch (err) {
-        console.error('Failed to fetch enquiries, using fallback', err);
-        setEnquiries(dashboardData.enquiries);
+        console.log(err);
+        setEnquiries([]);
       }
     };
+
     fetchEnquiries();
   }, []);
 
-  // const handleSelectAll = (e:any) => {
-  //   if (e.target.checked) setSelectedRows(enquiries.map(enq => enq.id));
-  //   else setSelectedRows([]);
-  // };
 
   const handleSelectRow = (id: any) => {
     setSelectedRows(prev => prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]);
@@ -201,7 +206,7 @@ const Enquiries = () => {
     <div className="min-h-screen w-full bg-[var(--primary-200)] p-4 md:p-6 lg:p-8">
       <div className="max-w-[1600px] mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-          {dashboardData.stats.map(stat => <StatCard key={stat.id} {...stat} />)}
+          {stats.map(stat => <StatCard key={stat.id} {...stat} />)}
         </div>
 
         <div className="bg-[var(--primary-100)] rounded-lg overflow-hidden">

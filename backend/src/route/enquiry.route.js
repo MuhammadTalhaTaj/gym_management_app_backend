@@ -3,7 +3,7 @@ import { addEnquiry, getEnquiries, deleteEnquiry, updateEnquiry } from "../contr
 import { authMiddleware } from "../middleware/auth.middleware.js";
 const enquiryRouter = Router();
 enquiryRouter.use(authMiddleware);
-enquiryRouter.route('/addEnquiry').get(authMiddleware,addEnquiry)
+enquiryRouter.route('/addEnquiry').post(authMiddleware,addEnquiry)
 enquiryRouter.route('/getEnquiries/:creatorId').get(authMiddleware, getEnquiries)
 enquiryRouter.route("/deleteEnquiry").delete(authMiddleware,deleteEnquiry)
 enquiryRouter.route("/update").patch(authMiddleware,updateEnquiry)

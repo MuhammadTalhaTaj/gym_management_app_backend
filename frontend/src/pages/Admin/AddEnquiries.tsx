@@ -1,5 +1,5 @@
 // src/pages/AddEnquiries.tsx
-import  { useState } from 'react';
+import { useState } from 'react';
 import { FileText, User, Calendar } from 'lucide-react';
 import { apiRequest } from '../../config/api'; // <- uses your existing apiRequest helper
 
@@ -97,7 +97,7 @@ const formConfig = {
 // Reusable Components
 const SectionHeader = ({ title, icon }: any) => {
   const IconComponent = icon === 'user' ? User : FileText;
-  
+
   return (
     <div className="flex items-center gap-3 mb-6">
       <IconComponent className="w-5 h-5 text-[var(--secondary-100)]" />
@@ -279,7 +279,7 @@ const AddEnquiries = () => {
   const handleSubmit = async () => {
     // client-side validation (unchanged)
     const newErrors: any = {};
-    
+
     formConfig.sections.forEach((section) => {
       section.fields.forEach((field: any) => {
         if (field.required && !formData[field.name]) {
@@ -292,19 +292,22 @@ const AddEnquiries = () => {
       setErrors(newErrors);
       return;
     }
-
-    // map frontend fields -> backend expected fields
-    const payload = {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const currentUser = localStorage.getItem("role")
+    let payload = {
       name: formData.fullName,
       contact: formData.contactNumber,
       remark: formData.remarks,
       followUp: formData.followUpDate,
       category: formData.category,
-      status: formData.status
+      status: formData.status,
+      currentUser,
+      creatorId: user.id,
+      adminId: currentUser === "Admin" ? user.id : user?.createdBy
     };
-
     setLoading(true);
     try {
+      console.log("Payload: ",payload)
       // call backend endpoint exactly as you specified
       const res = await apiRequest({
         method: 'POST',
@@ -320,9 +323,9 @@ const AddEnquiries = () => {
       handleReset();
     } catch (err: any) {
       // surface backend error to user
-      console.warn('Add enquiry failed:', err);
+      console.error('Error:', err);
       // if backend returned a message inside the error message, show it — otherwise show generic
-      alert(err?.message ?? 'Failed to save enquiry. See console for details.');
+      // alert(err?.message ?? 'Failed to save enquiry. See console for details.');
     } finally {
       setLoading(false);
     }
