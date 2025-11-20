@@ -1,5 +1,5 @@
 // src/components/AdminHeader.tsx
-import  { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import '../assets/styles/AdminHeader.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faBell, faUser } from '@fortawesome/free-solid-svg-icons'
@@ -17,28 +17,40 @@ interface Member {
   [key: string]: any
 }
 
+interface UserInterface {
+  id: string,
+  name: string,
+  email: string,
+  contact: string,
+  gymName: string,
+  gymLocation: string
+}
+
 function AdminHeader() {
   const [unread,] = useState(1)
   const [members, setMembers] = useState<Member[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const searchRef = useRef<HTMLDivElement | null>(null)
+  const [user, setUser] = useState<UserInterface | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
-    // fetch members on mount
-    const fetchMembers = async () => {
-      try {
-        const res = await apiRequest<{ message: string; data: Member[] }>({
-          method: 'GET',
-          endpoint: '/member/getallmember'
-        })
-        setMembers(res.data || [])
-      } catch (err) {
-        console.error('Failed to fetch members', err)
-      }
-    }
-    fetchMembers()
-  }, [])
+    const initialize = async () => {
+      await getUserData(); // load user
+    };
+
+    initialize();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetch = async () => {
+      await fetchMembers();
+    };
+
+    fetch();
+  }, [user]);
 
   // close dropdown on outside click
   useEffect(() => {
@@ -52,6 +64,35 @@ function AdminHeader() {
     document.addEventListener('mousedown', onDocClick)
     return () => document.removeEventListener('mousedown', onDocClick)
   }, [])
+  const fetchMembers = async () => {
+    try {
+      const res = await apiRequest<{ message: string; data: Member[] }>({
+        method: 'GET',
+        endpoint: '/member/getAllMembers',
+        body: { id: user?.id }
+      })
+      setMembers(res.data || [])
+    } catch (err) {
+      console.error('Failed to fetch members', err)
+    }
+  }
+  const getUserData = async () => {
+    const stored = localStorage.getItem("user");
+    console.log("User: ", stored);
+
+    if (!stored) {
+      setUser(null); // no user found
+      return;
+    }
+
+    try {
+      const parsed: UserInterface = JSON.parse(stored);
+      setUser(parsed);
+    } catch (err) {
+      console.error("Failed to parse stored user", err);
+      setUser(null);
+    }
+  };
 
   const openMember = (id: string) => {
     setShowDropdown(false)
@@ -60,12 +101,12 @@ function AdminHeader() {
 
   const openAllMembersPage = () => {
     setShowDropdown(false)
-    navigate('/members')
+    navigate('/members', { state: { userId: user?.id } })
   }
 
   return (
     <div className='adminHeader'>
-      <div className="adminHeader1"><h1>Welcome Alex!</h1> <sub>Here's your gym's performance overview for today.</sub></div>
+      <div className="adminHeader1"><h1>Welcome {user?.name ?? "User"}!</h1> <sub>Here's your gym's performance overview for today.</sub></div>
 
       <div className="adminHeader2" ref={searchRef} style={{ position: 'relative' }}>
         {/* keep the same input markup and classes */}
@@ -87,14 +128,14 @@ function AdminHeader() {
               background: 'var(--primary-100)'
             }}
           >
-            <div style={{ padding: 8, borderBottom: '1px solid #eee', display: 'flex', color:"white" , justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: 8, borderBottom: '1px solid #eee', display: 'flex', color: "white", justifyContent: 'space-between', alignItems: 'center' }}>
               <strong style={{ fontSize: 14 }}>Members</strong>
               <button onClick={openAllMembersPage} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
                 View all
               </button>
             </div>
 
-            <div style={{ maxHeight: 280, overflowY: 'auto',color:"white" }}>
+            <div style={{ maxHeight: 280, overflowY: 'auto', color: "white" }}>
               {members.length === 0 && <div style={{ padding: 12 }}>No members</div>}
               {members.map(m => (
                 <div

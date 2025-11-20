@@ -7,6 +7,7 @@ import { Payment } from "../model/payment.model.js";
 import { Member } from "../model/member.model.js";
 import { Expense } from "../model/expense.model.js";
 import { EMAIL_RE, CONTACT_RE, PASSWORD_MIN, ACCESS_COOKIE_OPTIONS, generateAccessToken, generateRefreshToken } from "../utils/helpers.util.js"
+import bcrypt from "bcrypt"
 // -------------------- SIGNUP --------------------
 const signup = asyncHandler(async (req, res) => {
   const { name, email, contact, password, gymName, gymLocation } = req.body || {};
@@ -38,12 +39,14 @@ const signup = asyncHandler(async (req, res) => {
       throw new APIError(400, "Gym already exists in this location");
     }
 
+    const hashedPassword = await bcrypt.hash(password,10)
+
     // 4️⃣ Create new admin
     const admin = new Admin({
       name,
       email,
       contact,
-      password,
+      password:hashedPassword,
       gymName,
       gymLocation
     });
@@ -58,19 +61,11 @@ const signup = asyncHandler(async (req, res) => {
     await admin.save();
 
     // 6️⃣ Send refresh token in HttpOnly cookie
-    res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTIONS);
+    // res.cookie("acessToken", accessToken, ACCESS_COOKIE_OPTIONS);
 
     // 7️⃣ Respond with admin info and access token
     res.status(201).json({
-      accessToken,
-      admin: {
-        id: admin._id,
-        name: admin.name,
-        email: admin.email,
-        contact: admin.contact,
-        gymName: admin.gymName,
-        gymLocation: admin.gymLocation,
-      },
+      message: "Admin created successfully."
     });
   } catch (err) {
     // 8️⃣ Handle duplicate key errors (for email and contact)

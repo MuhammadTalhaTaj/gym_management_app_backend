@@ -31,20 +31,20 @@ export async function loginRequest(payload: LoginPayload, remember = false) {
   const user = payload.role === "Admin" ? data.admin : data.staff;
 
   // Choose storage based on "remember"
-  const storage = remember ? localStorage : sessionStorage;
+  const storage = localStorage;
 
   // Persist tokens and user info
   storage.setItem("accessToken", accessToken);
   storage.setItem("role", payload.role);
   storage.setItem("user", JSON.stringify(user));
-  storage.setItem("userId", String(user._id ?? ""));
+  storage.setItem("userId", String(user.id ?? ""));
 
   // If remember is true, ensure localStorage has the same info (explicit)
   if (remember && storage !== localStorage) {
     localStorage.setItem("accessToken", accessToken);
     localStorage.setItem("role", payload.role);
     localStorage.setItem("user", JSON.stringify(user));
-    localStorage.setItem("userId", String(user._id ?? ""));
+    localStorage.setItem("userId", String(user.id ?? ""));
   }
 
   return { accessToken, user };

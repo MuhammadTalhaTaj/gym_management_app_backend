@@ -10,6 +10,6 @@ async function startDb() {
 
 startDb()
 
-app.listen(process.env.PORT, ()=>{
-    console.log(`Server is listening at port ${process.env.PORT}`)
-})
+app.listen(process.env.PORT, '0.0.0.0', () => {
+  console.log(`Server is listening at port ${process.env.PORT}`);
+});

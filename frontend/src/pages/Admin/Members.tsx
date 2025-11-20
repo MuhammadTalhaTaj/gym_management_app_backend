@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, MoreVertical, Bell } from 'lucide-react';
 import { apiRequest } from '../../config/api';
-
+import { useLocation } from 'react-router-dom';
 // Mock data in a separate structure (simulating a separate file)
 const MOCK_DATA = {
   members: [
@@ -58,7 +58,7 @@ const MOCK_DATA = {
 // ---------- UI subcomponents (unchanged styling) ----------
 
 export const StatusBadge = ({ status }: { status: string }) => {
-  const statusConfig: Record<string,string> = {
+  const statusConfig: Record<string, string> = {
     Active: "bg-green-100 text-green-700",
     Due: "bg-orange-100 text-orange-700",
     Expired: "bg-red-100 text-red-700"
@@ -71,7 +71,7 @@ export const StatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-export const SearchInput = ({ value, onChange, placeholder }: { value: string; onChange: (e:any)=>void; placeholder?:string }) => {
+export const SearchInput = ({ value, onChange, placeholder }: { value: string; onChange: (e: any) => void; placeholder?: string }) => {
   return (
     <div className="relative flex-1 max-w-md">
       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -86,7 +86,7 @@ export const SearchInput = ({ value, onChange, placeholder }: { value: string; o
   );
 };
 
-export const Dropdown = ({ label, value, onChange, options }: { label:string; value:string; onChange:(e:any)=>void; options:string[] }) => {
+export const Dropdown = ({ label, value, onChange, options }: { label: string; value: string; onChange: (e: any) => void; options: string[] }) => {
   return (
     <div className="flex items-center gap-2">
       <span className="text-gray-700 font-medium whitespace-nowrap">{label}</span>
@@ -138,7 +138,7 @@ export const FilterBar = ({ searchTerm, setSearchTerm, batch, setBatch, status, 
             label="Batch:"
             value={batch}
             onChange={(e) => setBatch(e.target.value)}
-            options={["All Batches", "morning", "evening","afternoon","night"]}
+            options={["All Batches", "morning", "evening", "afternoon", "night"]}
           />
           <Dropdown
             label="Status:"
@@ -253,17 +253,47 @@ export const normalizeMember = (raw: any, idx: number) => {
 
 // ---------- row / pagination components ----------
 export const TableRow = ({ member }: { member: any }) => {
-  // ensure phone is a string
-  const phoneStr = member.phone != null ? String(member.phone) : '';
+  // --- Phone formatting ---
+  const phoneStr = member.contact != null ? String(member.contact) : '';
   const phoneParts = phoneStr.split(' ').filter(Boolean);
   const firstLine = phoneParts.slice(0, 2).join(' ') || phoneStr || '';
   const secondLine = phoneParts.slice(2).join(' ') || '';
 
-  // ensure membershipPlan is a string
-  const planStr = member.membershipPlan != null ? String(member.membershipPlan) : '';
-  const planParts = planStr.split(' ').filter(Boolean);
-  const planFirst = planParts[0] ?? '';
-  const planSecond = planParts.slice(1).join(' ') ?? '';
+  // --- Plan details ---
+  const plan = member.plan;
+  const planName = plan?.name ?? '';
+  const planDuration = plan ? `${plan.duration ?? ''} ${plan.durationType ?? ''}` : '';
+
+  // --- Calculate expiry date ---
+  let expiryDate = null;
+  if (plan && member.joinDate) {
+    const joinDate = new Date(member.joinDate);
+    const duration = Number(plan.duration) || 0;
+
+    switch (plan.durationType) {
+      case 'Month':
+        joinDate.setMonth(joinDate.getMonth() + duration);
+        break;
+      case 'Year':
+        joinDate.setFullYear(joinDate.getFullYear() + duration);
+        break;
+      case 'Day':
+        joinDate.setDate(joinDate.getDate() + duration);
+        break;
+      default:
+        break;
+    }
+
+    expiryDate = joinDate;
+  }
+
+  // --- Compute status dynamically ---
+  const status = expiryDate && expiryDate < new Date() ? 'Expired' : 'Active';
+
+  // Format expiry date for display
+  const expiryDateStr = expiryDate
+    ? expiryDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '—';
 
   return (
     <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
@@ -280,14 +310,14 @@ export const TableRow = ({ member }: { member: any }) => {
         <div className="text-sm text-gray-900">{secondLine}</div>
       </td>
       <td className="px-6 py-4 hidden lg:table-cell">
-        <div className="text-sm text-gray-900">{planFirst}</div>
-        <div className="text-sm text-gray-900">{planSecond}</div>
+        <div className="text-sm text-gray-900">{planName}</div>
+        <div className="text-sm text-gray-900">{planDuration}</div>
       </td>
       <td className="px-6 py-4 text-sm text-gray-900 hidden xl:table-cell">
-        {member.expiryDate || '—'}
+        {expiryDateStr}
       </td>
       <td className="px-6 py-4">
-        <StatusBadge status={member.status ?? 'Active'} />
+        <StatusBadge status={status} />
       </td>
       <td className="px-6 py-4">
         <button className="p-1 hover:bg-gray-100 rounded transition-colors">
@@ -298,14 +328,15 @@ export const TableRow = ({ member }: { member: any }) => {
   );
 };
 
-export const Pagination = ({ currentPage, totalPages, onPageChange, showingFrom, showingTo, totalItems }: { currentPage:number; totalPages:number; onPageChange:(p:number)=>void; showingFrom:number; showingTo:number; totalItems:number }) => {
+
+export const Pagination = ({ currentPage, totalPages, onPageChange, showingFrom, showingTo, totalItems }: { currentPage: number; totalPages: number; onPageChange: (p: number) => void; showingFrom: number; showingTo: number; totalItems: number }) => {
   return (
     <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
       <div className="text-sm text-gray-600">
         Showing <span className="font-medium">{showingFrom}</span> - <span className="font-medium">{showingTo}</span> of <span className="font-medium">{totalItems}</span>
       </div>
       <div className="flex gap-2">
-        <button 
+        <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -316,16 +347,15 @@ export const Pagination = ({ currentPage, totalPages, onPageChange, showingFrom,
           <button
             key={page}
             onClick={() => onPageChange(page)}
-            className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
-              currentPage === page
-                ? 'bg-indigo-600 text-white'
-                : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
+            className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${currentPage === page
+              ? 'bg-indigo-600 text-white'
+              : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
           >
             {page}
           </button>
         ))}
-        <button 
+        <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -344,68 +374,43 @@ const Members: React.FC = () => {
   const [batch, setBatch] = useState('All Batches');
   const [status, setStatus] = useState('All Status');
   const [currentPage, setCurrentPage] = useState(1);
-
+  const location = useLocation();
+  const userId = location.state?.userId;
   const [members, setMembers] = useState<any[]>(MOCK_DATA.members);
   const [loading, setLoading] = useState(false);
 
-  // fetch & normalize (mapFn returns items array)
   useEffect(() => {
-    let mounted = true;
-
     const loadMembers = async () => {
       setLoading(true);
       try {
         const res = await apiRequest({
           method: 'GET',
-          endpoint: '/member/getAllMember',
-          mapFn: (rawRes) => {
-            // find array in response
-            let list: any[] = [];
-            if (Array.isArray(rawRes)) list = rawRes;
-            else if (Array.isArray(rawRes.data)) list = rawRes.data;
-            else if (Array.isArray(rawRes.members)) list = rawRes.members;
-            else if (Array.isArray(rawRes.results)) list = rawRes.results;
-            else {
-              const values = Object.values(rawRes ?? {});
-              const firstArray = values.find(v => Array.isArray(v));
-              if (firstArray) list = firstArray;
-            }
-            const items = list.map((r, i) => normalizeMember(r, i));
-            // return items only; component will decide fallback if empty
-            return { items, totalCount: rawRes.total ?? rawRes.totalCount ?? items.length, totalPages: rawRes.totalPages ?? undefined };
-          }
+          endpoint: '/member/getAllMembers',
+          body: { id: userId }
         });
-
-        if (mounted) {
-          if (Array.isArray(res?.items) && res.items.length > 0) {
-            setMembers(res.items);
-          } else {
-            // fallback if response empty
-            setMembers(MOCK_DATA.members);
-          }
-        }
+        console.log("Result: ", res.data)
+        setMembers(res.data)
       } catch (err) {
-        // fallback on error
-        if (mounted) setMembers(MOCK_DATA.members);
+        console.error("Error fetching members: ", err)
       } finally {
-        if (mounted) setLoading(false);
+        setLoading(false);
       }
     };
 
     loadMembers();
-    return () => { mounted = false; };
   }, []);
 
   // filter (search + status + batch)
   const filtered = useMemo(() => {
-    return members.filter(member => {
+    return (members ?? []).filter(member => {
       const matchesSearch = (member.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (member.email ?? '').toLowerCase().includes(searchTerm.toLowerCase());
+        (member.email ?? '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = status === 'All Status' || member.status === status;
       const matchesBatch = batch === 'All Batches' || member.batch === batch;
       return matchesSearch && matchesStatus && matchesBatch;
     });
   }, [members, searchTerm, status, batch]);
+
 
   // recompute pagination when filtered changes
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
