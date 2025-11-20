@@ -153,7 +153,7 @@ const Enquiries = () => {
           method: 'GET',
           endpoint: '/enquiry/getEnquiries/' + userId,
         });
-        console.log("Response: ",res)
+        console.log("Response: ", res)
         const enquiries = res.enquiries;
 
         // Total enquiries
@@ -195,12 +195,21 @@ const Enquiries = () => {
   };
 
   const filteredEnquiries = enquiries.filter(enquiry => {
-    const matchesSearch = enquiry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      enquiry.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'All Status' || enquiry.status === statusFilter;
-    const matchesCategory = categoryFilter === 'All Categories' || enquiry.category === categoryFilter;
+    const matchesSearch =
+      enquiry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (enquiry.email && enquiry.email.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesStatus =
+      statusFilter === 'All Status' ||
+      (enquiry.status && enquiry.status.toLowerCase() === statusFilter.toLowerCase());
+
+    const matchesCategory =
+      categoryFilter === 'All Categories' ||
+      (enquiry.category && enquiry.category.toLowerCase() === categoryFilter.toLowerCase());
+
     return matchesSearch && matchesStatus && matchesCategory;
   });
+
 
   return (
     <div className="min-h-screen w-full bg-[var(--primary-200)] p-4 md:p-6 lg:p-8">
