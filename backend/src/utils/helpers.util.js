@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken"
 // Helper function to generate JWT (access token)
 // -------------------- Config / helpers --------------------
 const generateAccessToken = (userId) =>
-  jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "1h" });
+  jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "6h" });
 
 const generateRefreshToken = (userId) =>
   jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });

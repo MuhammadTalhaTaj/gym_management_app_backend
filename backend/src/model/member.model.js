@@ -51,6 +51,10 @@ dueAmount:{
 
 },
 
+gender: {
+    type: String,
+}
+
 },{timestamps: true})
 
 export const Member = mongoose.model('Member', memberSchema)

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Calendar, Check } from 'lucide-react';
 import { getPlans } from '../../services/plan';
 import { addMember } from '../../services/member';
+import CustomAlert from '../../Components/CustomAlert';
 
 // --- existing static data (kept for fallback) ---
 const BATCH_MAP: Record<number, string> = {
@@ -132,9 +133,8 @@ const NumberInput: React.FC<NumberInputProps> = ({ label, required, placeholder,
       value={value as any}
       onChange={onChange}
       disabled={disabled}
-      className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder-gray-400 ${
-        disabled ? 'bg-gray-50 cursor-not-allowed' : ''
-      }`}
+      className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder-gray-400 ${disabled ? 'bg-gray-50 cursor-not-allowed' : ''
+        }`}
     />
   </div>
 );
@@ -149,7 +149,7 @@ type FormState = {
   contactNumber: string;
   email: string;
   address: string;
-  dateOfBirth: string;
+  // dateOfBirth: string;
   gender: string;
   joiningDate: string;
   membershipPlan: string; // plan id or name
@@ -167,7 +167,7 @@ const AddMember: React.FC = () => {
     contactNumber: '',
     email: '',
     address: '',
-    dateOfBirth: '',
+    // dateOfBirth: '',
     gender: '',
     joiningDate: '',
     membershipPlan: '', // will hold plan id (or fallback)
@@ -186,6 +186,7 @@ const AddMember: React.FC = () => {
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [success, setSuccess] = useState<boolean>(false)
 
   useEffect(() => {
     // fetch real plans via service
@@ -286,17 +287,14 @@ const AddMember: React.FC = () => {
       // cast addMember to any to allow passing `createdBy` (keeps UI & logic unchanged)
       const res: any = await (addMember as any)(payload);
 
-      // backend responds with { message: "...", data: { member, payment } }
-      setMessage(res?.message ?? 'Member registered successfully.');
-      window.alert(res?.message ?? 'Member registered successfully.');
-
+      setSuccess(true)
       // reset form (preserving fallback UI behavior)
       setFormState({
         fullName: '',
         contactNumber: '',
         email: '',
         address: '',
-        dateOfBirth: '',
+        // dateOfBirth: '',
         gender: '',
         joiningDate: '',
         membershipPlan: '',
@@ -307,8 +305,13 @@ const AddMember: React.FC = () => {
         // notes: ''
       });
     } catch (err: any) {
-      setMessage(err?.message || 'Server or network error occurred.');
-      window.alert(err?.message || 'Server or network error occurred.');
+      if (err.response.status == 404) {
+        setMessage("Plan not found")
+      }
+      else {
+        console.error("Error: ", err)
+      }
+      setSuccess(false)
     } finally {
       setSubmitting(false);
     }
@@ -364,15 +367,6 @@ const AddMember: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          <Input
-            label="Date of Birth"
-            required
-            type="date"
-            placeholder="mm / dd / yyyy"
-            value={formState.dateOfBirth}
-            onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-            icon={<Calendar size={18} />}
-          />
 
           <Select
             label="Gender"
@@ -463,6 +457,13 @@ const AddMember: React.FC = () => {
           </button>
         </div>
       </div>
+      {success && <CustomAlert
+        text="Member Added!"
+        severity="success"
+        open={success}
+        onClose={() => setSuccess(false)}
+
+      />}
     </div>
   );
 };

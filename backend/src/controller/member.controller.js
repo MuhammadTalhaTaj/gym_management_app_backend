@@ -135,30 +135,6 @@ const findMember = asyncHandler(async (req, res) => {
   });
 });
 
-// const getAllMembers = asyncHandler(async (req, res) => {
-//   const members = await Member.aggregate([
-//     {
-    
-//       $lookup: {
-//         from: "plans",
-//         localField: "plan",
-//         foreignField: "_id",
-//         as: "plan"
-//       }
-//     },
-//     {
-//       $unwind: {
-//         path: "$plan",
-//         preserveNullAndEmptyArrays: true
-//       }
-    
-//   }]);
-//   res.status(200).json({
-//     message: "Members found",
-//     data: members
-//   })
-// })
-
 const getAllMembers = asyncHandler(async (req, res) => {
   const adminId = req.userId || req.body.id; // Use userId from auth middleware
   
@@ -242,8 +218,6 @@ const getMemberWithPaymentHistory = asyncHandler(async (req, res) => {
     data: memberWithPayments[0] // Return the member data along with their payment history
   });
 });
-
-
 
 // DELETE MEMBER
 const deleteMember = asyncHandler(async (req, res) => {

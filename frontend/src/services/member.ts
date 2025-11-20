@@ -8,19 +8,24 @@ export interface AddMemberPayload {
   gender: string;
   batch: string;
   address?: string;
-  plan: string;         // plan id expected by backend
-  joinDate: string;     // joinDate key (backend expects this name)
+  plan: string;
+  joinDate: string;
   admissionAmount: number;
   discount?: number;
   collectedAmount: number;
-  // any additional fields if needed
+  createdBy: string
 }
 
 export async function addMember(payload: AddMemberPayload) {
   // POST to backend member/addMember
-  return apiRequest({
-    method: "POST",
-    endpoint: "/member/addMember",
-    body: payload
-  });
+  try {
+    return apiRequest({
+      method: "POST",
+      endpoint: "/member/addMember",
+      body: payload
+    });
+  } catch (error) {
+    throw error
+  }
+
 }
