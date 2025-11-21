@@ -1,6 +1,10 @@
 import Alert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
+<<<<<<< HEAD
 
+=======
+import React from "react";
+>>>>>>> 5e0126b0c13487c8bf5987cb645e3d8dc0f92ce7
 
 interface ToastAlertProps {
   text: string;
