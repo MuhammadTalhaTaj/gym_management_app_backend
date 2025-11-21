@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Calendar, Check } from 'lucide-react';
 import { getPlans } from '../../services/plan';
 import { addMember } from '../../services/member';
-// import CustomAlert from '../../Components/CustomAlert';
+import CustomAlert from '../../Components/CustomAlert';
 
 // --- existing static data (kept for fallback) ---
 const BATCH_MAP: Record<number, string> = {
@@ -457,12 +457,12 @@ const AddMember: React.FC = () => {
           </button>
         </div>
       </div>
-      {/* {success && <CustomAlert
+      {success && <CustomAlert
         text="Member Added!"
         severity="success"
         open={success}
         onClose={() => setSuccess(false)}
-      />} */}
+      />}
     </div>
   );
 };

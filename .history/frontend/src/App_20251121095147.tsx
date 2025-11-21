@@ -19,7 +19,6 @@ import Enquiries from './pages/Admin/Enquiries';
 import MemberPayments from './pages/Admin/MemberPayments';
 import StaffSignup from './pages/Admin/StaffSignup';
 import AddStaff from './pages/Admin/AddStaff';
-import Staff from './pages/Admin/Staff';
 
 
 function App() {
@@ -51,7 +50,7 @@ function App() {
                   <Route path="/finance" element={<Finance />} />
                   <Route path="/addplan" element={<AddPlan />} />
                   <Route path="/addexpense" element={<AddExpense />} />
-                  <Route path="/staff" element={<Staff /> } />
+                  <Route path="/staff" element={< } />
                   <Route path="/addstaff" element={<AddStaff /> } />
                   <Route path="/expense" element={<Expense /> } />
                   <Route path="/enquiries" element={ <Enquiries /> } />
