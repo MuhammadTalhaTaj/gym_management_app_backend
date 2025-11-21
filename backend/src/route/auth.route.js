@@ -8,6 +8,7 @@ import {
   logout 
 } from "../controller/auth.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
+import { staffLogin } from "../controller/staff.contoller.js";
 
 // auth.routes.js
 const userRouter = Router();
@@ -17,6 +18,7 @@ userRouter.route('/signup').post(signup)
 userRouter.route('/login').post(login)
 userRouter.route('/logout').post(logout)
 userRouter.route('/refreshToken').post(refreshAccessToken)
+userRouter.route('/staffLogin').post(staffLogin)
 
 // Protected routes (require authentication)
 userRouter.get('/authenticate', authMiddleware, (req, res) => {

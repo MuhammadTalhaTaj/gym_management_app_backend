@@ -2,6 +2,7 @@ import { Staff } from "../model/staff.model.js";
 import { EMAIL_RE, CONTACT_RE, PASSWORD_MIN, ACCESS_COOKIE_OPTIONS, generateAccessToken, generateRefreshToken } from "../utils/helpers.util.js"
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
+import { Admin } from "../model/admin.model.js";
 // -------------------- STAFF SIGNUP --------------------
 const staffSignup = asyncHandler(async (req, res) => {
     const { name, email, contact, password, role, permission, userId } = req.body || {};
@@ -72,12 +73,12 @@ const staffSignup = asyncHandler(async (req, res) => {
 
 // -------------------- STAFF LOGIN --------------------
 const staffLogin = asyncHandler(async (req, res) => {
-    const { email: rawEmail, password } = req.body || {};
-    const email = rawEmail?.trim().toLowerCase();
+    const { email, password } = req.body;
+    
 
     if (!email || !password) throw new APIError(400, "Email and password are required");
 
-    const staff = await Staff.findOne({ email });
+    const staff = await Staff.findOne({ email: email });
     if (!staff) throw new APIError(400, "Invalid email or password");
 
     const isPasswordCorrect = await staff.isPasswordCorrect(password);
@@ -104,7 +105,6 @@ const staffLogin = asyncHandler(async (req, res) => {
         },
     });
 });
-
 // -------------------- STAFF REFRESH ACCESS TOKEN --------------------
 const staffRefreshAccessToken = asyncHandler(async (req, res) => {
   const rawAccessToken =
@@ -160,4 +160,59 @@ const staffPermission = (requiredPermission) => {
     });
 };
 
-export {staffSignup,staffLogin,staffLogout,staffRefreshAccessToken,staffPermission }
+const updateStaff = asyncHandler(async (req, res) => {
+  const { name, email, contact, password, permission , staffId, userId} = req.body;
+
+  // Presence checks
+  if (!name || !email || !contact || !permission) {
+    throw new APIError(400, "Missing required field");
+  }
+
+  // Format checks
+  if (!EMAIL_RE.test(email)) {
+    throw new APIError(400, "Invalid email format");
+  }
+  if (!CONTACT_RE.test(contact)) {
+    throw new APIError(400, "Invalid contact number format");
+  }
+  if (password && password.length < PASSWORD_MIN) {
+    throw new APIError(400, `Password must be at least ${PASSWORD_MIN} characters`);
+  }
+
+  // Check if staff exists
+  const admin = await Admin.findById(userId);
+  if (!admin) throw new APIError(404, "Admin not found");
+
+  const staff = await Staff.findById(staffId)
+  // Prevent duplicate email
+  const existingEmail = await Staff.findOne({ email, _id: { $ne: staffId } });
+  if (existingEmail) throw new APIError(400, "Email already in use by another staff member");
+
+  // Update fields
+  staff.name = name;
+  staff.email = email.toLowerCase();
+  staff.contact = contact;
+  staff.permission = permission;
+  staff.createdBy= userId;
+
+  // Only update password if provided
+  if (password) {
+    staff.password = password; // pre-save hook will hash it
+  }
+
+  await staff.save();
+
+  res.status(200).json({
+    message: "Staff updated successfully",
+    staff: {
+      id: staff._id,
+      name: staff.name,
+      email: staff.email,
+      contact: staff.contact,
+      permission: staff.permission,
+      role: staff.role,
+      
+    },
+  });
+});
+export {staffSignup,staffLogin,staffLogout,staffRefreshAccessToken,staffPermission, updateStaff }
