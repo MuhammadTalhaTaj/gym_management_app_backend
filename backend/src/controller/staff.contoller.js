@@ -1,5 +1,5 @@
 import { Staff } from "../model/staff.model.js";
-import { EMAIL_RE, CONTACT_RE, PASSWORD_MIN, ACCESS_COOKIE_OPTIONS, generateAccessToken, generateRefreshToken } from "../utils/helpers.util.js"
+import { EMAIL_RE, CONTACT_RE, PASSWORD_MIN, REFRESH_COOKIE_OPTIONS, generateAccessToken, generateRefreshToken } from "../utils/helpers.util.js"
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
 import { Admin } from "../model/admin.model.js";
@@ -48,7 +48,7 @@ const staffSignup = asyncHandler(async (req, res) => {
         await staff.save();
 
         // Store refresh token in cookie
-        res.cookie("refreshToken", refreshToken, ACCESS_COOKIE_OPTIONS);
+        res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTIONS);
 
         // Response
         res.status(201).json({
@@ -91,7 +91,7 @@ const staffLogin = asyncHandler(async (req, res) => {
     staff.refreshToken = rawRefreshToken;
     await staff.save();
 
-    res.cookie("accessToken", accessToken, ACCESS_COOKIE_OPTIONS);
+    res.cookie("refreshToken", rawRefreshToken, REFRESH_COOKIE_OPTIONS);
 
     res.status(200).json({
         accessToken,

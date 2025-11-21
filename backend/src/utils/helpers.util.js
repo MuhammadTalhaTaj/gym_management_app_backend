@@ -8,12 +8,12 @@ const generateRefreshToken = (userId) =>
   jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
 
 // Cookie options for refresh token (adjust secure in prod)
-const ACCESS_COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict",
-  maxAge: 60 * 60 * 1000, // 1 hour
-  path: "/",
+const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true, // prevent JS access
+  secure: process.env.NODE_ENV === "production", // HTTPS only in production
+  sameSite: "strict", // strict CSRF protection
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+  path: "/", // cookie accessible on all routes
 };
 
 
@@ -21,4 +21,4 @@ const ACCESS_COOKIE_OPTIONS = {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CONTACT_RE = /^\+[1-9]\d{1,14}$/;
 const PASSWORD_MIN = 8;
-export {EMAIL_RE,CONTACT_RE,PASSWORD_MIN, ACCESS_COOKIE_OPTIONS, generateAccessToken, generateRefreshToken}
+export {EMAIL_RE,CONTACT_RE,PASSWORD_MIN, REFRESH_COOKIE_OPTIONS, generateAccessToken, generateRefreshToken}
