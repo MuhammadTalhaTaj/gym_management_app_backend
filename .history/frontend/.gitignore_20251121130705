@@ -19,7 +19,8 @@ dist
 dist-ssr
 .history/
 *.local
-**.history/
+*.history
+*.history/
 .history
 # Editor directories and files
 .vscode/*
