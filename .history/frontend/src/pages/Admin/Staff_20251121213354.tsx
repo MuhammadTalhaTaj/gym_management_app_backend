@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, Download, Filter, Eye, Edit, Trash2, UserPlus, Users, UserCheck, Building2,
 } from 'lucide-react';
-import { apiRequest } from '../../config/api';
+import { apiRequest } from '../config/api';
 
 // ---------- Mock data (kept same values) ----------
 const initialStaffData: Array<{
