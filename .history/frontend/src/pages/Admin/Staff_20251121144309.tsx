@@ -322,7 +322,7 @@ const Staff = () => {
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
               <button 
-              onClick={()=>navigate('/addstaff')}
+              onClick={()=>navigate('addstaff')}
               className="hidden sm:flex bg-[#11BF7F] hover:bg-[#11BF7F]/90 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold items-center gap-2 transition-colors shadow-lg text-sm sm:text-base">
                 <UserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
                 Add Staff

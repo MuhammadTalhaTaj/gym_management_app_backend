@@ -457,12 +457,12 @@ const AddMember: React.FC = () => {
           </button>
         </div>
       </div>
-      {success && <CustomAlert
+      {/* {success && <CustomAlert
         text="Member Added!"
         severity="success"
         open={success}
         onClose={() => setSuccess(false)}
-      />}
+      />} */}
     </div>
   );
 };

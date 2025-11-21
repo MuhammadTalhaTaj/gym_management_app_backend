@@ -17,17 +17,7 @@ function AdminSidebar() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   // helper to check if link is active
-  const isActive = (path: string) => {
-    const p = location.pathname;
-
-    if (path === '/members') {
-      return p === '/members' || p === '/addmember';
-    }
-    if (path === '/staff') {
-      return p === '/staff' || p === '/addstaff';
-    }
-    return p === path;
-  };
+  const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();

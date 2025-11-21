@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Users, UserCheck, UserPlus, Shield, User, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { apiRequest } from '../../config/api';
+import { apiRequest } from '../config/api';
 
 // ---------- Data (kept the same) ----------
 export const staffData = {

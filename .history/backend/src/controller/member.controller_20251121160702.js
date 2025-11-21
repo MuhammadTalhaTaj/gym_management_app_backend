@@ -135,6 +135,10 @@ const findMember = asyncHandler(async (req, res) => {
   });
 });
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 const getAllMembers = asyncHandler(async (req, res) => {
   const adminId = req.userId || req.body.id; // Use userId from auth middleware
   

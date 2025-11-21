@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+// import { Navigate } from "react-router-dom";
 import { apiRequest } from "../config/api";
 
 type Props = {
@@ -62,7 +62,7 @@ export default function ProtectedRoute({ children }: Props) {
     } catch (e) {
       // ignore
     }
-    return <Navigate to="/login" replace />;
+    // return <Navigate to="/login" replace />;
   }
 
   // auth ok

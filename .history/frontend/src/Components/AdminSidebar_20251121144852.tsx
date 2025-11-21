@@ -20,9 +20,12 @@ function AdminSidebar() {
   const isActive = (path: string) => {
     const p = location.pathname;
 
+    // treat members and addmember as the same active item
     if (path === '/members') {
       return p === '/members' || p === '/addmember';
     }
+
+    // treat staff and addstaff as the same active item
     if (path === '/staff') {
       return p === '/staff' || p === '/addstaff';
     }

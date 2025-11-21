@@ -1,5 +1,5 @@
 import  { useState } from 'react';
-import {useNavigate} from 'react-router-dom';
+import {} from 'react-dom-router';
 import { Search, Download, Filter, Eye, Edit, Trash2, UserPlus, Users, UserCheck, Building2,
     //  Menu, X 
     } from 'lucide-react';
@@ -291,7 +291,6 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => (
 
 // Main Component
 const Staff = () => {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedRole, setSelectedRole] = useState('All Roles');
@@ -321,9 +320,7 @@ const Staff = () => {
               <h1 className="text-white text-lg sm:text-2xl font-bold">Staff Management</h1>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
-              <button 
-              onClick={()=>navigate('/addstaff')}
-              className="hidden sm:flex bg-[#11BF7F] hover:bg-[#11BF7F]/90 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold items-center gap-2 transition-colors shadow-lg text-sm sm:text-base">
+              <button className="hidden sm:flex bg-[#11BF7F] hover:bg-[#11BF7F]/90 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold items-center gap-2 transition-colors shadow-lg text-sm sm:text-base">
                 <UserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
                 Add Staff
               </button>
