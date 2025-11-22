@@ -3,6 +3,8 @@ import { EMAIL_RE, CONTACT_RE, PASSWORD_MIN, REFRESH_COOKIE_OPTIONS, generateAcc
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
 import { Admin } from "../model/admin.model.js";
+
+import bcrypt from "bcrypt"
 // -------------------- STAFF SIGNUP --------------------
 const staffSignup = asyncHandler(async (req, res) => {
     const { name, email, contact, password, role, permission, userId } = req.body || {};
@@ -74,15 +76,13 @@ const staffSignup = asyncHandler(async (req, res) => {
 // -------------------- STAFF LOGIN --------------------
 const staffLogin = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    
-
     if (!email || !password) throw new APIError(400, "Email and password are required");
-
+    
     const staff = await Staff.findOne({ email: email });
-    if (!staff) throw new APIError(400, "Invalid email or password");
+    if (!staff) throw new APIError(400, "Invalid email");
 
     const isPasswordCorrect = await staff.isPasswordCorrect(password);
-    if (!isPasswordCorrect) throw new APIError(400, "Invalid email or password");
+    if (!isPasswordCorrect) throw new APIError(400, "Invalid password");
 
     const accessToken = generateAccessToken(staff._id);
     const rawRefreshToken = generateRefreshToken(staff._id);
@@ -187,18 +187,14 @@ const updateStaff = asyncHandler(async (req, res) => {
   // Prevent duplicate email
   const existingEmail = await Staff.findOne({ email, _id: { $ne: staffId } });
   if (existingEmail) throw new APIError(400, "Email already in use by another staff member");
-
+  const hashpassword = await bcrypt.hash(password, 10)
   // Update fields
   staff.name = name;
   staff.email = email.toLowerCase();
   staff.contact = contact;
   staff.permission = permission;
   staff.createdBy= userId;
-
-  // Only update password if provided
-  if (password) {
-    staff.password = password; // pre-save hook will hash it
-  }
+  staff.password= hashpassword
 
   await staff.save();
 
