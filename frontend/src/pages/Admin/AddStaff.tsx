@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Users, UserCheck, UserPlus, Shield, User, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { apiRequest } from '../../config/api';
+// import { apiRequest } from '../../config/api';
 
 // ---------- Data (kept the same) ----------
 export const staffData = {
@@ -89,12 +89,12 @@ type FormData = {
 };
 
 // ---------- Helper mapping (UI permission -> backend enum) ----------
-const permissionMap: Record<string, 'all' | 'view' | 'view+add' | 'view+add+update'> = {
-  'Full Access': 'all',
-  'View Only': 'view',
-  'View + Add': 'view+add',
-  'View + Add + Update': 'view+add+update'
-};
+// const permissionMap: Record<string, 'all' | 'view' | 'view+add' | 'view+add+update'> = {
+//   'Full Access': 'all',
+//   'View Only': 'view',
+//   'View + Add': 'view+add',
+//   'View + Add + Update': 'view+add+update'
+// };
 
 // ---------- UI Subcomponents (typed) ----------
 const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
@@ -352,26 +352,26 @@ const AddStaff: React.FC = () => {
     }
 
     // map permission to backend enum
-    const mappedPermission = permissionMap[formData.permission] ?? 'view';
+    // const mappedPermission = permissionMap[formData.permission] ?? 'view';
 
-    const payload = {
-      name: formData.fullName.trim(),
-      email: formData.email.trim().toLowerCase(),
-      contact: formData.contactNumber.trim(),
-      password: formData.password,
-      role: formData.jobRole,
-      permission: mappedPermission,
-      userId
-    };
+    // const payload = {
+    //   name: formData.fullName.trim(),
+    //   email: formData.email.trim().toLowerCase(),
+    //   contact: formData.contactNumber.trim(),
+    //   password: formData.password,
+    //   role: formData.jobRole,
+    //   permission: mappedPermission,
+    //   userId
+    // };
 
     setLoading(true);
     try {
       // call backend endpoint
-      const data = await apiRequest<{ accessToken?: string; staff?: any }>({
-        method: 'POST',
-        endpoint: '/staff/signup',
-        body: payload
-      });
+      // const data = await apiRequest<{ accessToken?: string; staff?: any }>({
+      //   method: 'POST',
+      //   endpoint: '/staff/signup',
+      //   body: payload
+      // });
 
       // Backend returns accessToken and staff object on success (201). We intentionally DO NOT overwrite currently stored admin tokens.
       // Show success and redirect to staff list.
