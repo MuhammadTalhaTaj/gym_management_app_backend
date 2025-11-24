@@ -7,9 +7,9 @@ import { Staff } from "../model/staff.model.js";
 
 
 const addEnquiry = asyncHandler(async (req, res) => {
-    const { name, contact, remark = "", followUp, category, status, creatorId, currentUser, adminId } = req.body;
-
-    if (!name || !contact || !followUp || !creatorId || !currentUser || !adminId) {
+    const { name, contact, remark = "", followUp, category, creatorId, currentUser} = req.body;
+    console.log(req.body)
+    if (!name || !contact || !followUp || !creatorId || !currentUser ) {
         throw new APIError(400, "Provide all required fields");
     }
 
@@ -22,11 +22,6 @@ const addEnquiry = asyncHandler(async (req, res) => {
         throw new APIError(400, "Invalid category value");
     }
 
-    const validStatus = ["open", "closed"];
-    if (status && !validStatus.includes(status)) {
-        throw new APIError(400, "Invalid status value");
-    }
-
     if (!["Admin", "Staff"].includes(currentUser)) {
         throw new APIError(400, "Current user must be admin or staff.");
     }
@@ -37,21 +32,12 @@ const addEnquiry = asyncHandler(async (req, res) => {
         if (creator?.permission == "view") {
             throw new APIError(403, "User is not allowed to add enquiry.")
         }
-    }
-    else {
-        creator = await Admin.findOne({ _id: creatorId })
-    }
-
-    if (!creator) {
-        throw new APIError(404, "No creator exists");
-    }
-
-    const duplicate = await Enquiry.exists({
+        const duplicate = await Enquiry.exists({
         name,
         contact,
         followUp,
         category,
-        status: status || "open"
+        status: "open"
     });
 
     if (duplicate) {
@@ -59,19 +45,60 @@ const addEnquiry = asyncHandler(async (req, res) => {
     }
 
     const newEnquiry = await Enquiry.create({
+        
         name,
         contact,
         remark,
         followUp,
         category,
-        status,
-        createdBy: adminId
+        status: "open",
+        createdBy: creator.createdBy,
+        staffId: creatorId
     });
 
     res.status(201).json({
         message: "Enquiry added successfully",
         data: newEnquiry
     });
+
+    }
+    else {
+        creator = await Admin.findOne({ _id: creatorId })
+   
+
+    if (!creator) {
+        throw new APIError(404, "No Admin Found");
+    }
+
+    const duplicate = await Enquiry.exists({
+        name,
+        contact,
+        followUp,
+        category,
+        status: "open"
+    });
+
+    if (duplicate) {
+        throw new APIError(409, "Enquiry already exists");
+    }
+
+    const newEnquiry = await Enquiry.create({
+        
+        name,
+        contact,
+        remark,
+        followUp,
+        category,
+        status: "open",
+        createdBy: creatorId
+    });
+
+    res.status(201).json({
+        message: "Enquiry added successfully",
+        data: newEnquiry
+    });
+
+    }
 });
 
 

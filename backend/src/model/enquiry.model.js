@@ -31,6 +31,15 @@ const enquirySchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: "Admin" 
+    },
+    staffId:{
+    type: mongoose.Schema.Types.ObjectId,    
+    ref: "Staff"
+    },
+    updatedBy:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Staff",
+  
     }
 }, { timestamps: true })
 export const Enquiry = mongoose.model('Enquiry', enquirySchema);
