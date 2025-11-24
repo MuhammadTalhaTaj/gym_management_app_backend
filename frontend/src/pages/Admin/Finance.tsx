@@ -85,7 +85,7 @@ const StatCard = ({ title, amount, percentageChange, isExpense } : StatCardProps
         </div>
         <div>
           <p className="text-sm text-white mb-1">{title}</p>
-          <h2 className="text-4xl font-bold text-[var(--primary-300)] mb-2">
+          <h2 className="text-4xl font-bold text-[var(--primary-300)] mb-2 wrap-anywhere">
             ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h2>
           <p className={`text-sm ${textColor} font-medium`}>+{percentageChange}% from last month</p>
