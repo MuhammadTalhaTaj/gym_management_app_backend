@@ -23,7 +23,8 @@ interface UserInterface {
   email: string,
   contact: string,
   gymName: string,
-  gymLocation: string
+  gymLocation: string,
+  createdBy?:string
 }
 
 function AdminHeader() {
@@ -32,6 +33,8 @@ function AdminHeader() {
   const [showDropdown, setShowDropdown] = useState(false)
   const searchRef = useRef<HTMLDivElement | null>(null)
   const [user, setUser] = useState<UserInterface | null>(null)
+  const role = localStorage.getItem("role")
+
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -65,11 +68,12 @@ function AdminHeader() {
     return () => document.removeEventListener('mousedown', onDocClick)
   }, [])
   const fetchMembers = async () => {
+    const id = role == "Admin" ? user?.id : user?.createdBy;
     try {
       const res = await apiRequest<{ message: string; data: Member[] }>({
         method: 'GET',
         endpoint: '/member/getAllMembers',
-        body: { id: user?.id }
+        body: { id: id }
       })
       setMembers(res.data || [])
     } catch (err) {
@@ -78,10 +82,10 @@ function AdminHeader() {
   }
   const getUserData = async () => {
     const stored = localStorage.getItem("user");
-    console.log("User: ", stored);
+    // console.log("User: ", stored);
 
     if (!stored) {
-      setUser(null); // no user found
+      setUser(null); 
       return;
     }
 
@@ -101,7 +105,7 @@ function AdminHeader() {
 
   const openAllMembersPage = () => {
     setShowDropdown(false)
-    navigate('/members', { state: { userId: user?.id } })
+    navigate('/members', { state: { userId: role === "Admin" ? user?.id : user?.createdBy } })
   }
 
   return (

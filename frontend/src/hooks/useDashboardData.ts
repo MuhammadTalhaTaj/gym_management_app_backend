@@ -21,15 +21,21 @@ export function useDashboardData() {
     const fetchData = async () => {
       setLoading(true)
       setError(null)
+      const role = localStorage.getItem("role")
+      const user = JSON.parse(localStorage.getItem("user") || "" );
+
+      const userId = role === "Admin"
+        ? localStorage.getItem("userId")
+        : user?.createdBy;
       try {
         const res = await apiRequest<DashboardData>({
           method: 'GET',
-          endpoint: '/auth/dashboard/'+localStorage.getItem("userId"),
+          endpoint: '/auth/dashboard/' + userId,
         })
-        console.log("Admin Data: ",res)
         setData(res)
+        // console.log("Admin data: ",res)
       } catch (err: any) {
-        // console.error('Dashboard fetch error:', err)
+        console.error('Dashboard fetch error:', err)
         // setError(err?.message || 'Failed to load dashboard data')
       } finally {
         setLoading(false)

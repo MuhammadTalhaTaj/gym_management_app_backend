@@ -68,10 +68,8 @@ export async function loginRequest(payload: LoginPayload, remember = false): Pro
     // The user object might be at data.user, data.admin, data.staff, or directly returned
     const user: any = data?.user ?? data?.admin ?? data?.staff ?? data ?? {};
 
-    // Choose storage based on remember flag
-    const storage: Storage = remember ? localStorage : sessionStorage;
+    const storage: Storage = localStorage;
 
-    // Persist accessToken & refreshToken & user & userId into chosen storage IF present
     try {
       if (accessToken != null) {
         storage.setItem("accessToken", accessToken);
@@ -104,17 +102,7 @@ export async function loginRequest(payload: LoginPayload, remember = false): Pro
       console.warn("Failed to write auth data to chosen storage:", e);
     }
 
-    // Store role in BOTH storages as requested (so role can be read regardless)
-    try {
       localStorage.setItem("role", role);
-    } catch {
-      // ignore storage error
-    }
-    try {
-      sessionStorage.setItem("role", role);
-    } catch {
-      // ignore storage error
-    }
 
     return {
       accessToken,

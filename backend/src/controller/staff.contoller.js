@@ -102,6 +102,7 @@ const staffLogin = asyncHandler(async (req, res) => {
             contact: staff.contact,
             role: staff.role,
             permission: staff.permission,
+            createdBy: staff.createdBy
         },
     });
 });
