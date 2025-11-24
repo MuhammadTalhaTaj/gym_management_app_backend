@@ -4,20 +4,25 @@ import { APIError } from "../utils/APIError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const addPlan = asyncHandler(async (req, res) => {
-    const { name, durationType, duration, amount } = req.body;
-    if (!name || !durationType || !duration || !amount) {
+    const { name, durationType, duration, amount, createdBy } = req.body;
+    if (!name || !durationType || !duration || !amount|| !createdBy) {
         throw new APIError(400, "Provide required fields")
     }
     const existingPlan = await Plan.findOne({ name, durationType, duration, amount })
     if (existingPlan) {
         throw new APIError(409, "Plan already exists!")
     }
+    const admin = await Admin.exists({_id:createdBy})
+    if(!admin){
+        throw new APIError(400, "No admin found")
+    }
     const newPlan = new Plan(
         {
             name,
             durationType,
             duration,
-            amount
+            amount,
+            createdBy
         })
     await newPlan.save()
 

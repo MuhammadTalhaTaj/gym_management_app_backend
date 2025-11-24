@@ -1,5 +1,11 @@
 import mongoose from "mongoose";
 const paymentSchema = mongoose.Schema({
+
+   createdBy:{
+      type: mongoose.Types.ObjectId,
+      ref:"Admin",
+   },
+
  amount:{
     type: Number,
     required:true

@@ -3,7 +3,7 @@ import { addMember, deleteMember, findMember, getAllMembers, getMemberWithPaymen
 // import { authMiddleware } from "../controller/auth.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 const memberRouter = Router()
-memberRouter.use(authMiddleware);
+// memberRouter.use(authMiddleware);
 
 memberRouter.route('/addMember').post(addMember)
 memberRouter.route('/findMember').get(findMember)

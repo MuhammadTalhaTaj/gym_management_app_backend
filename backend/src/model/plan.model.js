@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 const planSchema= mongoose.Schema({
+   createdBy:{
+      type: mongoose.Types.ObjectId,
+      ref: "Admin",
+      required:true
+   },
  name:{
     type:String,
     required: true

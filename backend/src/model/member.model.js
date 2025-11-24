@@ -2,8 +2,16 @@ import mongoose from "mongoose";
 const memberSchema = mongoose.Schema({
 createdBy:{
     type:mongoose.Types.ObjectId,
-    ref: 'User',
+    ref: 'Admin',
     required:true
+},
+createdByStaff:{
+type:mongoose.Types.ObjectId,
+    ref: 'Staff',
+},
+status:{
+type: String,
+default:"active"
 },
 name:{
     type: String,
