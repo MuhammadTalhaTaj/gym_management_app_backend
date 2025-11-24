@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { apiRequest } from "../../config/api"; // matches your existing import pattern
 import { ChevronLeft, Eye } from "lucide-react";
 
+
 type Payment = {
   _id: string;
   memberId?: string;
@@ -115,7 +116,7 @@ const MemberPayments: React.FC = () => {
   }, [memberId]);
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50">
+    <div className="min-h-screen w-full p-6 bg-gray-50">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="p-4 border-b border-gray-200 flex items-center gap-3">
           <button

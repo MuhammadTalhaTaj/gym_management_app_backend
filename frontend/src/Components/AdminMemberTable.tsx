@@ -1,7 +1,7 @@
 // src/pages/AdminMemberTable.tsx
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
-import { apiRequest } from '../config/api'; // uses your existing apiRequest helper
+// import { apiRequest } from '../config/api'; 
 import { useDashboardData } from '../hooks/useDashboardData';
 
 // Data file - membersData.js (fallback)
@@ -136,44 +136,44 @@ const TableHeader = () => {
 };
 
 // helper to format date -> YYYY-MM-DD (keeps same style as fallback)
-const formatDateISO = (input: any) => {
-  if (!input) return '';
-  const d = typeof input === 'string' || typeof input === 'number' ? new Date(input) : input instanceof Date ? input : null;
-  if (!d || isNaN(d.getTime())) return String(input);
-  return d.toISOString().split('T')[0];
-};
+// const formatDateISO = (input: any) => {
+//   if (!input) return '';
+//   const d = typeof input === 'string' || typeof input === 'number' ? new Date(input) : input instanceof Date ? input : null;
+//   if (!d || isNaN(d.getTime())) return String(input);
+//   return d.toISOString().split('T')[0];
+// };
 
 // normalize backend member -> frontend shape (keeps existing normalization, adds expiry formatting)
-const normalizeMember = (raw: any, idx: number) => {
-  const id = raw.id ?? raw._id ?? (idx + 1);
-  const name =
-    raw.name ??
-    raw.fullName ??
-    (raw.firstName || raw.lastName ? `${raw.firstName ?? ''} ${raw.lastName ?? ''}`.trim() : `Member ${id}`);
-  const avatar = raw.avatar ?? raw.avatarUrl ?? raw.profilePic ?? raw.picture ?? raw.image ?? '';
-  const contact = raw.contact ?? raw.phone ?? raw.phoneNumber ?? raw.mobile ?? '';
-  const plan = raw.planName ?? raw.plan ?? raw.subscription ?? raw.membershipPlan ?? '—';
-  const status = raw.status ?? raw.paymentStatus ?? raw.subscriptionStatus ?? (raw.dueAmount ? 'Payment Due' : 'Active');
-  const rawStatusType = (raw.statusType ?? raw.statusTypeName ?? raw.paymentStatus ?? '').toString().toLowerCase();
-  let statusType = 'success';
-  if (rawStatusType.includes('due') || rawStatusType.includes('overdue') || rawStatusType.includes('pending') || rawStatusType.includes('failed')) {
-    statusType = 'danger';
-  } else if (rawStatusType.includes('expire') || rawStatusType.includes('expiring') || rawStatusType.includes('soon')) {
-    statusType = 'warning';
-  } else if (raw.dueAmount && Number(raw.dueAmount) > 0) {
-    statusType = 'danger';
-  }
+// const normalizeMember = (raw: any, idx: number) => {
+//   const id = raw.id ?? raw._id ?? (idx + 1);
+//   const name =
+//     raw.name ??
+//     raw.fullName ??
+//     (raw.firstName || raw.lastName ? `${raw.firstName ?? ''} ${raw.lastName ?? ''}`.trim() : `Member ${id}`);
+//   const avatar = raw.avatar ?? raw.avatarUrl ?? raw.profilePic ?? raw.picture ?? raw.image ?? '';
+//   const contact = raw.contact ?? raw.phone ?? raw.phoneNumber ?? raw.mobile ?? '';
+//   const plan = raw.planName ?? raw.plan ?? raw.subscription ?? raw.membershipPlan ?? '—';
+//   const status = raw.status ?? raw.paymentStatus ?? raw.subscriptionStatus ?? (raw.dueAmount ? 'Payment Due' : 'Active');
+//   const rawStatusType = (raw.statusType ?? raw.statusTypeName ?? raw.paymentStatus ?? '').toString().toLowerCase();
+//   let statusType = 'success';
+//   if (rawStatusType.includes('due') || rawStatusType.includes('overdue') || rawStatusType.includes('pending') || rawStatusType.includes('failed')) {
+//     statusType = 'danger';
+//   } else if (rawStatusType.includes('expire') || rawStatusType.includes('expiring') || rawStatusType.includes('soon')) {
+//     statusType = 'warning';
+//   } else if (raw.dueAmount && Number(raw.dueAmount) > 0) {
+//     statusType = 'danger';
+//   }
 
-  const expiryDateRaw = raw.expiryDate ?? raw.expiresAt ?? raw.subscriptionEnd ?? raw.endDate ?? raw.joinDate ?? '';
-  const expiryDate = formatDateISO(expiryDateRaw);
+//   const expiryDateRaw = raw.expiryDate ?? raw.expiresAt ?? raw.subscriptionEnd ?? raw.endDate ?? raw.joinDate ?? '';
+//   const expiryDate = formatDateISO(expiryDateRaw);
 
-  return { id, name, avatar, contact, plan, status, statusType, expiryDate };
-};
+//   return { id, name, avatar, contact, plan, status, statusType, expiryDate };
+// };
 
 // Main Component (fetches expired members from dashboard controller)
 const AdminMemberTable = () => {
   const { data, loading } = useDashboardData()
-  const [members, setMembers] = useState<any[]>(membersData);
+  const [members,] = useState<any[]>(membersData);
   // const [loading, setLoading] = useState(false);
 
   // useEffect(() => {

@@ -3,10 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "electron:dev": "cross-env NODE_ENV=development concurrently \"npm:dev\" \"wait-on http://localhost:5173 && electron .\"",
     "test": "jest --runInBand",
     "test:ui": "jest --config=jest.config.ui.js",
     "preview": "vite preview"
@@ -22,6 +24,7 @@
     "@mui/material": "^7.3.5",
     "@mui/styled-engine-sc": "^7.3.5",
     "@tailwindcss/vite": "^4.1.16",
+    "idb": "^8.0.3",
     "lucide-react": "^0.552.0",
     "process": "^0.11.10",
     "react": "^19.1.1",
@@ -46,6 +49,10 @@
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^5.0.4",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^39.2.3",
+    "electron-reload": "^2.0.0-alpha.1",
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
@@ -58,7 +65,8 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
     "util": "^0.12.5",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "wait-on": "^9.0.3"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

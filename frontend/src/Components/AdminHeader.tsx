@@ -100,7 +100,7 @@ function AdminHeader() {
 
   const openMember = (id: string) => {
     setShowDropdown(false)
-    navigate(`/members/${id}`)
+    navigate(`/members/${id}/payments`)
   }
 
   const openAllMembersPage = () => {

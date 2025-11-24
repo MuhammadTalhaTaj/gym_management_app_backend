@@ -3,16 +3,16 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, MapPin } from "lucide-react";
 import { apiRequest } from "../../config/api";
-import { formConfig } from "../../Components/Signup/FormConfig";
+import { formConfig } from "../../../Signup/FormConfig";
 
-import FormInput from "../../Components/Signup/FormInput";
-import PasswordInput from "../../Components/Signup/PasswordInput";
-import TextArea from "../../Components/Signup/TextArea";
-import Checkbox from "../../Components/Signup/Checkbox";
-import Button from "../../Components/Signup/Button";
-import Divider from "../../Components/Signup/Divider";
-import GymIcon from "../../Components/Signup/GymIcon";
-import SectionHeader from "../../Components/Signup/SectionHeader";
+import FormInput from "../../../Signup/FormInput";
+import PasswordInput from "../../../Signup/PasswordInput";
+import TextArea from "../../../Signup/TextArea";
+import Checkbox from "../../../Signup/Checkbox";
+import Button from "../../../Signup/Button";
+import Divider from "../../../Signup/Divider";
+import GymIcon from "../../../Signup/GymIcon";
+import SectionHeader from "../../../Signup/SectionHeader";
 
 const initialForm = {
   adminName: "",

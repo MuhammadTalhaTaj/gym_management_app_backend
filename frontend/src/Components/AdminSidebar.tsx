@@ -89,6 +89,15 @@ function AdminSidebar() {
       Members
     </NavLink>
   </li>
+    <li className={isActive('/staff') ? 'active-link' : ''}>
+    <NavLink to="/staff">
+      <FontAwesomeIcon className="adminSidebarIcon"
+        icon={faUser}
+        style={{ color: isActive('/staff') ? 'var(--secondary-100)' : 'var(--primary-300)' }}
+      />
+      Staff
+    </NavLink>
+  </li>
   {/* <li className={isActive('/addmember') ? 'active-link' : ''}>
     <NavLink to="/addmember">
       <FontAwesomeIcon className="adminSidebarIcon"
@@ -98,6 +107,15 @@ function AdminSidebar() {
       Add Member
     </NavLink>
   </li> */}
+   <li className={isActive('/finance') ? 'active-link' : ''}>
+    <NavLink to="/finance">
+      <FontAwesomeIcon className="adminSidebarIcon"
+        icon={faChartPie}
+        style={{ color: isActive('/finance') ? 'var(--secondary-100)' : 'var(--primary-300)' }}
+      />
+      Finance
+    </NavLink>
+  </li>
   <li className={isActive('/addpayment') ? 'active-link' : ''}>
     <NavLink to="/addpayment">
       <FontAwesomeIcon className="adminSidebarIcon"

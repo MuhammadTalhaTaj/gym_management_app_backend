@@ -89,11 +89,18 @@ type FormData = {
 };
 
 // ---------- Helper mapping (UI permission -> backend enum) ----------
+const normalizePermission = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/\s*\+\s*/g, '+')
+    .trim();
+
 const permissionMap: Record<string, 'all' | 'view' | 'view+add' | 'view+add+update'> = {
-  'Full Access': 'all',
-  'View Only': 'view',
-  'View + Add': 'view+add',
-  'View + Add + Update': 'view+add+update'
+  'full access': 'all',
+  'view only': 'view',
+  'view+add': 'view+add',
+  'view+add+update': 'view+add+update'
 };
 
 // ---------- UI Subcomponents (typed) ----------
@@ -352,7 +359,13 @@ const AddStaff: React.FC = () => {
     }
 
     // map permission to backend enum
-    const mappedPermission = permissionMap[formData.permission] ?? 'view';
+    const normalized = normalizePermission(formData.permission);
+    const mappedPermission = permissionMap[normalized as keyof typeof permissionMap];
+
+    if (!mappedPermission) {
+      setError('Invalid permission selected.');
+      return;
+    }
 
     const payload = {
       name: formData.fullName.trim(),
@@ -366,7 +379,6 @@ const AddStaff: React.FC = () => {
 
     setLoading(true);
     try {
-      // call backend endpoint
       const data = await apiRequest<{ accessToken?: string; staff?: any }>({
         method: 'POST',
         endpoint: '/staff/signup',
@@ -374,15 +386,33 @@ const AddStaff: React.FC = () => {
       });
 
       // Backend returns accessToken and staff object on success (201). We intentionally DO NOT overwrite currently stored admin tokens.
-      // Show success and redirect to staff list.
       setSuccessMessage('Staff member created successfully.');
+
+      // clear sensitive fields but keep role/permission for convenience
+      setFormData(prev => ({ ...prev, password: '', email: '', fullName: '', contactNumber: '' }));
+
       // small delay to let user see success message before redirect (optional)
       setTimeout(() => {
         navigate('/staff');
       }, 700);
     } catch (err: any) {
-      // show backend message if present
-      const msg = err?.message || String(err) || 'Failed to create staff member.';
+      // handle common error shapes
+      let msg = 'Failed to create staff member.';
+      if (!err) {
+        msg = 'Unknown error occurred.';
+      } else if (err instanceof Error) {
+        msg = err.message || msg;
+      } else if (typeof err === 'string') {
+        msg = err;
+      } else if (err?.message) {
+        msg = err.message;
+      }
+
+      // user-friendly network error
+      if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('network')) {
+        msg = 'Network error. Please check your connection or try again later.';
+      }
+
       setError(msg);
     } finally {
       setLoading(false);
@@ -417,7 +447,7 @@ const AddStaff: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center text-[var(--primary-300)] gap-2 text-sm hover:text-gray-300 transition-colors">
+            <button className="flex items-center text-[var(--primary-300)] gap-2 text-sm hover:text-gray-300 transition-colors" onClick={()=>{navigate('/staff')}}>
               <span className="hidden sm:inline">← Back to Staff List</span>
               <span className="sm:hidden">← Back</span>
             </button>
