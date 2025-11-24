@@ -40,11 +40,11 @@ const addMember = asyncHandler(async (req, res) => {
     throw new APIError(400, "Provide required fields");
   }
   if (!mongoose.Types.ObjectId.isValid(createdBy)) {
-        throw new APIError(400, "Id is not in valid format");
-    }
-if (!["Admin", "Staff"].includes(currentUser)) {
-        throw new APIError(400, "Current user must be admin or staff.");
-    }
+    throw new APIError(400, "Id is not in valid format");
+  }
+  if (!["Admin", "Staff"].includes(currentUser)) {
+    throw new APIError(400, "Current user must be admin or staff.");
+  }
 
 
   // ✅ Check for existing member (by contact or email)
@@ -64,147 +64,147 @@ if (!["Admin", "Staff"].includes(currentUser)) {
 
   // ✅ Calculate the due amount dynamically
   const dueAmount = (admissionAmount + planDetails.amount) - collectedAmount - discount;
-let creator;
-if(currentUser=="Staff"){
-  creator= await Staff.findById(createdBy);
-  if(!creator){
-    throw new APIError(400, "Staff not found")
-  }
-  if(creator.permission=="view"){
-    throw new APIError(401,"You do not have permission to Add Member")
-  }
-  const newMember = new Member({
-    name,
-    contact,
-    email,
-    gender,
-    batch,
-    address,
-    plan,
-    joinDate,
-    admissionAmount,
-    discount,
-    collectedAmount,
-    dueAmount,
-    createdBy: creator.createdBy,
-    createdByStaff: createdBy // Dynamically calculated due amount
-  });
-
-  await newMember.save();
-
-  const payment = new Payment({
-    memberId: newMember._id, // Use the newly created memberId
-    plan: plan,              // Use the plan the member selected
-    amount: collectedAmount,
-    createdBy:creator.createdBy,
-    paymentDate: new Date()
-  });
-
-  try {
-    await payment.save();
-  } catch (error) {
-    // Rollback member creation if payment fails (you can delete the member or mark it as incomplete)
-    await newMember.delete();
-    throw new APIError(500, "Payment creation failed, and member is removed");
-  }
-
-  // ✅ Use aggregation pipeline to join with plan details
-  const memberWithPlan = await Member.aggregate([
-    { $match: { _id: newMember._id } },
-    {
-      $lookup: {
-        from: "plans",
-        localField: "plan",
-        foreignField: "_id",
-        as: "plan"
-      }
-    },
-    {
-      $unwind: {
-        path: "$plan",
-        preserveNullAndEmptyArrays: true
-      }
+  let creator;
+  if (currentUser == "Staff") {
+    creator = await Staff.findById(createdBy);
+    if (!creator) {
+      throw new APIError(400, "Staff not found")
     }
-  ]);
-
-  // ✅ Send response
-  res.status(201).json({
-    message: "New Member and Payment added successfully",
-    data: {
-      member: memberWithPlan[0], // Return member with plan details
-      payment: payment           // Return the payment details
+    if (creator.permission == "view") {
+      throw new APIError(401, "You do not have permission to Add Member")
     }
-  });
+    const newMember = new Member({
+      name,
+      contact,
+      email,
+      gender,
+      batch,
+      address,
+      plan,
+      joinDate,
+      admissionAmount,
+      discount,
+      collectedAmount,
+      dueAmount,
+      createdBy: creator.createdBy,
+      createdByStaff: createdBy // Dynamically calculated due amount
+    });
 
+    await newMember.save();
 
-}else{
-  creator = await Admin.findById(createdBy)
-  if(!creator){
-    throw new APIError(400, "Admin not found")
-  }
-  // ✅ Create new member
-  const newMember = new Member({
-    name,
-    contact,
-    email,
-    gender,
-    batch,
-    address,
-    plan,
-    joinDate,
-    admissionAmount,
-    discount,
-    collectedAmount,
-    dueAmount,
-    createdBy // Dynamically calculated due amount
-  });
+    const payment = new Payment({
+      memberId: newMember._id, // Use the newly created memberId
+      plan: plan,              // Use the plan the member selected
+      amount: collectedAmount,
+      createdBy: creator.createdBy,
+      paymentDate: new Date()
+    });
 
-  await newMember.save();
+    try {
+      await payment.save();
+    } catch (error) {
+      // Rollback member creation if payment fails (you can delete the member or mark it as incomplete)
+      await newMember.delete();
+      throw new APIError(500, "Payment creation failed, and member is removed");
+    }
 
-  const payment = new Payment({
-    memberId: newMember._id, // Use the newly created memberId
-    plan: plan,              // Use the plan the member selected
-    amount: collectedAmount,
-    paymentDate: new Date(),
-    createdBy
-  });
-
-  try {
-    await payment.save();
-  } catch (error) {
-    // Rollback member creation if payment fails (you can delete the member or mark it as incomplete)
-    await newMember.delete();
-    throw new APIError(500, "Payment creation failed, and member is removed");
-  }
-
-  // ✅ Use aggregation pipeline to join with plan details
-  const memberWithPlan = await Member.aggregate([
-    { $match: { _id: newMember._id } },
-    {
-      $lookup: {
-        from: "plans",
-        localField: "plan",
-        foreignField: "_id",
-        as: "plan"
+    // ✅ Use aggregation pipeline to join with plan details
+    const memberWithPlan = await Member.aggregate([
+      { $match: { _id: newMember._id } },
+      {
+        $lookup: {
+          from: "plans",
+          localField: "plan",
+          foreignField: "_id",
+          as: "plan"
+        }
+      },
+      {
+        $unwind: {
+          path: "$plan",
+          preserveNullAndEmptyArrays: true
+        }
       }
-    },
-    {
-      $unwind: {
-        path: "$plan",
-        preserveNullAndEmptyArrays: true
-      }
-    }
-  ]);
+    ]);
 
-  // ✅ Send response
-  res.status(201).json({
-    message: "New Member and Payment added successfully",
-    data: {
-      member: memberWithPlan[0], // Return member with plan details
-      payment: payment           // Return the payment details
+    // ✅ Send response
+    res.status(201).json({
+      message: "New Member and Payment added successfully",
+      data: {
+        member: memberWithPlan[0], // Return member with plan details
+        payment: payment           // Return the payment details
+      }
+    });
+
+
+  } else {
+    creator = await Admin.findById(createdBy)
+    if (!creator) {
+      throw new APIError(400, "Admin not found")
     }
-  });
-}
+    // ✅ Create new member
+    const newMember = new Member({
+      name,
+      contact,
+      email,
+      gender,
+      batch,
+      address,
+      plan,
+      joinDate,
+      admissionAmount,
+      discount,
+      collectedAmount,
+      dueAmount,
+      createdBy // Dynamically calculated due amount
+    });
+
+    await newMember.save();
+
+    const payment = new Payment({
+      memberId: newMember._id, // Use the newly created memberId
+      plan: plan,              // Use the plan the member selected
+      amount: collectedAmount,
+      paymentDate: new Date(),
+      createdBy
+    });
+
+    try {
+      await payment.save();
+    } catch (error) {
+      // Rollback member creation if payment fails (you can delete the member or mark it as incomplete)
+      await newMember.delete();
+      throw new APIError(500, "Payment creation failed, and member is removed");
+    }
+
+    // ✅ Use aggregation pipeline to join with plan details
+    const memberWithPlan = await Member.aggregate([
+      { $match: { _id: newMember._id } },
+      {
+        $lookup: {
+          from: "plans",
+          localField: "plan",
+          foreignField: "_id",
+          as: "plan"
+        }
+      },
+      {
+        $unwind: {
+          path: "$plan",
+          preserveNullAndEmptyArrays: true
+        }
+      }
+    ]);
+
+    // ✅ Send response
+    res.status(201).json({
+      message: "New Member and Payment added successfully",
+      data: {
+        member: memberWithPlan[0], // Return member with plan details
+        payment: payment           // Return the payment details
+      }
+    });
+  }
 });
 
 
@@ -225,16 +225,17 @@ const findMember = asyncHandler(async (req, res) => {
 });
 
 const getAllMembers = asyncHandler(async (req, res) => {
-  const {adminId} =  req.body; 
+  const { adminId } = req.body;
   // console.log(adminId)
   let members;
 
   // members = await Member.find({createdBy:adminId})
   // Get all members created by this admin
   members = await Member.aggregate([
-   {
-      
-    $match: {createdBy: mongoose.Types.ObjectId.createFromHexString(adminId)}    },
+    {
+
+      $match: { createdBy: mongoose.Types.ObjectId.createFromHexString(adminId) }
+    },
     {
       $lookup: {
         from: "plans",
@@ -254,10 +255,10 @@ const getAllMembers = asyncHandler(async (req, res) => {
     }
   ]);
 
-  if(members.length == 0){
-    throw new APIError(404,"No members")
+  if (members.length == 0) {
+    throw new APIError(404, "No members")
   }
-  
+
 
   res.status(200).json({
     success: true,
@@ -274,7 +275,7 @@ const getMemberWithPaymentHistory = asyncHandler(async (req, res) => {
   }
 
   // ✅ Check if the member exists
-  const member = await Member.findById({_id: memberId});  // Use memberId directly
+  const member = await Member.findById({ _id: memberId });  // Use memberId directly
   if (!member) {
     throw new APIError(404, "Member not found");
   }
