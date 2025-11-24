@@ -4,6 +4,7 @@ import { Calendar, Check } from 'lucide-react';
 import { getPlans } from '../../services/plan';
 // import { addMember } from '../../services/member';
 import CustomAlert from '../../Components/CustomAlert';
+import { addMember, type AddMemberPayload } from '../../services/member';
 
 // --- existing static data (kept for fallback) ---
 const BATCH_MAP: Record<number, string> = {
@@ -27,9 +28,13 @@ const formData = {
   ]
 };
 
-function getStoredUserId(): string | null {
-  return localStorage.getItem('userId') || sessionStorage.getItem('userId') || null;
-}
+// function getStoredUserId(user: any): string | null {
+//   const role = localStorage.getItem("role")
+//   console.log("Role: ",role);
+  
+//   const userId = role === "Admin" ? user?.id : user?.createdBy
+//   return userId ?? null;
+// }
 
 // types for plans coming from service or fallback
 type PlanOption = {
@@ -187,7 +192,7 @@ const AddMember: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false)
-
+  const user = JSON.parse(localStorage.getItem("user") || "")
   useEffect(() => {
     // fetch real plans via service
     const loadPlans = async () => {
@@ -242,32 +247,36 @@ const AddMember: React.FC = () => {
   // BEFORE sending to backend, check required fields and map names
   const handleSubmit = async () => {
     setMessage(null);
-    const userId = getStoredUserId();
+    console.log("User passed: ",user);
+    const role = localStorage.getItem("role")
+    const userId = role === "Admin" ? user?.id : user?.createdBy
+    console.log("User ID: ",userId);
+    
     if (!userId) {
       setMessage('You must be logged in to register a member. (missing userId)');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
-    const payload: Record<string, any> = {
+    const payload: AddMemberPayload = {
       name: formState.fullName?.trim() || '',
       contact: formState.contactNumber?.trim() || '',
       email: formState.email?.trim() || '',
       gender: formState.gender || '',
       batch: BATCH_MAP[Number(formState.batch)] || formState.batch || '',
       address: formState.address?.trim() || '',
-      plan: formState.membershipPlan || '', // must be plan id (we populate dropdown with _id)
+      plan: formState.membershipPlan || '',
       joinDate: formState.joiningDate || '',
       admissionAmount: Number(formState.admissionAmount) || 0,
-      discount: 0,
-      discountAmount: Number(formState.discountAmount) || 0,
+      discount: Number(formState.discountAmount) || 0,
       collectedAmount: Number(formState.collectedAmount) || 0,
-      createdBy: userId
+      createdBy: String(userId)
     };
 
-    const required = ['name', 'contact', 'gender', 'batch', 'plan', 'joinDate', 'admissionAmount', 'collectedAmount', 'discountAmount'];
+    const required = ['name', 'contact', 'gender', 'batch', 'plan', 'joinDate', 'admissionAmount', 'collectedAmount', 'discount'];
+
     const missing = required.filter(key => {
-      const v = payload[key];
+      const v = (payload as Record<string, any>)[key];
       return v === undefined || v === null || v === '' || (typeof v === 'number' && isNaN(v));
     });
 
@@ -287,6 +296,7 @@ const AddMember: React.FC = () => {
       // cast addMember to any to allow passing `createdBy` (keeps UI & logic unchanged)
       // const res: any = await (addMember as any)(payload);
 
+      await addMember(payload)
       setSuccess(true)
       // reset form (preserving fallback UI behavior)
       setFormState({

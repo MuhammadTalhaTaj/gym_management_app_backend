@@ -136,7 +136,7 @@ const findMember = asyncHandler(async (req, res) => {
 });
 
 const getAllMembers = asyncHandler(async (req, res) => {
-  const adminId = req.userId || req.body.id; // Use userId from auth middleware
+  const adminId =  req.body.id; 
   
   let members;
 

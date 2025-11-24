@@ -13,7 +13,7 @@ export interface AddMemberPayload {
   admissionAmount: number;
   discount?: number;
   collectedAmount: number;
-  createdBy: string
+  createdBy: string,
 }
 
 export async function addMember(payload: AddMemberPayload) {

@@ -104,10 +104,6 @@ export const Dropdown = ({ label, value, onChange, options }: { label: string; v
 };
 
 export const Header = ({ admin }: { admin: any }) => {
-  const [adminData, setAdminData] = useState(admin || {})
-
-
-
   return (
     <div className="flex items-center justify-between mb-8">
       <h1 className="text-4xl font-bold text-gray-900">Member Management</h1>
@@ -385,17 +381,18 @@ const Members: React.FC = () => {
   const userId = role == "Admin" ? user?.id : user?.createdBy;
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [adminData, setAdminData] = useState({})
 
   useEffect(() => {
     const loadMembers = async () => {
       setLoading(true);
       try {
         const res = await apiRequest({
-          method: 'GET',
+          method: 'POST',
           endpoint: '/member/getAllMembers',
           body: { id: userId }
         });
-        console.log("Result: ", res)
+        // console.log("Result: ", res)
         setMembers(res.data)
       } catch (err: any) {
         if (err.data.status == 404) {
@@ -420,7 +417,7 @@ const Members: React.FC = () => {
         endpoint: '/staff/getAdmin',
         body: { id: user?.id }
       });
-      setMembers(res.data)
+      setAdminData(res.data)
     } catch (err: any) {
 
     }
@@ -461,7 +458,7 @@ const Members: React.FC = () => {
   return (
     <div className="min-h-screen w-full bg-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <Header admin={MOCK_DATA.admin} />
+        <Header admin={adminData} />
 
         <FilterBar
           searchTerm={searchTerm}
