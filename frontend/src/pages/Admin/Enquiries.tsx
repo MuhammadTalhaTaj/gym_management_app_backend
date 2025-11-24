@@ -8,40 +8,40 @@ interface Avatar {
   name: String;
 }
 // Fallback data
-const dashboardData = {
-  stats: [
-    { id: 1, icon: '📧', label: 'Total Enquiries', value: 248, change: '+12%', changePositive: true },
-    { id: 2, icon: '📂', label: 'Open Status', value: 156, count: 156 },
-    { id: 3, icon: '💳', label: 'Payment Category', value: 42, count: 42 },
-    { id: 4, icon: '⚠️', label: 'Complaints', value: 18, count: 18 }
-  ],
-  enquiries: [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      email: 'sarah.j@email.com',
-      contact: '+1 234 567 8900',
-      category: 'Payment',
-      status: 'Open',
-      followUp: 'Jan 25, 2024',
-      created: 'Jan 20, 2024',
-      avatar: 'SJ',
-      remark: 'Follow up on payment.'
-    },
-    {
-      id: 2,
-      name: 'Michael Chen',
-      email: 'm.chen@email.com',
-      contact: '+1 234 567 8901',
-      category: 'Discussion',
-      status: 'Open',
-      followUp: 'Jan 26, 2024',
-      created: 'Jan 19, 2024',
-      avatar: 'MC',
-      remark: 'Interested in new features.'
-    }
-  ]
-};
+// const dashboardData = {
+//   stats: [
+//     { id: 1, icon: '📧', label: 'Total Enquiries', value: 248, change: '+12%', changePositive: true },
+//     { id: 2, icon: '📂', label: 'Open Status', value: 156, count: 156 },
+//     { id: 3, icon: '💳', label: 'Payment Category', value: 42, count: 42 },
+//     { id: 4, icon: '⚠️', label: 'Complaints', value: 18, count: 18 }
+//   ],
+//   enquiries: [
+//     {
+//       id: 1,
+//       name: 'Sarah Johnson',
+//       email: 'sarah.j@email.com',
+//       contact: '+1 234 567 8900',
+//       category: 'Payment',
+//       status: 'Open',
+//       followUp: 'Jan 25, 2024',
+//       created: 'Jan 20, 2024',
+//       avatar: 'SJ',
+//       remark: 'Follow up on payment.'
+//     },
+//     {
+//       id: 2,
+//       name: 'Michael Chen',
+//       email: 'm.chen@email.com',
+//       contact: '+1 234 567 8901',
+//       category: 'Discussion',
+//       status: 'Open',
+//       followUp: 'Jan 26, 2024',
+//       created: 'Jan 19, 2024',
+//       avatar: 'MC',
+//       remark: 'Interested in new features.'
+//     }
+//   ]
+// };
 
 // Stat Card Component
 const StatCard = ({ icon, label, value, change, changePositive, count }: any) => (

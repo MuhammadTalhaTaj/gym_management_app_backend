@@ -277,6 +277,9 @@ const AddEnquiries = () => {
   };
 
   const handleSubmit = async () => {
+    // prevent double submit
+    if (loading) return;
+
     // client-side validation (unchanged)
     const newErrors: any = {};
 
@@ -292,9 +295,19 @@ const AddEnquiries = () => {
       setErrors(newErrors);
       return;
     }
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const currentUser = localStorage.getItem("role")
-    let payload = {
+
+    // safe read of localStorage user and role
+    let user: any = {};
+    try {
+      const raw = localStorage.getItem("user");
+      user = raw ? JSON.parse(raw) : {};
+    } catch {
+      user = {};
+    }
+    const currentUser = localStorage.getItem("role");
+
+    // Build payload including extra fields your app uses
+    const payload: any = {
       name: formData.fullName,
       contact: formData.contactNumber,
       remark: formData.remarks,
@@ -302,12 +315,14 @@ const AddEnquiries = () => {
       category: formData.category,
       status: formData.status,
       currentUser,
-      creatorId: user.id,
-      adminId: currentUser === "Admin" ? user.id : user?.createdBy
+      creatorId: user?.id,
+      adminId: currentUser === "Admin" ? user?.id : user?.createdBy
     };
+
     setLoading(true);
     try {
-      console.log("Payload: ",payload)
+      console.log("Payload: ", payload);
+
       // call backend endpoint exactly as you specified
       const res = await apiRequest({
         method: 'POST',
@@ -319,13 +334,12 @@ const AddEnquiries = () => {
       console.log('Add enquiry response:', res);
       alert(res?.message ?? 'Enquiry saved successfully!');
 
-      // keep UI unchanged — you can reset form if you want to replicate previous behaviour:
+      // reset form after success
       handleReset();
     } catch (err: any) {
       // surface backend error to user
       console.error('Error:', err);
-      // if backend returned a message inside the error message, show it — otherwise show generic
-      // alert(err?.message ?? 'Failed to save enquiry. See console for details.');
+      alert(err?.message ?? 'Failed to save enquiry. See console for details.');
     } finally {
       setLoading(false);
     }

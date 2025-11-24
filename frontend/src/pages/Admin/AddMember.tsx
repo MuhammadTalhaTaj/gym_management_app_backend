@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Calendar, Check } from 'lucide-react';
 import { getPlans } from '../../services/plan';
-import { addMember } from '../../services/member';
+// import { addMember } from '../../services/member';
 import CustomAlert from '../../Components/CustomAlert';
 
 // --- existing static data (kept for fallback) ---
@@ -285,7 +285,7 @@ const AddMember: React.FC = () => {
     setSubmitting(true);
     try {
       // cast addMember to any to allow passing `createdBy` (keeps UI & logic unchanged)
-      const res: any = await (addMember as any)(payload);
+      // const res: any = await (addMember as any)(payload);
 
       setSuccess(true)
       // reset form (preserving fallback UI behavior)

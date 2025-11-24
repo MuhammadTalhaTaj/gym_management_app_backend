@@ -434,7 +434,7 @@ const Members: React.FC = () => {
   const showingTo = Math.min(filtered.length, currentPage * PAGE_SIZE);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen w-full bg-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <Header admin={MOCK_DATA.admin} />
 

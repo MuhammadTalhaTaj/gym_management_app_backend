@@ -185,7 +185,6 @@ const permissionMapToBackend: Record<string, string> = {
   'All': 'all',
   'View Only': 'view',
   'View + Add': 'view+add',
-  'View + Add + Update': 'view+add+update',
   'View + Add + Update': 'view+add+update'
 };
 
@@ -356,7 +355,7 @@ const Staff: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedRole] = useState('All Roles');
   const [selectedPermission] = useState('All Permissions');
-  const [mobileMenuOpen] = useState(false);
+  // const [mobileMenuOpen] = useState(false);
 
   // make staff state editable
   const [staffList, setStaffList] = useState(initialStaffData);

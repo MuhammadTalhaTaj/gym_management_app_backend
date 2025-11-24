@@ -237,7 +237,7 @@ const AddPayment: React.FC = () => {
         const [membersRes, plansRes] = await Promise.all([
           apiRequest({
             method: 'GET',
-            endpoint: '/member/getAllMember',
+            endpoint: '/member/getAllMembers',
             mapFn: (raw: any) => {
               const list = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
               return list.map((r: any, i: number) => normalizeMember(r, i));
