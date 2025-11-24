@@ -6,7 +6,7 @@ import '../assets/styles/AdminDashboardStats.css'
 function AdminDashboardStats() {
   const { data, loading, } = useDashboardData()
 
-  console.log("Data: ",data)
+  // console.log("Data: ",data)
   const displayRevenue =
     loading ? 'Loading...' : data?.revenueThisMonth ?? 0
   const displayAdmissions =

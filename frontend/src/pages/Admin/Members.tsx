@@ -104,6 +104,10 @@ export const Dropdown = ({ label, value, onChange, options }: { label: string; v
 };
 
 export const Header = ({ admin }: { admin: any }) => {
+  const [adminData, setAdminData] = useState(admin || {})
+
+
+
   return (
     <div className="flex items-center justify-between mb-8">
       <h1 className="text-4xl font-bold text-gray-900">Member Management</h1>
@@ -375,9 +379,11 @@ const Members: React.FC = () => {
   const [batch, setBatch] = useState('All Batches');
   const [status, setStatus] = useState('All Status');
   const [currentPage, setCurrentPage] = useState(1);
-  const location = useLocation();
-  const userId = location.state?.userId;
-  const [members, setMembers] = useState<any[]>(MOCK_DATA.members);
+  // const location = useLocation();
+  const user = JSON.parse(localStorage.getItem("user") || "")
+  const role = localStorage.getItem("role")
+  const userId = role == "Admin" ? user?.id : user?.createdBy;
+  const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -389,17 +395,36 @@ const Members: React.FC = () => {
           endpoint: '/member/getAllMembers',
           body: { id: userId }
         });
-        console.log("Result: ", res.data)
+        console.log("Result: ", res)
         setMembers(res.data)
-      } catch (err) {
-        console.error("Error fetching members: ", err)
+      } catch (err: any) {
+        if (err.data.status == 404) {
+          setMembers([])
+        }
+        else {
+          console.error("Error fetching members: ", err)
+        }
       } finally {
         setLoading(false);
       }
     };
 
     loadMembers();
+    getAdminDetail();
   }, []);
+
+  const getAdminDetail = async () => {
+    try {
+      const res = await apiRequest({
+        method: 'GET',
+        endpoint: '/staff/getAdmin',
+        body: { id: user?.id }
+      });
+      setMembers(res.data)
+    } catch (err: any) {
+
+    }
+  }
 
   // filter (search + status + batch)
   const filtered = useMemo(() => {

@@ -116,24 +116,7 @@ function AdminSidebar() {
       Finance
     </NavLink>
   </li>
-  {/* <li className={isActive('/Expense') ? 'active-link' : ''}>
-    <NavLink to="/Expense">
-      <FontAwesomeIcon className="adminSidebarIcon"
-        icon={faWallet}
-        style={{ color: isActive('/Expense') ? 'var(--secondary-100)' : 'var(--primary-300)' }}
-      />
-      Expense
-    </NavLink>
-  </li> */}
-  {/* <li className={isActive('/AddExpense') ? 'active-link' : ''}>
-    <NavLink to="/AddExpense">
-      <FontAwesomeIcon className="adminSidebarIcon"
-        icon={faWallet}
-        style={{ color: isActive('/AddExpense') ? 'var(--secondary-100)' : 'var(--primary-300)' }}
-      />
-      Add Expense
-    </NavLink>
-  </li> */}
+ 
   <li className={isActive('/staff') ? 'active-link' : ''}>
     <NavLink to="/staff">
       <FontAwesomeIcon className="adminSidebarIcon"
