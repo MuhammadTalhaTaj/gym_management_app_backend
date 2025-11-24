@@ -125,7 +125,7 @@ function AdminSidebar() {
       Add Payment
     </NavLink>
   </li>
-  <li className={isActive('/finance') ? 'active-link' : ''}>
+  {/* <li className={isActive('/finance') ? 'active-link' : ''}>
     <NavLink to="/finance">
       <FontAwesomeIcon className="adminSidebarIcon"
         icon={faChartPie}
@@ -133,7 +133,7 @@ function AdminSidebar() {
       />
       Finance
     </NavLink>
-  </li>
+  </li> */}
  
   <li className={isActive('/staff') ? 'active-link' : ''}>
     <NavLink to="/staff">
