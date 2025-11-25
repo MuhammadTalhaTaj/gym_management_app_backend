@@ -3,7 +3,6 @@ import { EMAIL_RE, CONTACT_RE, PASSWORD_MIN, REFRESH_COOKIE_OPTIONS, generateAcc
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
 import { Admin } from "../model/admin.model.js";
-
 import bcrypt from "bcrypt"
 // -------------------- STAFF SIGNUP --------------------
 const staffSignup = asyncHandler(async (req, res) => {

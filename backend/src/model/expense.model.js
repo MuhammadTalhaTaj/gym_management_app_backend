@@ -1,5 +1,15 @@
 import mongoose from "mongoose";
 const expenseSchema = mongoose.Schema({
+  createdBy:{
+    type:mongoose.Schema.ObjectId,
+    ref:"Admin",
+    required:true
+  },
+  staffId:{
+    type:mongoose.Schema.ObjectId,
+    ref:"Staff"
+  },
+
   name: {
     type: String,
     required: true

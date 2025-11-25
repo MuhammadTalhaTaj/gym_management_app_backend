@@ -4,7 +4,7 @@ import { APIError } from "../utils/APIError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const addPlan = asyncHandler(async (req, res) => {
-    const { name, durationType, duration, amount, createdBy } = req.body;
+    const { name, durationType, duration, amount, createdBy} = req.body;
     if (!name || !durationType || !duration || !amount|| !createdBy) {
         throw new APIError(400, "Provide required fields")
     }
