@@ -181,10 +181,15 @@ const Finance = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      const role = localStorage.getItem("role")
+      const user = JSON.parse(localStorage.getItem("user") || "" );
+      const userId = role === "Admin"
+        ? localStorage.getItem("userId")
+        : user?.createdBy;
       try {
         const res = await apiRequest({
           method: 'GET',
-          endpoint: '/auth/dashboard',
+          endpoint: '/auth/dashboard/'+ userId,
         });
         setDashboardData(res);
       } catch (err) {
@@ -214,7 +219,7 @@ const Finance = () => {
     : fallbackData.stats;
 
   return (
-    <div className="min-h-screen bg-[var(--primary-200)] ">
+    <div className="min-h-screen w-full bg-[var(--primary-200)] ">
       <Header user={user} />
       <main className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
