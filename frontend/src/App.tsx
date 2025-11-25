@@ -20,6 +20,7 @@ import MemberPayments from './pages/Admin/MemberPayments';
 import StaffSignup from './pages/Admin/StaffSignup';
 import AddStaff from './pages/Admin/AddStaff';
 import Staff from './pages/Admin/Staff';
+import Setting from './pages/Admin/Setting';
 
 
 function App() {
@@ -55,6 +56,7 @@ function App() {
                   <Route path="/staff" element={<Staff /> } />
                   <Route path="/addstaff" element={<AddStaff /> } />
                   <Route path="/expense" element={<Expense /> } />
+                  <Route path="/setting" element={<Setting /> } />
                   <Route path="/enquiries" element={ <Enquiries /> } />
                   <Route path="/addenquiries" element={<AddEnquiries />} />
                 </Routes>
