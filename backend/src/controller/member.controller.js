@@ -207,8 +207,6 @@ const addMember = asyncHandler(async (req, res) => {
   }
 });
 
-
-
 const findMember = asyncHandler(async (req, res) => {
   const { name } = req.body;
   if (!name) {
@@ -315,24 +313,35 @@ const getMemberWithPaymentHistory = asyncHandler(async (req, res) => {
   });
 });
 
-// DELETE MEMBER
+
 const deleteMember = asyncHandler(async (req, res) => {
-  const { memberId } = req.params;
+  console.log("Request body: ", req.body)
+  const { memberId, userId, currentUser } = req.body;
 
   // Validate memberId
-  if (!memberId) {
+  if (!memberId||!userId) {
     throw new APIError(400, "Member ID is required");
   }
-
-  // Validate if memberId is a valid MongoDB ObjectId
-  if (!mongoose.Types.ObjectId.isValid(memberId)) {
-    throw new APIError(400, "Invalid member ID format");
+  if (!mongoose.Types.ObjectId.isValid(memberId) || !mongoose.Types.ObjectId.isValid(userId)) {
+    throw new APIError(400, "Invalid ID format");
   }
-
+   if (!["Admin", "Staff"].includes(currentUser)) {
+    throw new APIError(400, "Current user must be admin or staff.");
+  }
+  let creator;
+  if(currentUser=="Staff"){
+    creator= await Staff.findById(userId)
+    if(!creator){
+      throw new APIError(400, "Staff not found")
+    }
+    if(creator.permission!=="all"){
+      throw new APIError(401, "You do not have permission to delete Member")
+    }
   // Find the member and verify it belongs to the current admin
-  const member = await Member.findOne({
-    _id: memberId,
-    createdBy: req.userId // Ensure the member belongs to the current admin
+
+     const member = await Member.findOne({
+    _id:memberId,
+    createdBy: creator.createdBy
   });
 
   if (!member) {
@@ -353,8 +362,37 @@ const deleteMember = asyncHandler(async (req, res) => {
       deletedMemberName: member.name
     }
   });
-});
+}else {
+  creator = await Admin.findById(userId)
+  if(!creator){
+    throw new APIError(400,"Admin not found")
+  }
+  const member = await Member.findOne({
+    _id:memberId,
+    createdBy: userId
+  });
 
+  if (!member) {
+    throw new APIError(404, "Member not found or you don't have permission to delete this member");
+  }
+
+  // Delete associated payments first (to maintain data integrity)
+  await Payment.deleteMany({ memberId: memberId });
+
+  // Delete the member
+  await Member.findByIdAndDelete(memberId);
+
+  res.status(200).json({
+    success: true,
+    message: "Member and associated payments deleted successfully",
+    data: {
+      deletedMemberId: memberId,
+      deletedMemberName: member.name
+    }
+  });
+
+}
+});
 
 
 export { addMember, findMember, getAllMembers, getMemberWithPaymentHistory, deleteMember };
