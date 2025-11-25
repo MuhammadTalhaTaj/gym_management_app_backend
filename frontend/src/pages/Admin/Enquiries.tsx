@@ -2,48 +2,13 @@
 import { useState, useEffect } from 'react';
 import { Search, Eye, Edit2, Trash2, ChevronLeft } from 'lucide-react';
 import { apiRequest } from '../../config/api';
+import { NavLink } from 'react-router-dom';
 
 interface Avatar {
   initials: any;
   name: String;
 }
-// Fallback data
-// const dashboardData = {
-//   stats: [
-//     { id: 1, icon: '📧', label: 'Total Enquiries', value: 248, change: '+12%', changePositive: true },
-//     { id: 2, icon: '📂', label: 'Open Status', value: 156, count: 156 },
-//     { id: 3, icon: '💳', label: 'Payment Category', value: 42, count: 42 },
-//     { id: 4, icon: '⚠️', label: 'Complaints', value: 18, count: 18 }
-//   ],
-//   enquiries: [
-//     {
-//       id: 1,
-//       name: 'Sarah Johnson',
-//       email: 'sarah.j@email.com',
-//       contact: '+1 234 567 8900',
-//       category: 'Payment',
-//       status: 'Open',
-//       followUp: 'Jan 25, 2024',
-//       created: 'Jan 20, 2024',
-//       avatar: 'SJ',
-//       remark: 'Follow up on payment.'
-//     },
-//     {
-//       id: 2,
-//       name: 'Michael Chen',
-//       email: 'm.chen@email.com',
-//       contact: '+1 234 567 8901',
-//       category: 'Discussion',
-//       status: 'Open',
-//       followUp: 'Jan 26, 2024',
-//       created: 'Jan 19, 2024',
-//       avatar: 'MC',
-//       remark: 'Interested in new features.'
-//     }
-//   ]
-// };
-
-// Stat Card Component
+// Stat Card Component (unchanged)
 const StatCard = ({ icon, label, value, change, changePositive, count }: any) => (
   <div className="bg-[var(--primary-100)] rounded-lg p-6 relative overflow-hidden">
     <div className="flex items-start justify-between mb-4">
@@ -77,22 +42,19 @@ interface StatusBadgeProps {
   status: 'Open' | 'Closed' | string; // allow string for fallback
 }
 
-// Status Badge
 const StatusBadge = ({ status }: StatusBadgeProps) => {
   const styles: Record<'Open' | 'Closed', string> = {
     Open: 'bg-[var(--tertiary-300-30)] text-[var(--tertiary-300)]',
     Closed: 'bg-[var(--primary-300)] bg-opacity-30 text-[var(--tertiary-500)]'
   };
-  // fallback to Open style if unknown
   const cls = styles[status as 'Open' | 'Closed'] || styles.Open;
   return <span className={`px-3 py-1 rounded text-xs font-medium ${cls}`}>{status}</span>;
 };
 
-
 // Avatar
 const Avatar = ({ initials, name }: Avatar) => {
   const colors = ['bg-blue-500', 'bg-purple-500', 'bg-pink-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500'];
-  const firstChar = (name && name.length > 0) ? name[0] : 'A';
+  const firstChar = (name && name.length > 0) ? (String(name)[0]) : 'A';
   const colorIndex = firstChar.charCodeAt(0) % colors.length;
   return <div className={`w-10 h-10 rounded-full ${colors[colorIndex]} flex items-center justify-center text-white text-sm font-semibold`}>{initials}</div>;
 };
@@ -104,8 +66,8 @@ const ActionButton = ({ icon: Icon, onClick, className = '' }: any) => (
   </button>
 );
 
-// Table Row
-const TableRow = ({ enquiry, onViewRemark }: any) => (
+// Table Row (now receives edit/delete handlers)
+const TableRow = ({ enquiry, onViewRemark, onEdit, onDelete }: any) => (
   <tr className="border-b border-[var(--primary-300)] border-opacity-20 hover:bg-[var(--tertiary-400-30)] hover:bg-opacity-10 transition-colors">
     <td className="py-4 px-4">
       <div className="flex items-center gap-3">
@@ -118,14 +80,14 @@ const TableRow = ({ enquiry, onViewRemark }: any) => (
     </td>
     <td className="py-4 px-4 text-[var(--tertiary-500)] text-sm">{enquiry.contact}</td>
     <td className="py-4 px-4"><CategoryBadge category={enquiry.category} /></td>
-    <td className="py-4 px-4"><StatusBadge status={enquiry.status} /></td>
+    <td className="py-4 px-4"><StatusBadge status={String(enquiry.status).charAt(0).toUpperCase() + String(enquiry.status).slice(1)} /></td>
     <td className="py-4 px-4 text-[var(--tertiary-500)] text-sm">{enquiry.followUp}</td>
     <td className="py-4 px-4 text-[var(--tertiary-500)] text-sm">{enquiry.created}</td>
     <td className="py-4 px-4">
       <div className="flex items-center gap-1">
         <ActionButton icon={Eye} className="text-[var(--tertiary-400)]" onClick={() => onViewRemark(enquiry)} />
-        <ActionButton icon={Edit2} className="text-[var(--secondary-100)]" />
-        <ActionButton icon={Trash2} className="text-[var(--tertiary-100)]" />
+        <ActionButton icon={Edit2} className="text-[var(--secondary-100)]" onClick={() => onEdit(enquiry)} />
+        <ActionButton icon={Trash2} className="text-[var(--tertiary-100)]" onClick={() => onDelete(enquiry)} />
       </div>
     </td>
   </tr>
@@ -145,6 +107,16 @@ const Enquiries = () => {
     { id: 4, icon: '⚠️', label: 'Complaints', value: 0 }
   ]);
   const userId = localStorage.getItem("userId");
+  const currentUserRole = localStorage.getItem("role"); // must be "Admin" or "Staff"
+
+  // update modal state (for edit)
+  const [updateModal, setUpdateModal] = useState<{ visible: boolean; enquiry?: any; status: string; submitting: boolean }>({
+    visible: false,
+    enquiry: undefined,
+    status: 'open',
+    submitting: false
+  });
+
   // Fetch enquiries from API
   useEffect(() => {
     const fetchEnquiries = async () => {
@@ -153,18 +125,18 @@ const Enquiries = () => {
           method: 'GET',
           endpoint: '/enquiry/getEnquiries/' + userId,
         });
-        console.log("Response: ", res)
-        const enquiries = res.enquiries;
+        const enquiries = res.enquiries || [];
 
+        // normalize dates/display text if needed (keep same UI)
         // Total enquiries
         const totalEnquiries = enquiries.length;
 
-        // Count by status
-        const openStatus = enquiries.filter((e: any) => e.status === "open").length;
+        // Count by status (case-insensitive)
+        const openStatus = enquiries.filter((e: any) => String(e.status).toLowerCase() === "open").length;
 
-        const paymentCategory = enquiries.filter((e: any) => e.category === "payment").length;
+        const paymentCategory = enquiries.filter((e: any) => String(e.category).toLowerCase() === "payment").length;
 
-        const complaints = enquiries.filter((e: any) => e.category === "complaint").length;
+        const complaints = enquiries.filter((e: any) => String(e.category).toLowerCase() === "complaint").length;
 
         // Update state
         setStats([
@@ -174,7 +146,15 @@ const Enquiries = () => {
           { id: 4, icon: '⚠️', label: 'Complaints', value: complaints }
         ]);
 
-        setEnquiries(enquiries);
+        // ensure each enquiry has id/_id and created/followUp formatted for display (don't change originals)
+        const mapped = enquiries.map((e: any) => ({
+          ...e,
+          id: e._id ?? e.id,
+          created: e.createdAt ? new Date(e.createdAt).toLocaleDateString() : (e.created || ''),
+          followUp: e.followUp ? new Date(e.followUp).toLocaleDateString() : (e.followUp || '')
+        }));
+
+        setEnquiries(mapped);
 
       } catch (err) {
         console.log(err);
@@ -183,8 +163,8 @@ const Enquiries = () => {
     };
 
     fetchEnquiries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
 
   const handleSelectRow = (id: any) => {
     setSelectedRows(prev => prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]);
@@ -194,25 +174,154 @@ const Enquiries = () => {
     setRemarkModal({ visible: true, remark: enquiry.remark, name: enquiry.name });
   };
 
+  // Delete handler
+  const handleDelete = async (enquiry: any) => {
+    const ok = window.confirm(`Delete enquiry from ${enquiry.name}? This action cannot be undone.`);
+    if (!ok) return;
+
+    const id = userId;
+    const enquiryId = enquiry._id ?? enquiry.id ?? enquiry.enquiryId ?? enquiryId;
+
+    if (!id || !enquiryId) {
+      alert('Missing user id or enquiry id.');
+      return;
+    }
+
+    try {
+      // call backend: expects { id, enquiryId, currentUser }
+      await apiRequest({
+        method: 'DELETE',
+        endpoint: '/enquiry/deleteEnquiry',
+        body: { id, enquiryId, currentUser: currentUserRole }
+      });
+
+      // remove locally
+      const after = enquiries.filter(e => (e._id ?? e.id) !== (enquiry._id ?? enquiry.id));
+      setEnquiries(after);
+
+      // update stats quickly (recompute)
+      const totalEnquiries = after.length;
+      const openStatus = after.filter((e: any) => String(e.status).toLowerCase() === "open").length;
+      const paymentCategory = after.filter((e: any) => String(e.category).toLowerCase() === "payment").length;
+      const complaints = after.filter((e: any) => String(e.category).toLowerCase() === "complaint").length;
+      setStats([
+        { id: 1, icon: '📧', label: 'Total Enquiries', value: totalEnquiries },
+        { id: 2, icon: '📂', label: 'Open Status', value: openStatus },
+        { id: 3, icon: '💳', label: 'Payment Category', value: paymentCategory },
+        { id: 4, icon: '⚠️', label: 'Complaints', value: complaints }
+      ]);
+    } catch (err: any) {
+      // show simple error
+      console.error('Delete failed', err);
+      alert(err.message || 'Failed to delete enquiry.');
+    }
+  };
+
+  // Open update modal
+  const handleEdit = (enquiry: any) => {
+    setUpdateModal({
+      visible: true,
+      enquiry,
+      status: String(enquiry.status || 'open').toLowerCase(),
+      submitting: false
+    });
+  };
+
+  // Update submit
+  const submitUpdate = async () => {
+    if (!updateModal.enquiry) return;
+    const enquiryId = updateModal.enquiry._id ?? updateModal.enquiry.id;
+    if (!enquiryId) {
+      alert('Missing enquiry id.');
+      return;
+    }
+    const userIdLocal = userId;
+    if (!userIdLocal) {
+      alert('Missing user id.');
+      return;
+    }
+
+    setUpdateModal(prev => ({ ...prev, submitting: true }));
+    try {
+      // backend expects { userId, currentUser, enquiryId, status }
+      const body = {
+        userId: userIdLocal,
+        currentUser: currentUserRole,
+        enquiryId,
+        status: String(updateModal.status).toLowerCase()
+      };
+
+      const res = await apiRequest({
+        method: 'PATCH',
+        endpoint: '/enquiry/updateEnquiry',
+        body
+      });
+
+      // update local list - backend returns updated enquiry in res.enquiry
+      const updated = res?.enquiry;
+      setEnquiries(prev => prev.map(e => {
+        const eid = e._id ?? e.id;
+        const updatedId = updated ? (updated._id ?? updated.id) : enquiryId;
+        if (String(eid) === String(updatedId)) {
+          // keep existing objects but update status and updatedAt fields
+          return {
+            ...e,
+            status: updated?.status ?? updateModal.status,
+            updatedAt: updated?.updatedAt ?? e.updatedAt
+          };
+        }
+        return e;
+      }));
+
+      // recompute stats
+      const after = enquiries.map(e => {
+        const eid = e._id ?? e.id;
+        if (String(eid) === String(enquiryId)) {
+          return { ...e, status: String(updateModal.status).toLowerCase() };
+        }
+        return e;
+      });
+      const totalEnquiries = after.length;
+      const openStatus = after.filter((e: any) => String(e.status).toLowerCase() === "open").length;
+      const paymentCategory = after.filter((e: any) => String(e.category).toLowerCase() === "payment").length;
+      const complaints = after.filter((e: any) => String(e.category).toLowerCase() === "complaint").length;
+      setStats([
+        { id: 1, icon: '📧', label: 'Total Enquiries', value: totalEnquiries },
+        { id: 2, icon: '📂', label: 'Open Status', value: openStatus },
+        { id: 3, icon: '💳', label: 'Payment Category', value: paymentCategory },
+        { id: 4, icon: '⚠️', label: 'Complaints', value: complaints }
+      ]);
+
+      setUpdateModal({ visible: false, enquiry: undefined, status: 'open', submitting: false });
+    } catch (err: any) {
+      console.error('Update failed', err);
+      alert(err.message || 'Failed to update enquiry.');
+      setUpdateModal(prev => ({ ...prev, submitting: false }));
+    }
+  };
+
   const filteredEnquiries = enquiries.filter(enquiry => {
     const matchesSearch =
-      enquiry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (enquiry.name && enquiry.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (enquiry.email && enquiry.email.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesStatus =
       statusFilter === 'All Status' ||
-      (enquiry.status && enquiry.status.toLowerCase() === statusFilter.toLowerCase());
+      (enquiry.status && String(enquiry.status).toLowerCase() === statusFilter.toLowerCase());
 
     const matchesCategory =
       categoryFilter === 'All Categories' ||
-      (enquiry.category && enquiry.category.toLowerCase() === categoryFilter.toLowerCase());
+      (enquiry.category && String(enquiry.category).toLowerCase() === categoryFilter.toLowerCase());
 
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-
   return (
     <div className="min-h-screen w-full bg-[var(--primary-200)] p-4 md:p-6 lg:p-8">
+      <div className="enquiriesHeader flex justify-between mb-4 mt-1.5">
+        <h1 className='text-2xl text-[var(--primary-300)]'>Enquiries</h1>
+        <NavLink to={'/addenquiries'} className='text-[var(--secondary-100)] rounded-lg p-2 bg-[var(--secondary-200)]'>Add Enquiries</NavLink>
+      </div>
       <div className="max-w-[1600px] mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
           {stats.map(stat => <StatCard key={stat.id} {...stat} />)}
@@ -269,6 +378,8 @@ const Enquiries = () => {
                     isSelected={selectedRows.includes(enquiry.id)}
                     onSelect={() => handleSelectRow(enquiry.id)}
                     onViewRemark={handleViewRemark}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
                   />
                 ))}
               </tbody>
@@ -286,7 +397,7 @@ const Enquiries = () => {
                     <div className="text-[var(--tertiary-500)] text-xs mb-2">{enquiry.email}</div>
                     <div className="flex flex-wrap gap-2 mb-2">
                       <CategoryBadge category={enquiry.category} />
-                      <StatusBadge status={enquiry.status} />
+                      <StatusBadge status={String(enquiry.status).charAt(0).toUpperCase() + String(enquiry.status).slice(1)} />
                     </div>
                   </div>
                 </div>
@@ -306,8 +417,8 @@ const Enquiries = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <ActionButton icon={Eye} className="text-[var(--tertiary-400)]" onClick={() => handleViewRemark(enquiry)} />
-                    <ActionButton icon={Edit2} className="text-[var(--secondary-100)]" />
-                    <ActionButton icon={Trash2} className="text-[var(--tertiary-100)]" />
+                    <ActionButton icon={Edit2} className="text-[var(--secondary-100)]" onClick={() => handleEdit(enquiry)} />
+                    <ActionButton icon={Trash2} className="text-[var(--tertiary-100)]" onClick={() => handleDelete(enquiry)} />
                   </div>
                 </div>
               </div>
@@ -338,6 +449,51 @@ const Enquiries = () => {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Update Modal (Edit) - color scheme same as other modals */}
+      {updateModal.visible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[var(--primary-200)] p-6 rounded-lg max-w-md w-full">
+            <h2 className="text-white font-bold mb-4">Update Enquiry</h2>
+
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-300 block mb-2">Name</label>
+                <div className="text-white p-2 rounded bg-[var(--primary-100)] border border-[var(--primary-300)]">{updateModal.enquiry?.name}</div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-300 block mb-2">Status</label>
+                <select
+                  value={updateModal.status}
+                  onChange={(e) => setUpdateModal(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-[var(--primary-300)] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 bg-white cursor-pointer"
+                >
+                  <option value="open">Open</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+
+              {/* You mentioned only status update is required on backend - keep form minimal */}
+              <div className="flex justify-end gap-2 mt-2">
+                <button
+                  onClick={() => setUpdateModal({ visible: false, enquiry: undefined, status: 'open', submitting: false })}
+                  className="px-4 py-2 rounded bg-transparent border border-[var(--primary-300)] text-white hover:bg-[var(--primary-300)] hover:bg-opacity-20 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitUpdate}
+                  disabled={updateModal.submitting}
+                  className="px-4 py-2 rounded bg-[var(--primary-100)] text-white hover:bg-[var(--primary-300)] hover:bg-opacity-20 transition-colors"
+                >
+                  {updateModal.submitting ? 'Updating...' : 'Update'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

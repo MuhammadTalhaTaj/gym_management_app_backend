@@ -59,7 +59,7 @@ function buildFetchConfig(opts: ApiRequestOptions, accessToken?: string): Reques
     credentials: "include", // include cookies by default (useful for refresh cookie)
   };
 
-  if (opts.body && ["POST","PUT","PATCH"].includes(opts.method)) {
+  if (opts.body && ["POST","PUT","PATCH", "DELETE"].includes(opts.method)) {
     config.body = JSON.stringify(opts.body);
   }
 

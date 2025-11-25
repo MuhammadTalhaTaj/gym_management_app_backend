@@ -270,7 +270,8 @@ const LoginForm = ({ data }: any) => {
 
           <p className="text-center text-sm text-[var(--primary-300)]">
             Don't have an account?{' '}
-            <button className="text-[var(--tertiary-400)] hover:underline font-semibold">
+            <button className="text-[var(--tertiary-400)] hover:underline font-semibold"
+             onClick={()=>{navigate('/signup')}}>
               Sign up here
             </button>
           </p>

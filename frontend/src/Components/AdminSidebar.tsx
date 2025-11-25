@@ -26,6 +26,9 @@ function AdminSidebar() {
     if (path === '/staff') {
       return p === '/staff' || p === '/addstaff';
     }
+    if (path === '/enquiries') {
+      return p === '/enquiries' || p === '/addenquiries';
+    }
     return p === path;
   };
 
@@ -135,7 +138,7 @@ function AdminSidebar() {
     </NavLink>
   </li> */}
  
-  <li className={isActive('/staff') ? 'active-link' : ''}>
+  {/* <li className={isActive('/staff') ? 'active-link' : ''}>
     <NavLink to="/staff">
       <FontAwesomeIcon className="adminSidebarIcon"
         icon={faUser}
@@ -143,7 +146,7 @@ function AdminSidebar() {
       />
       Staff
     </NavLink>
-  </li>
+  </li> */}
   <li className={isActive('/enquiries') ? 'active-link' : ''}>
     <NavLink to="/enquiries">
       <FontAwesomeIcon className="adminSidebarIcon"
@@ -153,7 +156,7 @@ function AdminSidebar() {
       Enquiries
     </NavLink>
   </li>
-  <li className={isActive('/addenquiries') ? 'active-link' : ''}>
+  {/* <li className={isActive('/addenquiries') ? 'active-link' : ''}>
     <NavLink to="/addenquiries">
       <FontAwesomeIcon className="adminSidebarIcon"
         icon={faEnvelopeOpenText}
@@ -161,7 +164,7 @@ function AdminSidebar() {
       />
       Add Enquiry
     </NavLink>
-  </li>
+  </li> */}
 </ul>
 <ul >
   <li>

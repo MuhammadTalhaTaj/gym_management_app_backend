@@ -258,7 +258,19 @@ const AddMember: React.FC = () => {
       return;
     }
 
-    const payload: AddMemberPayload = {
+    // get currentUser from localStorage 'role' key as requested
+    const rawCurrentUser = localStorage.getItem('role');
+    let currentUser: any = rawCurrentUser;
+    try {
+      if (rawCurrentUser) {
+        currentUser = JSON.parse(rawCurrentUser);
+      }
+    } catch {
+      // rawCurrentUser is probably a simple string (e.g., "Admin"), keep as-is
+      currentUser = rawCurrentUser;
+    }
+
+    const payload: AddMemberPayload & { currentUser?: any } = {
       name: formState.fullName?.trim() || '',
       contact: formState.contactNumber?.trim() || '',
       email: formState.email?.trim() || '',
@@ -270,7 +282,9 @@ const AddMember: React.FC = () => {
       admissionAmount: Number(formState.admissionAmount) || 0,
       discount: Number(formState.discountAmount) || 0,
       collectedAmount: Number(formState.collectedAmount) || 0,
-      createdBy: String(userId)
+      createdBy: String(userId),
+      // added per your instruction: include currentUser read from localStorage key 'role'
+      currentUser
     };
 
     const required = ['name', 'contact', 'gender', 'batch', 'plan', 'joinDate', 'admissionAmount', 'collectedAmount', 'discount'];
@@ -293,10 +307,8 @@ const AddMember: React.FC = () => {
 
     setSubmitting(true);
     try {
-      // cast addMember to any to allow passing `createdBy` (keeps UI & logic unchanged)
-      // const res: any = await (addMember as any)(payload);
-
-      await addMember(payload)
+      // pass payload (contains currentUser). cast to any to avoid strict type mismatch if AddMemberPayload doesn't include currentUser
+      await addMember(payload as any)
       setSuccess(true)
       // reset form (preserving fallback UI behavior)
       setFormState({
@@ -315,7 +327,7 @@ const AddMember: React.FC = () => {
         // notes: ''
       });
     } catch (err: any) {
-      if (err.response.status == 404) {
+      if (err.response?.status == 404) {
         setMessage("Plan not found")
       }
       else {
