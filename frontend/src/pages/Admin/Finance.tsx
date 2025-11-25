@@ -18,7 +18,7 @@ interface StatCardProps {
   isExpense: boolean;
 }
 
-// Static fallback data
+// Static fallback data (kept but NOT used for UI anymore)
 const fallbackData = {
   stats: {
     totalIncome: { amount: 12480.5, percentageChange: 15, trend: 'up' },
@@ -33,7 +33,7 @@ const fallbackData = {
 };
 
 // Header Component
-const Header = ({ user }:any) => (
+const Header = ({ user }: any) => (
   <header className="flex items-center justify-between px-6 py-5 bg-[var(--primary-200)] border-b border-gray-200">
     <h1 className="text-3xl font-bold text-[var(--primary-300)]">Finance Dashboard</h1>
     <div className="flex items-center gap-4">
@@ -52,7 +52,7 @@ const Header = ({ user }:any) => (
 );
 
 // Time Toggle Component
-const TimeToggle = ({ activeView, onViewChange }:any) => {
+const TimeToggle = ({ activeView, onViewChange }: any) => {
   const views = ['Day', 'Week', 'Month'];
   return (
     <div className="inline-flex bg-[var(--primary-200)] rounded-lg p-1">
@@ -72,7 +72,7 @@ const TimeToggle = ({ activeView, onViewChange }:any) => {
 };
 
 // Stat Card Component
-const StatCard = ({ title, amount, percentageChange, isExpense } : StatCardProps) => {
+const StatCard = ({ title, amount, percentageChange, isExpense }: StatCardProps) => {
   const bgColor = isExpense ? 'bg-red-50' : 'bg-green-50';
   const iconColor = isExpense ? 'text-red-600' : 'text-green-500';
   const textColor = isExpense ? 'text-red-500' : 'text-green-600';
@@ -97,7 +97,6 @@ const StatCard = ({ title, amount, percentageChange, isExpense } : StatCardProps
 
 // Income vs Expense Chart Component
 const IncomeExpenseChart = ({ data }: { data: DashboardResponse | null }) => {
-
   const [activeView, setActiveView] = useState('Month');
 
   const hasBackendData = useMemo(() => {
@@ -106,43 +105,47 @@ const IncomeExpenseChart = ({ data }: { data: DashboardResponse | null }) => {
   }, [data]);
 
   const chartData = useMemo(() => {
+    if (!hasBackendData) {
+      // **Do not show fallback** — return empty dataset so chart shows no bars
+      return [];
+    }
+
     const income = Number(data?.revenueThisMonth ?? 0);
     const expense = Number(data?.expense ?? 0);
 
-    if (hasBackendData) {
-      if (activeView === 'Month') {
-        return [
-          { week: 'Week 1', Income: income, Expenses: expense },
-          { week: 'Week 2', Income: income, Expenses: expense },
-          { week: 'Week 3', Income: income, Expenses: expense },
-          { week: 'Week 4', Income: income, Expenses: expense },
-        ];
-      }
-      if (activeView === 'Week') {
-        const perDayIncome = income / 7;
-        const perDayExpense = expense / 7;
-        return [
-          { week: 'Mon', Income: perDayIncome, Expenses: perDayExpense },
-          { week: 'Tue', Income: perDayIncome, Expenses: perDayExpense },
-          { week: 'Wed', Income: perDayIncome, Expenses: perDayExpense },
-          { week: 'Thu', Income: perDayIncome, Expenses: perDayExpense },
-          { week: 'Fri', Income: perDayIncome, Expenses: perDayExpense },
-          { week: 'Sat', Income: perDayIncome, Expenses: perDayExpense },
-          { week: 'Sun', Income: perDayIncome, Expenses: perDayExpense },
-        ];
-      }
-      const perSlotIncome = income / 6;
-      const perSlotExpense = expense / 6;
+    if (activeView === 'Month') {
       return [
-        { week: '6am', Income: perSlotIncome, Expenses: perSlotExpense },
-        { week: '9am', Income: perSlotIncome, Expenses: perSlotExpense },
-        { week: '12pm', Income: perSlotIncome, Expenses: perSlotExpense },
-        { week: '3pm', Income: perSlotIncome, Expenses: perSlotExpense },
-        { week: '6pm', Income: perSlotIncome, Expenses: perSlotExpense },
-        { week: '9pm', Income: perSlotIncome, Expenses: perSlotExpense },
+        { week: 'Week 1', Income: income, Expenses: expense },
+        { week: 'Week 2', Income: income, Expenses: expense },
+        { week: 'Week 3', Income: income, Expenses: expense },
+        { week: 'Week 4', Income: income, Expenses: expense },
       ];
     }
-    return fallbackData.chartData;
+
+    if (activeView === 'Week') {
+      const perDayIncome = income / 7;
+      const perDayExpense = expense / 7;
+      return [
+        { week: 'Mon', Income: perDayIncome, Expenses: perDayExpense },
+        { week: 'Tue', Income: perDayIncome, Expenses: perDayExpense },
+        { week: 'Wed', Income: perDayIncome, Expenses: perDayExpense },
+        { week: 'Thu', Income: perDayIncome, Expenses: perDayExpense },
+        { week: 'Fri', Income: perDayIncome, Expenses: perDayExpense },
+        { week: 'Sat', Income: perDayIncome, Expenses: perDayExpense },
+        { week: 'Sun', Income: perDayIncome, Expenses: perDayExpense },
+      ];
+    }
+
+    const perSlotIncome = income / 6;
+    const perSlotExpense = expense / 6;
+    return [
+      { week: '6am', Income: perSlotIncome, Expenses: perSlotExpense },
+      { week: '9am', Income: perSlotIncome, Expenses: perSlotExpense },
+      { week: '12pm', Income: perSlotIncome, Expenses: perSlotExpense },
+      { week: '3pm', Income: perSlotIncome, Expenses: perSlotExpense },
+      { week: '6pm', Income: perSlotIncome, Expenses: perSlotExpense },
+      { week: '9pm', Income: perSlotIncome, Expenses: perSlotExpense },
+    ];
   }, [data, activeView, hasBackendData]);
 
   return (
@@ -181,19 +184,28 @@ const Finance = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const role = localStorage.getItem("role")
-      const user = JSON.parse(localStorage.getItem("user") || "" );
+      const role = localStorage.getItem("role");
+      const storedUser = localStorage.getItem("user");
+      let parsedUser: any = null;
+      try {
+        parsedUser = storedUser ? JSON.parse(storedUser) : null;
+      } catch {
+        parsedUser = null;
+      }
+
       const userId = role === "Admin"
         ? localStorage.getItem("userId")
-        : user?.createdBy;
+        : parsedUser?.createdBy;
+
       try {
         const res = await apiRequest({
           method: 'GET',
-          endpoint: '/auth/dashboard/'+ userId,
+          endpoint: '/auth/dashboard/' + userId,
         });
         setDashboardData(res);
       } catch (err) {
         console.error(err);
+        // keep dashboardData null on error (DO NOT show static data)
         setDashboardData(null);
       }
     };
@@ -203,20 +215,26 @@ const Finance = () => {
   const handleAddIncome = () => navigate('/addpayment');
   const handleAddExpense = () => navigate('/addexpense');
 
-  // Fallback user info
+  // Fallback user info for header (unchanged visual)
   const user = {
     name: 'Eleanor Pena',
     role: 'Administrator',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
   };
 
-  // Fallback stats
-  const stats = dashboardData
-    ? {
-        totalIncome: { amount: Number(dashboardData.revenueThisMonth ?? fallbackData.stats.totalIncome.amount), percentageChange: 15, trend: 'up' },
-        totalExpenses: { amount: Number(dashboardData.expense ?? fallbackData.stats.totalExpenses.amount), percentageChange: 8, trend: 'up' },
-      }
-    : fallbackData.stats;
+  // **Never use fallbackData for stats** — always derive from dashboardData or default to zeros
+  const stats = {
+    totalIncome: {
+      amount: Number(dashboardData?.revenueThisMonth ?? 0),
+      percentageChange: 0,
+      trend: 'up'
+    },
+    totalExpenses: {
+      amount: Number(dashboardData?.expense ?? 0),
+      percentageChange: 0,
+      trend: 'up'
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-[var(--primary-200)] ">
@@ -270,3 +288,4 @@ const Finance = () => {
 };
 
 export default Finance;
+ 

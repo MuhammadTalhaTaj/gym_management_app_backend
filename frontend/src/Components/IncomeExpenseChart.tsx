@@ -164,8 +164,7 @@ const IncomeExpenseChart: React.FC = () => {
 
     // fallback: use your static chartData
     // ensure correct key typing when indexing
-    const key = activePeriod.toLowerCase() as keyof ChartDataMap;
-    return chartData[key];
+    return [];
   }, [data, activePeriod, hasUsefulBackendValues]);
 
   const maxValue = Math.max(...currentData.map(item => (Number(item.income) + Number(item.expense)) ), 0);
