@@ -209,10 +209,13 @@ const AddMember: React.FC = () => {
           }));
           setPlans(mapped);
         }
-      } catch (err) {
-        // keep fallback static plans on failure (no UX change)
-        // eslint-disable-next-line no-console
-        console.warn('Failed to fetch plans:', err);
+      } catch (err:any) {
+        if(err.response.status == 404){
+          setPlans(formData.membershipPlans)
+        }
+        else{
+          console.error('Failed to fetch plans:', err);
+        }
       } finally {
         setLoadingPlans(false);
       }

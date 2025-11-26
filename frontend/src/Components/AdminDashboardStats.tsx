@@ -4,17 +4,13 @@ import { useDashboardData } from '../hooks/useDashboardData'
 import '../assets/styles/AdminDashboardStats.css'
 
 function AdminDashboardStats() {
-  const { data, loading, } = useDashboardData()
+  const { data } = useDashboardData()
 
   // console.log("Data: ",data)
-  const displayRevenue =
-    loading ? 'Loading...' : data?.revenueThisMonth ?? 0
-  const displayAdmissions =
-    loading ? '...' : data?.totalAdmissionsThisMonth ?? 0
-  const displayExpiring =
-    loading ? '...' : data?.expiringSubscriptions ?? 0
-  const displayDue =
-    loading ? '...' : data?.netDueAmount ?? 0
+  const displayRevenue =data?.revenueThisMonth ?? 0
+  const displayAdmissions = data?.totalAdmissionsThisMonth ?? 0
+  const displayExpiring = data?.expiringSubscriptions ?? 0
+  const displayDue =data?.netDueAmount ?? 0
 
   return (
     <div className='adminDashboardStats'>
