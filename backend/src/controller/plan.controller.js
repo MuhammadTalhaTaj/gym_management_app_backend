@@ -34,6 +34,9 @@ const addPlan = asyncHandler(async (req, res) => {
 
 const getAllPlans = asyncHandler(async(req,res)=>{
     const planData = await Plan.find();
+    if(!planData || planData.length == 0){
+        throw new APIError(404,"No plan found")
+    }
     res.status(200).json({
         message:"Plan Data Found",
         data: planData

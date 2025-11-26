@@ -1,20 +1,38 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faDollarSign, faFileInvoiceDollar, faHourglassHalf, faUserPlus } from '@fortawesome/free-solid-svg-icons'
-import { useDashboardData } from '../hooks/useDashboardData'
+// import { useDashboardData } from '../hooks/useDashboardData'
 import '../assets/styles/AdminDashboardStats.css'
+import { useEffect, useState } from 'react'
 
-function AdminDashboardStats() {
-  const { data, loading, } = useDashboardData()
+function AdminDashboardStats({ data }: { data: any }) {
+  // const { data } = useDashboardData()
+  const [revenue, setRevenue] = useState(
+    Number(localStorage.getItem("revenue")) ?? 0
+  );
+  const [admissions, setAdmissions] = useState(
+    Number(localStorage.getItem("admissions")) ?? 0
+  );
+  const [expiring, setExpiring] = useState(
+    Number(localStorage.getItem("expiring")) ?? 0
+  );
+  const [due, setDue] = useState(
+    Number(localStorage.getItem("due")) ?? 0
+  );
 
-  // console.log("Data: ",data)
-  const displayRevenue =
-    loading ? 'Loading...' : data?.revenueThisMonth ?? 0
-  const displayAdmissions =
-    loading ? '...' : data?.totalAdmissionsThisMonth ?? 0
-  const displayExpiring =
-    loading ? '...' : data?.expiringSubscriptions ?? 0
-  const displayDue =
-    loading ? '...' : data?.netDueAmount ?? 0
+  useEffect(() => {
+    if (data) {
+      setRevenue(data.revenueThisMonth)
+      setAdmissions(data.totalAdmissionsThisMonth)
+      setDue(data.netDueAmount)
+      setExpiring(data.expiringSubscriptions)
+
+      // Save to local storage
+      localStorage.setItem("revenue", data.revenueThisMonth);
+      localStorage.setItem("admissions", data.totalAdmissionsThisMonth);
+      localStorage.setItem("expiring", data.expiringSubscriptions);
+      localStorage.setItem("due", data.netDueAmount);
+    }
+  }, [data])
 
   return (
     <div className='adminDashboardStats'>
@@ -23,9 +41,9 @@ function AdminDashboardStats() {
         <div className="adminStatsCard11">
           <p className='text-[var(--primary-300)]'>Today's Earning</p>
           <p className="text-2xl font-bold text-white">
-            {typeof displayRevenue === 'number'
-              ? `$${displayRevenue.toLocaleString()}`
-              : displayRevenue}
+            {typeof revenue === 'number'
+              ? `$${revenue.toLocaleString()}`
+              : revenue}
           </p>
         </div>
       </div>
@@ -34,7 +52,7 @@ function AdminDashboardStats() {
         <FontAwesomeIcon className='adminStatsPlus' icon={faUserPlus} />
         <div className="adminStatsCard11">
           <p className='text-[var(--primary-300)]'>New Admissions</p>
-          <p className="text-2xl font-bold text-white">{displayAdmissions}</p>
+          <p className="text-2xl font-bold text-white">{admissions}</p>
         </div>
       </div>
 
@@ -44,7 +62,7 @@ function AdminDashboardStats() {
           <p className='text-[var(--primary-300)]'>
             Subscriptions Expiring
           </p>
-          <p className="text-2xl font-bold text-white">{displayExpiring}</p>
+          <p className="text-2xl font-bold text-white">{expiring}</p>
         </div>
       </div>
 
@@ -53,9 +71,9 @@ function AdminDashboardStats() {
         <div className="adminStatsCard11">
           <p className='text-[var(--primary-300)]'>Total Due Amount</p>
           <p className="text-2xl font-bold text-white">
-            {typeof displayDue === 'number'
-              ? `$${displayDue.toLocaleString()}`
-              : displayDue}
+            {typeof due === 'number'
+              ? `$${due.toLocaleString()}`
+              : due}
           </p>
         </div>
       </div>
