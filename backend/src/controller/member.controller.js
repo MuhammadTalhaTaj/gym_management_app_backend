@@ -45,8 +45,6 @@ const addMember = asyncHandler(async (req, res) => {
   if (!["Admin", "Staff"].includes(currentUser)) {
     throw new APIError(400, "Current user must be admin or staff.");
   }
-
-
   // ✅ Check for existing member (by contact or email)
   const existingMember = await Member.findOne({
     $or: [{ contact: contact }, { email: email }]
@@ -319,80 +317,187 @@ const deleteMember = asyncHandler(async (req, res) => {
   const { memberId, userId, currentUser } = req.body;
 
   // Validate memberId
-  if (!memberId||!userId) {
+  if (!memberId || !userId) {
     throw new APIError(400, "Member ID is required");
   }
   if (!mongoose.Types.ObjectId.isValid(memberId) || !mongoose.Types.ObjectId.isValid(userId)) {
     throw new APIError(400, "Invalid ID format");
   }
-   if (!["Admin", "Staff"].includes(currentUser)) {
+  if (!["Admin", "Staff"].includes(currentUser)) {
+    throw new APIError(400, "Current user must be admin or staff.");
+  }
+  let creator;
+  if (currentUser == "Staff") {
+    creator = await Staff.findById(userId)
+    if (!creator) {
+      throw new APIError(400, "Staff not found")
+    }
+    if (creator.permission !== "all") {
+      throw new APIError(401, "You do not have permission to delete Member")
+    }
+    // Find the member and verify it belongs to the current admin
+
+    const member = await Member.findOne({
+      _id: memberId,
+      createdBy: creator.createdBy
+    });
+
+    if (!member) {
+      throw new APIError(404, "Member not found or you don't have permission to delete this member");
+    }
+
+    // Delete associated payments first (to maintain data integrity)
+    await Payment.deleteMany({ memberId: memberId });
+
+    // Delete the member
+    await Member.findByIdAndDelete(memberId);
+
+    res.status(200).json({
+      success: true,
+      message: "Member and associated payments deleted successfully",
+      data: {
+        deletedMemberId: memberId,
+        deletedMemberName: member.name
+      }
+    });
+  } else {
+    creator = await Admin.findById(userId)
+    if (!creator) {
+      throw new APIError(400, "Admin not found")
+    }
+    const member = await Member.findOne({
+      _id: memberId,
+      createdBy: userId
+    });
+
+    if (!member) {
+      throw new APIError(404, "Member not found or you don't have permission to delete this member");
+    }
+
+    // Delete associated payments first (to maintain data integrity)
+    await Payment.deleteMany({ memberId: memberId });
+
+    // Delete the member
+    await Member.findByIdAndDelete(memberId);
+
+    res.status(200).json({
+      success: true,
+      message: "Member and associated payments deleted successfully",
+      data: {
+        deletedMemberId: memberId,
+        deletedMemberName: member.name
+      }
+    });
+
+  }
+});
+
+const updateMembership = asyncHandler(async (req, res) => {
+  const { memberId, planId, batch, collectedAmount, joiningDate, userId, currentUser } = req.body;
+  if (!memberId || !planId || !collectedAmount || !joiningDate || !userId || !batch) {
+    throw new APIError(400, "Missing required fields")
+  }
+  if (!mongoose.Types.ObjectId.isValid(memberId) || !mongoose.Types.ObjectId.isValid(planId) || !mongoose.Types.ObjectId.isValid(userId)) {
+    throw new APIError(400, "Ptovide correct Id for member, plan, admin/staff");
+  }
+  if (!["Admin", "Staff"].includes(currentUser)) {
     throw new APIError(400, "Current user must be admin or staff.");
   }
   let creator;
   if(currentUser=="Staff"){
-    creator= await Staff.findById(userId)
+    creator =await Staff.findById(userId)
     if(!creator){
-      throw new APIError(400, "Staff not found")
+      throw new APIError(404, "Staff not found")
     }
-    if(creator.permission!=="all"){
-      throw new APIError(401, "You do not have permission to delete Member")
+    if(creator.permission!="all" || creator.permission!="create+view+update"){
+      throw new APIError(401,"You do not have access to renew Membership")
     }
-  // Find the member and verify it belongs to the current admin
 
-     const member = await Member.findOne({
-    _id:memberId,
-    createdBy: creator.createdBy
-  });
-
-  if (!member) {
-    throw new APIError(404, "Member not found or you don't have permission to delete this member");
-  }
-
-  // Delete associated payments first (to maintain data integrity)
-  await Payment.deleteMany({ memberId: memberId });
-
-  // Delete the member
-  await Member.findByIdAndDelete(memberId);
-
-  res.status(200).json({
-    success: true,
-    message: "Member and associated payments deleted successfully",
-    data: {
-      deletedMemberId: memberId,
-      deletedMemberName: member.name
-    }
-  });
-}else {
-  creator = await Admin.findById(userId)
-  if(!creator){
-    throw new APIError(400,"Admin not found")
-  }
-  const member = await Member.findOne({
-    _id:memberId,
-    createdBy: userId
-  });
-
-  if (!member) {
-    throw new APIError(404, "Member not found or you don't have permission to delete this member");
-  }
-
-  // Delete associated payments first (to maintain data integrity)
-  await Payment.deleteMany({ memberId: memberId });
-
-  // Delete the member
-  await Member.findByIdAndDelete(memberId);
-
-  res.status(200).json({
-    success: true,
-    message: "Member and associated payments deleted successfully",
-    data: {
-      deletedMemberId: memberId,
-      deletedMemberName: member.name
-    }
-  });
-
+const member = await Member.findById(memberId)
+if(!member){
+  throw new APIError(400, "Member not found")
 }
+
+const plan = await Plan.findById(planId)
+
+if(!plan){
+  throw new APIError(400, "No plan found")
+}
+let dueAmount= member.dueAmount+plan.amount-collectedAmount;
+console.log("due amount: ", dueAmount)
+member.plan= planId,
+member.collectedAmount+=collectedAmount
+member.dueAmount=dueAmount;
+member.joiningDate=joiningDate;
+member.createdByStaff=userId;
+member.batch=batch
+
+await member.save();
+const payment = new Payment({
+      memberId: member._id, // Use the newly created memberId
+      plan: planId,              // Use the plan the member selected
+      amount: collectedAmount,
+      createdBy: creator.createdBy,
+      paymentDate: new Date()
+    });
+
+    try {
+      await payment.save();
+    } catch (error) {
+     throw new APIError(500, "Payment creation failed, and member is removed");
+    }
+res.status(200).json({
+  message:"Member update Successfully",
+  data:{member,
+    payment
+  }
+})
+  }else{
+    creator =await Admin.findById(userId)
+    if(!creator){
+      throw new APIError(404, "Admin not found")
+    }
+    
+const member = await Member.findById(memberId)
+if(!member){
+  throw new APIError(400, "Member not found")
+}
+
+const plan = await Plan.findById(planId)
+
+if(!plan){
+  throw new APIError(400, "No plan found")
+}
+let dueAmount= member.dueAmount+plan.amount-collectedAmount;
+member.plan= planId,
+member.collectedAmount+=collectedAmount
+member.dueAmount=dueAmount;
+member.joiningDate=joiningDate
+member.createdBy=userId
+member.batch=batch
+
+await member.save();
+const payment = new Payment({
+      memberId: member._id, // Use the newly created memberId
+      plan: planId,              // Use the plan the member selected
+      amount: collectedAmount,
+      createdBy: userId,
+      paymentDate: new Date()
+    });
+
+    try {
+      await payment.save();
+    } catch (error) {
+     throw new APIError(500, "Payment creation failed, and member is removed");
+    }
+res.status(200).json({
+  message:"Membership renewed Successfully",
+  data:{member,payment}
+
+})
+
+  }
+
+
 });
-
-
-export { addMember, findMember, getAllMembers, getMemberWithPaymentHistory, deleteMember };
+export { addMember, findMember, getAllMembers, getMemberWithPaymentHistory, deleteMember, updateMembership };

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addMember, deleteMember, findMember, getAllMembers, getMemberWithPaymentHistory } from "../controller/member.controller.js";
+import { addMember, deleteMember, findMember, getAllMembers, getMemberWithPaymentHistory, updateMembership } from "../controller/member.controller.js";
 // import { authMiddleware } from "../controller/auth.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 const memberRouter = Router()
@@ -10,4 +10,5 @@ memberRouter.route('/findMember').get(findMember)
 memberRouter.route('/getAllMembers').post(getAllMembers)
 memberRouter.route('/getMemberPayments/:memberId').get(getMemberWithPaymentHistory)
 memberRouter.route('/deleteMember').delete(deleteMember)
+memberRouter.route('/updateMembership').patch(updateMembership)
 export {memberRouter}
