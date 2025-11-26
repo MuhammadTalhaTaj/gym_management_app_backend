@@ -115,7 +115,7 @@ export const Header = ({ admin }: { admin: any }) => {
         <div className="flex items-center gap-3">
           <div className="hidden sm:block">
             <div className="text-sm font-semibold text-gray-900">{admin.name}</div>
-            <div className="text-xs text-gray-500">{admin.role}</div>
+            <div className="text-xs text-gray-500">{admin.role ?? "Administration"}</div>
           </div>
         </div>
       </div>
@@ -395,7 +395,7 @@ const Members: React.FC = () => {
         console.log("Result: ", res)
         setMembers(res.data)
       } catch (err: any) {
-        console.error("Error: ",err)
+        console.error("Error: ", err)
         if (err.status == 404) {
           setMembers([])
         }
@@ -412,6 +412,14 @@ const Members: React.FC = () => {
   }, []);
 
   const getAdminDetail = async () => {
+    if (role == "Admin") {
+      let userStr = localStorage.getItem("user");
+      let user = userStr ? JSON.parse(userStr) : {};
+      // console.log("Admin: ",user);
+      
+      setAdminData(user|| {})
+      return;
+    }
     try {
       const res = await apiRequest({
         method: 'GET',
