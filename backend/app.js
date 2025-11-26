@@ -39,4 +39,7 @@ app.use('/expense',expenseRouter)
 
 import { staffRouter } from "./src/route/staff.route.js";
 app.use('/staff',staffRouter)
+
+import { adminRouter } from "./src/route/admin.route.js";
+app.use('/admin', adminRouter)
 export default app
