@@ -9,6 +9,12 @@ app.use(cors({
 
 app.use(express.json());
 
+app.use((err, req, res, next) => {
+  console.error(err); // log full error
+  res.status(500).json({ message: 'Internal Server Error', error: err.message });
+});
+
+
 app.get('/', ()=>{
     console.log("server is working")
 })

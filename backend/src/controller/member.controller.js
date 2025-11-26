@@ -253,14 +253,12 @@ const getAllMembers = asyncHandler(async (req, res) => {
     }
   ]);
 
-  if (members.length == 0) {
+  if ( !members || members.length == 0) {
     throw new APIError(404, "No members")
   }
 
 
   res.status(200).json({
-    success: true,
-    message: "Members retrieved successfully",
     data: members,
     count: members.length
   });

@@ -390,12 +390,13 @@ const Members: React.FC = () => {
         const res = await apiRequest({
           method: 'POST',
           endpoint: '/member/getAllMembers',
-          body: { id: userId }
+          body: { adminId: userId }
         });
-        // console.log("Result: ", res)
+        console.log("Result: ", res)
         setMembers(res.data)
       } catch (err: any) {
-        if (err.data.status == 404) {
+        console.error("Error: ",err)
+        if (err.status == 404) {
           setMembers([])
         }
         else {
