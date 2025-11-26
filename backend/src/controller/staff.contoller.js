@@ -212,4 +212,21 @@ const updateStaff = asyncHandler(async (req, res) => {
   });
 });
 
-export {staffSignup,staffLogin,staffLogout,staffRefreshAccessToken,staffPermission, updateStaff }
+
+const getAllStaff = asyncHandler(async(req,res)=>{
+    const {adminId} = req.params;
+
+    if(!adminId){
+        throw new APIError(400,"Admin id is missing")
+    }
+
+    const staff = await Staff.find({createdBy: adminId}).select("-refreshToken -__v")
+    if(!staff || staff.length === 0){
+        throw new APIError(404,"Staff not found")
+    }
+
+    res.status(200).json({
+        staff: staff
+    })
+})
+export {staffSignup,staffLogin,staffLogout,staffRefreshAccessToken,staffPermission, updateStaff, getAllStaff }

@@ -1,75 +1,10 @@
 // src/pages/Staff.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, Download, Filter, Eye, Edit, Trash2, UserPlus, Users, UserCheck, Building2,
 } from 'lucide-react';
 import { apiRequest } from '../../config/api';
-
-// ---------- Mock data (kept same values) ----------
-const initialStaffData: Array<{
-  id: number | string;
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  permissions: string;
-  created: string;
-  status: string;
-  avatar: string;
-}> = [
-  {
-    id: 1,
-    name: 'Sarah Johnson',
-    email: 'sarah.johnson@company.com',
-    phone: '+1 (555) 123-4567',
-    role: 'Project Manager',
-    permissions: 'All',
-    created: 'Jan 15, 2024',
-    status: 'Active',
-    avatar: 'https://i.pravatar.cc/150?img=1'
-  },
-  {
-    id: 2,
-    name: 'Michael Chen',
-    email: 'michael.chen@company.com',
-    phone: '+1 (555) 234-5678',
-    role: 'Senior Developer',
-    permissions: 'View + Add + Update',
-    created: 'Dec 8, 2023',
-    status: 'Active',
-    avatar: 'https://i.pravatar.cc/150?img=2'
-  },
-  {
-    id: 3,
-    name: 'Emma Davis',
-    email: 'emma.davis@company.com',
-    phone: '+1 (555) 345-6789',
-    role: 'UX Designer',
-    permissions: 'View + Add',
-    created: 'Feb 22, 2024',
-    status: 'Active',
-    avatar: 'https://i.pravatar.cc/150?img=3'
-  },
-  {
-    id: 4,
-    name: 'David Wilson',
-    email: 'david.wilson@company.com',
-    phone: '+1 (555) 456-7890',
-    role: 'HR Manager',
-    permissions: 'View',
-    created: 'Nov 10, 2023',
-    status: 'Inactive',
-    avatar: 'https://i.pravatar.cc/150?img=4'
-  }
-];
-
-const statsData = [
-  { label: 'Total Staff', value: 24, icon: Users, color: 'bg-[#11BF7F]/10', iconColor: 'text-[#11BF7F]', borderColor: 'border-l-[#11BF7F]' },
-  { label: 'Active Staff', value: 18, icon: UserCheck, color: 'bg-[#3D8BF2]/10', iconColor: 'text-[#3D8BF2]', borderColor: 'border-l-[#3D8BF2]' },
-  { label: 'Departments', value: 6, icon: Building2, color: 'bg-[#EC9A0E]/10', iconColor: 'text-[#EC9A0E]', borderColor: 'border-l-[#EC9A0E]' },
-  { label: 'New This Month', value: 3, icon: UserPlus, color: 'bg-[#F27117]/10', iconColor: 'text-[#F27117]', borderColor: 'border-l-[#F27117]' }
-];
 
 // ---------- Helpers & small components (unchanged styling) ----------
 const StatCard: React.FC<{ stat: any }> = ({ stat }) => {
@@ -132,11 +67,10 @@ const ActionButton: React.FC<{ icon: any; onClick: () => void; variant?: 'defaul
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const isActive = status === 'Active';
   return (
-    <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold whitespace-nowrap ${
-      isActive
-        ? 'bg-[#11BF7F]/10 text-[#11BF7F]'
-        : 'bg-[#EC9A0E]/10 text-[#EC9A0E]'
-    }`}>
+    <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold whitespace-nowrap ${isActive
+      ? 'bg-[#11BF7F]/10 text-[#11BF7F]'
+      : 'bg-[#EC9A0E]/10 text-[#EC9A0E]'
+      }`}>
       {status}
     </span>
   );
@@ -158,19 +92,35 @@ const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
 };
 
 const PermissionBadge: React.FC<{ permissions: string }> = ({ permissions }) => {
-  const getColor = () => {
-    if (permissions === 'All') return 'text-[#11BF7F]';
-    if (permissions.includes('Update')) return 'text-[#EC9A0E]';
-    if (permissions.includes('Add')) return 'text-[#8C9BB0]';
-    return 'text-[#8C9BB0]';
+  const getColor = (permission?: string) => {
+    switch (permission) {
+      case "view+add+update":
+        return "text-red-500";
+      case "view+add":
+        return "text-orange-500";
+      case "view":
+        return "text-green-500";
+      case "all":
+        return "text-blue-500";
+      default:
+        return "text-gray-500";
+    }
   };
 
+  const capitalize = (str: string) => {
+    if (!str) return "";
+    return str
+      .split("+")               // split words by '+' since your permissions use '+'
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" + ");             // join back with ' + '
+  };
   return (
-    <span className={`text-xs sm:text-sm font-medium ${getColor()}`}>
-      {permissions}
+    <span className={`text-xs sm:text-sm font-medium ${getColor(permissions)}`}>
+      {capitalize(permissions)}
     </span>
   );
 };
+
 
 // ---------- Edit Form Modal (appears when clicking edit) ----------
 type EditFormState = {
@@ -222,13 +172,13 @@ const StaffCard: React.FC<{ staff: any; onView: (id: any) => void; onEdit: (id: 
   <div className="bg-[var(--primary-100)] rounded-lg p-4 mb-3 shadow-sm border border-[#8C9BB0]/10">
     <div className="flex items-start justify-between mb-3">
       <div className="flex items-center gap-3">
-        <img src={staff.avatar} alt={staff.name} className="w-12 h-12 rounded-full object-cover" />
+        <img src={staff.avatar ?? "https://cdn-icons-png.flaticon.com/512/219/219983.png"} alt={staff.name} className="w-12 h-12 rounded-full object-cover" />
         <div>
           <p className="font-semibold text-[var(--primary-300)] text-sm">{staff.name}</p>
           <p className="text-xs text-[var(--primary-300)]">{staff.email}</p>
         </div>
       </div>
-      <StatusBadge status={staff.status} />
+      {/* <StatusBadge status={staff.status} /> */}
     </div>
 
     <div className="space-y-2 mb-3">
@@ -238,15 +188,15 @@ const StaffCard: React.FC<{ staff: any; onView: (id: any) => void; onEdit: (id: 
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-[#8C9BB0]">Phone:</span>
-        <span className="text-xs text-[var(--primary-300)]">{staff.phone}</span>
+        <span className="text-xs text-[var(--primary-300)]">{staff.contact}</span>
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-[#8C9BB0]">Permissions:</span>
-        <PermissionBadge permissions={staff.permissions} />
+        <PermissionBadge permissions={staff.permission} />
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-[#8C9BB0]">Created:</span>
-        <span className="text-xs text-[var(--primary-300)]">{staff.created}</span>
+        <span className="text-xs text-[var(--primary-300)]">{ formatDate( staff.createdAt)}</span>
       </div>
     </div>
 
@@ -258,6 +208,15 @@ const StaffCard: React.FC<{ staff: any; onView: (id: any) => void; onEdit: (id: 
   </div>
 );
 
+
+const formatDate = (timestamp: any) => {
+  const date = new Date(timestamp);
+
+  // Format as "Nov 24, 2025"
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+  const formattedDate = date.toLocaleDateString('en-US', options);
+  return formattedDate
+}
 // ---------- Desktop Table View (unchanged) ----------
 const StaffTable: React.FC<{ data: any[]; onView: (id: any) => void; onEdit: (id: any) => void; onDelete: (id: any) => void }> = ({ data, onView, onEdit, onDelete }) => (
   <div className="overflow-x-auto">
@@ -269,7 +228,7 @@ const StaffTable: React.FC<{ data: any[]; onView: (id: any) => void; onEdit: (id
           <th className="text-left py-4 px-4 text-xs font-semibold text-[var(--primary-300)] uppercase tracking-wider">Role</th>
           <th className="text-left py-4 px-4 text-xs font-semibold text-[var(--primary-300)] uppercase tracking-wider">Permissions</th>
           <th className="text-left py-4 px-4 text-xs font-semibold text-[var(--primary-300)] uppercase tracking-wider">Created</th>
-          <th className="text-left py-4 px-4 text-xs font-semibold text-[var(--primary-300)] uppercase tracking-wider">Status</th>
+          {/* <th className="text-left py-4 px-4 text-xs font-semibold text-[var(--primary-300)] uppercase tracking-wider">Status</th> */}
           <th className="text-left py-4 px-4 text-xs font-semibold text-[var(--primary-300)] uppercase tracking-wider">Actions</th>
         </tr>
       </thead>
@@ -278,24 +237,22 @@ const StaffTable: React.FC<{ data: any[]; onView: (id: any) => void; onEdit: (id
           <tr key={staff.id} className="border-b border-[#8C9BB0]/10 hover:bg-[var(--primary-200)] transition-colors">
             <td className="py-4 px-4">
               <div className="flex items-center gap-3">
-                <img src={staff.avatar} alt={staff.name} className="w-10 h-10 rounded-full object-cover" />
+                <img src={staff.avatar ?? "https://cdn-icons-png.flaticon.com/512/219/219983.png"} alt={staff.name} className="w-10 h-10 rounded-full object-cover" />
                 <div>
                   <p className="font-semibold text-[var(--primary-300)]">{staff.name}</p>
                   <p className="text-sm text-[var(--primary-300)]">{staff.email}</p>
                 </div>
               </div>
             </td>
-            <td className="py-4 px-4 text-[var(--primary-300)]">{staff.phone}</td>
+            <td className="py-4 px-4 text-[var(--primary-300)]">{staff.contact}</td>
             <td className="py-4 px-4">
               <RoleBadge role={staff.role} />
             </td>
             <td className="py-4 px-4">
-              <PermissionBadge permissions={staff.permissions} />
+              <PermissionBadge permissions={staff.permission} />
             </td>
-            <td className="py-4 px-4 text-[var(--primary-300)]">{staff.created}</td>
-            <td className="py-4 px-4">
-              <StatusBadge status={staff.status} />
-            </td>
+            <td className="py-4 px-4 text-[var(--primary-300)]">{ formatDate( staff.createdAt )}</td>
+
             <td className="py-4 px-4">
               <div className="flex items-center gap-1">
                 <ActionButton icon={Eye} onClick={() => onView(staff.id)} variant="view" />
@@ -328,11 +285,10 @@ const Pagination: React.FC<{ currentPage: number; totalPages: number; onPageChan
         <button
           key={i + 1}
           onClick={() => onPageChange(i + 1)}
-          className={`w-8 h-8 sm:w-10 sm:h-10 text-sm sm:text-base rounded-lg font-medium transition-colors ${
-            currentPage === i + 1
-              ? 'bg-[#3D8BF2] text-white'
-              : 'border border-[#8C9BB0]/30 text-[var(--primary-300)] hover:bg-[var(--primary-200)]'
-          }`}
+          className={`w-8 h-8 sm:w-10 sm:h-10 text-sm sm:text-base rounded-lg font-medium transition-colors ${currentPage === i + 1
+            ? 'bg-[#3D8BF2] text-white'
+            : 'border border-[#8C9BB0]/30 text-[var(--primary-300)] hover:bg-[var(--primary-200)]'
+            }`}
         >
           {i + 1}
         </button>
@@ -348,6 +304,83 @@ const Pagination: React.FC<{ currentPage: number; totalPages: number; onPageChan
   </div>
 );
 
+
+// ---------- Mock data (kept same values) ----------
+const initialStaffData: Array<{
+  id: number | string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  permissions: string;
+  created: string;
+  status: string;
+  avatar: string;
+}> = [
+    {
+      id: 1,
+      name: 'Sarah Johnson',
+      email: 'sarah.johnson@company.com',
+      phone: '+1 (555) 123-4567',
+      role: 'Project Manager',
+      permissions: 'All',
+      created: 'Jan 15, 2024',
+      status: 'Active',
+      avatar: 'https://i.pravatar.cc/150?img=1'
+    },
+    {
+      id: 2,
+      name: 'Michael Chen',
+      email: 'michael.chen@company.com',
+      phone: '+1 (555) 234-5678',
+      role: 'Senior Developer',
+      permissions: 'View + Add + Update',
+      created: 'Dec 8, 2023',
+      status: 'Active',
+      avatar: 'https://i.pravatar.cc/150?img=2'
+    },
+    {
+      id: 3,
+      name: 'Emma Davis',
+      email: 'emma.davis@company.com',
+      phone: '+1 (555) 345-6789',
+      role: 'UX Designer',
+      permissions: 'View + Add',
+      created: 'Feb 22, 2024',
+      status: 'Active',
+      avatar: 'https://i.pravatar.cc/150?img=3'
+    },
+    {
+      id: 4,
+      name: 'David Wilson',
+      email: 'david.wilson@company.com',
+      phone: '+1 (555) 456-7890',
+      role: 'HR Manager',
+      permissions: 'View',
+      created: 'Nov 10, 2023',
+      status: 'Inactive',
+      avatar: 'https://i.pravatar.cc/150?img=4'
+    }
+  ];
+
+const statsData = [
+  { label: 'Total Staff', value: 24, icon: Users, color: 'bg-[#11BF7F]/10', iconColor: 'text-[#11BF7F]', borderColor: 'border-l-[#11BF7F]' },
+  { label: 'Active Staff', value: 18, icon: UserCheck, color: 'bg-[#3D8BF2]/10', iconColor: 'text-[#3D8BF2]', borderColor: 'border-l-[#3D8BF2]' },
+  { label: 'Departments', value: 6, icon: Building2, color: 'bg-[#EC9A0E]/10', iconColor: 'text-[#EC9A0E]', borderColor: 'border-l-[#EC9A0E]' },
+  { label: 'New This Month', value: 3, icon: UserPlus, color: 'bg-[#F27117]/10', iconColor: 'text-[#F27117]', borderColor: 'border-l-[#F27117]' }
+];
+
+interface StaffType {
+  id: number | string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  permissions: string;
+  created: string;
+  status: string;
+  // avatar: string;
+}
 // ---------- Main Component ----------
 const Staff: React.FC = () => {
   const navigate = useNavigate();
@@ -358,7 +391,7 @@ const Staff: React.FC = () => {
   // const [mobileMenuOpen] = useState(false);
 
   // make staff state editable
-  const [staffList, setStaffList] = useState(initialStaffData);
+  const [staffList, setStaffList] = useState<StaffType[]>([]);
 
   // Edit modal state
   const [editingStaffId, setEditingStaffId] = useState<number | string | null>(null);
@@ -372,6 +405,35 @@ const Staff: React.FC = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const role = localStorage.getItem("role")
+      const userString = localStorage.getItem("user")
+
+      const user = userString ? JSON.parse(userString) : {}
+
+      const adminId = role === "Admin" ? user?.id : user?.createdBy;
+      try {
+        const res = await apiRequest({
+          method: "GET",
+          endpoint: `/staff/getAllStaff/${adminId}`,
+        });
+        const { staff } = res
+        console.log("Staff: ", staff);
+
+        setStaffList(staff)
+
+      } catch (error: any) {
+        if (error.response.status === 404) {
+          setStaffList([])
+        }
+        else {
+          console.error(error)
+        }
+      }
+    })();
+  }, [])
 
   // Filtered data
   const filteredData = staffList.filter(staff =>

@@ -15,8 +15,8 @@ app.use((err, req, res, next) => {
 });
 
 
-app.get('/', ()=>{
-    console.log("server is working")
+app.get('/', async(req,res)=>{
+    res.send("Working")
 })
 
 import {userRouter} from "./src/route/auth.route.js";
