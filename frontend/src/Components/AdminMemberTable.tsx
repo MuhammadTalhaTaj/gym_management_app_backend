@@ -1,8 +1,6 @@
 // src/pages/AdminMemberTable.tsx
 import { useState } from 'react';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
-// import { apiRequest } from '../config/api'; 
-import { useDashboardData } from '../hooks/useDashboardData';
 
 // Status Badge Component (unchanged)
 const StatusBadge = ({ status, type }: { status: string; type: string }) => {
@@ -87,8 +85,8 @@ const TableHeader = () => {
 };
 
 // Main Component (fetches expired members from dashboard controller)
-const AdminMemberTable = () => {
-  const { data, loading } = useDashboardData()
+const AdminMemberTable = ({data}:{data:any}) => {
+  // const { data, loading } = useDashboardData()
   const [members,] = useState<any[]>([]);
 
   const handleView = (id: any) => { console.log('View member:', id); };
@@ -109,7 +107,7 @@ const AdminMemberTable = () => {
 
           {/* Member Rows */}
           <div className="divide-y divide-slate-700/50">
-            {data?.expiredMembersList.map((member) => (
+            {data?.expiredMembersList.map((member:any) => (
               <MemberRow
                 key={member.id}
                 member={{ ...member, status: 'Expired', statusType: 'danger' }}
@@ -124,7 +122,7 @@ const AdminMemberTable = () => {
         {/* Footer Info */}
         <div className="mt-6 text-center">
           <p className="text-slate-400 text-sm">
-            Showing {members.length} members {loading ? ' (loading...)' : ''}
+            Showing {members.length} members
           </p>
         </div>
       </div>
