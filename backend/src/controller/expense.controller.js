@@ -4,6 +4,7 @@ import { Staff } from "../model/staff.model.js";
 import { APIError } from "../utils/APIError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Payment } from "../model/payment.model.js";
+import moment from "moment";
 const addExpense = asyncHandler(async (req,res)=>{
 
     const {name, amount, date,notes, category, createdBy, currentUser}=req.body;
@@ -78,70 +79,60 @@ const getExpense = asyncHandler(async (req,res)=>{
         data: expenseData
     })
 })
-
-
-
-
 // Function to calculate total income and expenses for the given time range (week, month, or year)
 const getIncomeAndExpenseData = asyncHandler(async (req, res) => {
-  const now = new Date();
-  const {rangeType}= req.params
+  const { rangeType } = req.params;
 
-  // Define the start and end of the range based on the requested range type (week, month, or year)
+  // Define date range
   let startDate, endDate;
 
   if (rangeType === 'week') {
-    startDate = moment().startOf('week').toDate(); // Start of the current week
-    endDate = moment().endOf('week').toDate();   // End of the current week
+    startDate = moment().startOf('week').toDate();
+    endDate = moment().endOf('week').toDate();
   } else if (rangeType === 'month') {
-    startDate = moment().startOf('month').toDate(); // Start of the current month
-    endDate = moment().endOf('month').toDate();    // End of the current month
+    startDate = moment().startOf('month').toDate();
+    endDate = moment().endOf('month').toDate();
   } else if (rangeType === 'year') {
-    startDate = moment().startOf('year').toDate();  // Start of the current year
-    endDate = moment().endOf('year').toDate();     // End of the current year
+    startDate = moment().startOf('year').toDate();
+    endDate = moment().endOf('year').toDate();
+  } else {
+    throw new APIError(400, "Invalid range type");
   }
 
-  // Total Income from Payment (positive amounts)
-  const totalIncomeResult = await Payment.aggregate([
-    {
-      $match: {
-        amount: { $gt: 0 },  // Match only income (positive amount)
-        paymentDate: { $gte: startDate, $lte: endDate }  // Match the date range
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        totalIncome: { $sum: "$amount" }  // Sum the income amounts
-      }
-    }
-  ]);
+  // -------------------------
+  // 📌 INCOME DOCUMENTS
+  // -------------------------
+  const incomeDocs = await Payment.find({
+    amount: { $gt: 0 },
+    paymentDate: { $gte: startDate, $lte: endDate }
+  });
 
-  const totalIncome = totalIncomeResult.length > 0 ? totalIncomeResult[0].totalIncome : 0;
+  const totalIncome = incomeDocs.reduce((sum, p) => sum + p.amount, 0);
 
-  // Total Expenses from Expense (negative amounts)
-  const totalExpenseResult = await Expense.aggregate([
-    {
-      $match: {
-        amount: { $lt: 0 },  // Match only expenses (negative amount)
-        date: { $gte: startDate, $lte: endDate }  // Match the date range
-      }
-    },
-    {
-      $group: {
-        _id: null,
-        totalExpense: { $sum: "$amount" }  // Sum the expense amounts
-      }
-    }
-  ]);
+  // -------------------------
+  // 📌 EXPENSE DOCUMENTS
+  // -------------------------
+  const expenseDocs = await Expense.find({
+    amount: { $lt: 0 },
+    date: { $gte: startDate, $lte: endDate }
+  });
 
-  const totalExpense = totalExpenseResult.length > 0 ? totalExpenseResult[0].totalExpense : 0;
+  const totalExpense = expenseDocs.reduce((sum, e) => sum + e.amount, 0);
 
-  res.status(200).json( {
+  // -------------------------
+  // 📌 RESPONSE
+  // -------------------------
+  res.status(200).json({
+    rangeType,
+    startDate,
+    endDate,
     totalIncome,
-    totalExpense
+    totalExpense,
+    incomeDocs,
+    expenseDocs
   });
 });
+
 
 // Example usage
 

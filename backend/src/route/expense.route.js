@@ -8,4 +8,3 @@ expenseRouter.route('/addExpense').post(addExpense)
 expenseRouter.route('/getExpense').get(getExpense)
 expenseRouter.route('/finance/:rangeType').get(getIncomeAndExpenseData)
 export {expenseRouter}
-
