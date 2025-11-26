@@ -406,6 +406,10 @@ const Staff: React.FC = () => {
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
 
+  // Delete state
+  const [deleteLoadingId, setDeleteLoadingId] = useState<number | string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   useEffect(() => {
     (async () => {
       const role = localStorage.getItem("role")
@@ -425,7 +429,7 @@ const Staff: React.FC = () => {
         setStaffList(staff)
 
       } catch (error: any) {
-        if (error.response.status === 404) {
+        if (error?.response?.status === 404) {
           setStaffList([])
         }
         else {
@@ -471,8 +475,40 @@ const Staff: React.FC = () => {
     setEditForm(prev => ({ ...prev, [field]: e.target.value }));
   };
 
-  // Delete handler placeholder (unchanged behaviour)
-  const handleDelete = (id: number | string) => console.log('Delete staff:', id);
+  // Delete handler - calls backend and removes from local list on success
+  const handleDelete = async (id: number | string) => {
+    const confirmed = window.confirm('Are you sure you want to delete this staff member? This action cannot be undone.');
+    if (!confirmed) return;
+
+    setDeleteError(null);
+    setDeleteLoadingId(id);
+
+    const userId = readCurrentUserId();
+    if (!userId) {
+      setDeleteError('Unable to determine current user. Please log in again.');
+      setDeleteLoadingId(null);
+      return;
+    }
+
+    try {
+      const res = await apiRequest<{ message?: string }>({
+        method: 'DELETE',
+        endpoint: '/staff/deleteStaff',
+        body: { staffId: id, userId }
+      });
+
+      // remove staff locally
+      setStaffList(prev => prev.filter(s => String(s.id) !== String(id) && String((s as any)._id) !== String(id)));
+
+      // optionally log or display message
+      console.log(res?.message ?? 'Staff deleted successfully.');
+    } catch (err: any) {
+      setDeleteError(err?.message ?? 'Failed to delete staff.');
+      console.error(err);
+    } finally {
+      setDeleteLoadingId(null);
+    }
+  };
 
   // Submit update to backend
   const handleUpdateSubmit = async () => {
@@ -543,7 +579,7 @@ const Staff: React.FC = () => {
       if (updatedStaff) {
         // update local staffList mapping by id
         setStaffList(prev => prev.map(s => {
-          if (String(s.id) === String(updatedStaff.id) || String(s.id) === String(editingStaffId)) {
+          if (String(s.id) === String(updatedStaff.id) || String(s.id) === String(editingStaffId) || String((s as any)._id) === String(updatedStaff.id)) {
             // keep avatar and created/status if not returned by backend
             return {
               ...s,

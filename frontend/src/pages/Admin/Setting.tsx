@@ -1,5 +1,7 @@
+// src/components/Setting.tsx
 import React, { useState } from 'react';
 import { User, Mail, Phone, MapPin, Building2, Lock, Camera, Save, X, Eye, EyeOff, Check } from 'lucide-react';
+import { apiRequest } from '../../config/api'; // keep using the unified API helper
 
 // types.ts - Type definitions
 interface AdminProfile {
@@ -300,25 +302,30 @@ const Setting: React.FC = () => {
     }
   };
 
+  /**
+   * Validation helpers - they set error messages but DO NOT stop submission.
+   * This ensures the PATCH request is still sent even when some fields are empty.
+   */
   const validateProfile = (): boolean => {
     const newErrors: ValidationErrors = {};
 
-    if (!profile.name.trim()) newErrors.name = 'Name is required';
-    if (!profile.email.trim()) newErrors.email = 'Email is required';
+    if (!profile.name.trim()) newErrors.name = 'Name is recommended';
+    if (!profile.email.trim()) newErrors.email = 'Email is recommended';
     else if (!/\S+@\S+\.\S+/.test(profile.email)) newErrors.email = 'Invalid email format';
-    if (!profile.contact.trim()) newErrors.contact = 'Contact is required';
-    if (!profile.gymName.trim()) newErrors.gymName = 'Gym name is required';
-    if (!profile.gymLocation.trim()) newErrors.gymLocation = 'Gym location is required';
+    if (!profile.contact.trim()) newErrors.contact = 'Contact is recommended';
+    if (!profile.gymName.trim()) newErrors.gymName = 'Gym name is recommended';
+    if (!profile.gymLocation.trim()) newErrors.gymLocation = 'Gym location is recommended';
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    // set errors for UI feedback but DO NOT block submission
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return true; // always allow submit to proceed
   };
 
   const validatePasswords = (): boolean => {
     const newErrors: ValidationErrors = {};
 
     if (passwords.newPassword || passwords.confirmPassword || passwords.currentPassword) {
-      if (!passwords.currentPassword) newErrors.currentPassword = 'Current password is required';
+      if (!passwords.currentPassword) newErrors.currentPassword = 'Current password is required to change password';
       if (!passwords.newPassword) newErrors.newPassword = 'New password is required';
       else if (passwords.newPassword.length < 8) newErrors.newPassword = 'Password must be at least 8 characters';
       if (passwords.newPassword !== passwords.confirmPassword) {
@@ -326,35 +333,79 @@ const Setting: React.FC = () => {
       }
     }
 
+    // set password-related errors but do not block submit
     setErrors(prev => ({ ...prev, ...newErrors }));
-    return Object.keys(newErrors).length === 0;
+    return true; // always allow submit to proceed
   };
 
   const handleSubmit = async () => {
-    const isProfileValid = validateProfile();
-    const isPasswordValid = validatePasswords();
-
-    if (!isProfileValid || !isPasswordValid) return;
+    // Run validations for user feedback (but they won't block submission)
+    validateProfile();
+    validatePasswords();
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      // Build payload with all profile fields present (could be empty strings)
+      const payload: Record<string, any> = {
+        name: profile.name ?? '',
+        email: profile.email ?? '',
+        contact: profile.contact ?? '',
+        gymName: profile.gymName ?? '',
+        gymLocation: profile.gymLocation ?? '',
+        // permission is required by backend; prefer localStorage value and fallback to 'all'
+        permission: localStorage.getItem('permission') || 'all'
+      };
 
-    console.log('Profile Data:', profile);
-    if (passwords.newPassword) {
-      console.log('Password Update:', { currentPassword: passwords.currentPassword, newPassword: passwords.newPassword });
+      // include password only when user provided a new password
+      if (passwords.newPassword) {
+        payload.password = passwords.newPassword;
+      }
+
+      // include identifiers when present in localStorage (staffId or userId or both)
+      const staffId = localStorage.getItem('staffId');
+      const userId = localStorage.getItem('userId');
+
+      if (staffId) payload.staffId = staffId;
+      if (userId) payload.userId = userId;
+
+      // Always call the same PATCH endpoint as requested
+      const res = await apiRequest<{ message?: string; staff?: any }>({
+        method: 'PATCH',
+        endpoint: '/staff/updateStaff',
+        body: payload
+      });
+
+      // Sync returned fields into local state if available
+      if (res && res.staff) {
+        setProfile(prev => ({
+          ...prev,
+          name: res.staff.name ?? prev.name,
+          email: res.staff.email ?? prev.email,
+          contact: res.staff.contact ?? prev.contact,
+          // keep gym fields as they might not be returned; guard with existing values
+          gymName: (res.staff.gymName as string) ?? prev.gymName,
+          gymLocation: (res.staff.gymLocation as string) ?? prev.gymLocation
+        }));
+      }
+
+      setIsSubmitting(false);
+      setShowToast(true);
+
+      // Clear password fields after successful update
+      setPasswords({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+
+      if (res && res.message) console.log('API:', res.message);
+    } catch (err: any) {
+      console.error('Update failed:', err);
+      setIsSubmitting(false);
+      // simple user-visible feedback (keeps UI intact)
+      alert(err?.message || 'Failed to update profile. Please try again.');
     }
-
-    setIsSubmitting(false);
-    setShowToast(true);
-    
-    // Clear password fields
-    setPasswords({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    });
   };
 
   return (
