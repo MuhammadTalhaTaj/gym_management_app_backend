@@ -167,10 +167,10 @@ const normalizeMember = (raw: any, idx: number): Member => {
   // Always produce a non-null Plan (keeps state homogeneous)
   const planObj: Plan = (raw && raw.plan && typeof raw.plan === 'object')
     ? {
-        id: String(raw.plan._id ?? raw.plan.id ?? ''),
-        name: String(raw.plan.name ?? 'Plan'),
-        amount: Number(raw.plan.amount ?? 0)
-      }
+      id: String(raw.plan._id ?? raw.plan.id ?? ''),
+      name: String(raw.plan.name ?? 'Plan'),
+      amount: Number(raw.plan.amount ?? 0)
+    }
     : { id: '0', name: 'No Plan', amount: 0 };
 
   return {
@@ -220,6 +220,11 @@ const AddPayment: React.FC = () => {
   const [loadingMemberDetails, setLoadingMemberDetails] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
+  const role = localStorage.getItem("role")
+  const userString = localStorage.getItem("user")
+  const user = userString ? JSON.parse(userString) : {}
+
+  const userId = role === "Admin" ? user?.id : user?.createdBy
   // keep track of last fetch id to avoid race updates
   const fetchCounterRef = useRef(0);
   const mountedRef = useRef(true);
@@ -232,6 +237,7 @@ const AddPayment: React.FC = () => {
   // load members & plans from backend on mount (with fallbacks)
   useEffect(() => {
     let isMounted = true;
+
     const load = async () => {
       try {
         const [membersRes, plansRes] = await Promise.all([
@@ -239,8 +245,8 @@ const AddPayment: React.FC = () => {
             method: 'POST',
             endpoint: '/member/getAllMembers',
             body: {
-                adminId: localStorage.getItem("userId")
-              },
+              adminId: userId
+            },
             mapFn: (raw: any) => {
               const list = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
               return list.map((r: any, i: number) => normalizeMember(r, i));
@@ -248,7 +254,7 @@ const AddPayment: React.FC = () => {
           }).catch(() => null),
           apiRequest({
             method: 'GET',
-            endpoint: '/plan/getPlans',
+            endpoint: `/plan/getPlans/${userId}`,
             mapFn: (raw: any) => {
               const list = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
               return list.map((r: any, i: number) => normalizePlan(r, i));
@@ -381,8 +387,8 @@ const AddPayment: React.FC = () => {
     }
     const chosen = new Date(paymentDate);
     const today = new Date();
-    chosen.setHours(0,0,0,0);
-    today.setHours(0,0,0,0);
+    chosen.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
     if (isNaN(chosen.getTime())) {
       window.alert('Invalid payment date.');
       return false;
@@ -405,7 +411,9 @@ const AddPayment: React.FC = () => {
         amount,
         memberId: selectedMember,
         plan: selectedPlan,
-        paymentDate
+        paymentDate,
+        userId,
+         
       };
 
       const res = await apiRequest({
