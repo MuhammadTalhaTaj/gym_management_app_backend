@@ -5,6 +5,7 @@ import { APIError } from "../utils/APIError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Payment } from "../model/payment.model.js";
 import moment from "moment";
+import mongoose from "mongoose";
 const addExpense = asyncHandler(async (req,res)=>{
 
     const {name, amount, date,notes, category, createdBy, currentUser}=req.body;

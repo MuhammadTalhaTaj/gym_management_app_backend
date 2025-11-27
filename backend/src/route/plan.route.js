@@ -5,5 +5,5 @@ import { authMiddleware } from "../middleware/auth.middleware.js";
 const planRouter = Router();
 // planRouter.use(authMiddleware);
 planRouter.route('/addPlan').post(addPlan)
-planRouter.route('/getPlans').get(getAllPlans)
+planRouter.route('/getPlans/:Id').get(getAllPlans)
 export {planRouter}

@@ -229,4 +229,22 @@ const getAllStaff = asyncHandler(async(req,res)=>{
         staff: staff
     })
 })
+
+const removeStaff = asyncHandler(async(req,res)=>{
+    const {staffId, adminId}=req.body;
+    const admin= await Admin.exists({_id:adminId})
+    if(!admin){
+        throw new APIError(404,"Admin not found")
+    }
+    const staff = await findOne({_id:staffId, createdBy:adminId})
+    if(!staff){
+        throw new APIError(404,"Staff not found")
+    }
+    await Staff.deleteOne({_id:staffId, createdBy:adminId})
+
+    res.status(200).json({
+        message: "Staff deleted"
+    })
+})
+
 export {staffSignup,staffLogin,staffLogout,staffRefreshAccessToken,staffPermission, updateStaff, getAllStaff }

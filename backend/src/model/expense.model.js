@@ -24,7 +24,7 @@ const expenseSchema = mongoose.Schema({
       "rent",
       "utility",
       "equipment purchase",
-      "maintainance",
+      "maintenence",
       "salaries",
       "training",
       "supplies",
