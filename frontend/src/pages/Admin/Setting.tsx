@@ -1,5 +1,5 @@
 // src/components/Setting.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, Mail, Phone, MapPin, Building2, Lock, Camera, Save, X, Eye, EyeOff, Check } from 'lucide-react';
 import { apiRequest } from '../../config/api'; // keep using the unified API helper
 
@@ -22,7 +22,9 @@ interface ValidationErrors {
   [key: string]: string;
 }
 
-// profileData.ts - Initial data
+/*
+  NOTE: static example data removed from runtime (kept commented here for reference)
+
 const initialProfileData: AdminProfile = {
   name: 'John Doe',
   email: 'john.doe@gymadmin.com',
@@ -30,6 +32,30 @@ const initialProfileData: AdminProfile = {
   gymName: 'FitZone Elite',
   gymLocation: '123 Fitness Street, New York, NY 10001'
 };
+*/
+
+// Helper to read userId (tries multiple locations)
+function readUserId(): string | null {
+  try {
+    const ls = localStorage.getItem('userId');
+    if (ls) return ls;
+    const ss = sessionStorage.getItem('userId');
+    if (ss) return ss;
+
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    if (userStr) {
+      try {
+        const userObj = JSON.parse(userStr);
+        return userObj?.id ?? userObj?._id ?? null;
+      } catch {
+        // parse fail
+      }
+    }
+  } catch {
+    // storage error
+  }
+  return null;
+}
 
 // Input Component
 interface InputFieldProps {
@@ -124,7 +150,7 @@ const InputField: React.FC<InputFieldProps> = ({
   );
 };
 
-// Profile Picture Component
+// Profile Picture Component (kept in file for future use but NOT rendered)
 const ProfilePicture: React.FC = () => {
   const [imageSrc, setImageSrc] = useState<string>('');
 
@@ -268,15 +294,44 @@ const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
 
 // Main Component
 const Setting: React.FC = () => {
-  const [profile, setProfile] = useState<AdminProfile>(initialProfileData);
+  // start with empty profile — no static fallback shown ever
+  const [profile, setProfile] = useState<AdminProfile>({
+    name: '',
+    email: '',
+    contact: '',
+    gymName: '',
+    gymLocation: ''
+  });
+
   const [passwords, setPasswords] = useState<PasswordData>({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
   const [errors, setErrors] = useState<ValidationErrors>({});
-  const [showToast, setShowToast] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showProfileToast, setShowProfileToast] = useState(false);
+  const [showPasswordToast, setShowPasswordToast] = useState(false);
+  const [isProfileSubmitting, setIsProfileSubmitting] = useState(false);
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
+
+  // Initialize from real localStorage user if present (NOT static example)
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        setProfile(prev => ({
+          name: user?.name ?? prev.name,
+          email: user?.email ?? prev.email,
+          contact: user?.contact ?? prev.contact,
+          gymName: user?.gymName ?? prev.gymName,
+          gymLocation: user?.gymLocation ?? prev.gymLocation
+        }));
+      }
+    } catch (e) {
+      // ignore parse errors; keep empty fields
+    }
+  }, []);
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -303,8 +358,7 @@ const Setting: React.FC = () => {
   };
 
   /**
-   * Validation helpers - they set error messages but DO NOT stop submission.
-   * This ensures the PATCH request is still sent even when some fields are empty.
+   * Validation helpers - used for UI feedback.
    */
   const validateProfile = (): boolean => {
     const newErrors: ValidationErrors = {};
@@ -316,95 +370,118 @@ const Setting: React.FC = () => {
     if (!profile.gymName.trim()) newErrors.gymName = 'Gym name is recommended';
     if (!profile.gymLocation.trim()) newErrors.gymLocation = 'Gym location is recommended';
 
-    // set errors for UI feedback but DO NOT block submission
     setErrors(prev => ({ ...prev, ...newErrors }));
-    return true; // always allow submit to proceed
+    return Object.keys(newErrors).length === 0;
   };
 
   const validatePasswords = (): boolean => {
     const newErrors: ValidationErrors = {};
 
-    if (passwords.newPassword || passwords.confirmPassword || passwords.currentPassword) {
-      if (!passwords.currentPassword) newErrors.currentPassword = 'Current password is required to change password';
-      if (!passwords.newPassword) newErrors.newPassword = 'New password is required';
-      else if (passwords.newPassword.length < 8) newErrors.newPassword = 'Password must be at least 8 characters';
-      if (passwords.newPassword !== passwords.confirmPassword) {
-        newErrors.confirmPassword = 'Passwords do not match';
-      }
+    // For password update we require the current and new password fields
+    if (!passwords.currentPassword) newErrors.currentPassword = 'Current password is required to change password';
+    if (!passwords.newPassword) newErrors.newPassword = 'New password is required';
+    else if (passwords.newPassword.length < 8) newErrors.newPassword = 'Password must be at least 8 characters';
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    // set password-related errors but do not block submit
     setErrors(prev => ({ ...prev, ...newErrors }));
-    return true; // always allow submit to proceed
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
-    // Run validations for user feedback (but they won't block submission)
+  // Submit profile -> calls /admin/updateAdmin
+  const handleProfileSubmit = async () => {
+    // validate for UI feedback (will not populate static example data)
     validateProfile();
-    validatePasswords();
 
-    setIsSubmitting(true);
+    const userId = readUserId();
+    if (!userId) {
+      alert('Unable to determine current user. Please log in again.');
+      return;
+    }
 
+    // backend expects Id field (capital I)
+    const payload = {
+      Id: userId,
+      email: profile.email ?? '',
+      contact: profile.contact ?? '',
+      gymName: profile.gymName ?? '',
+      gymLocation: profile.gymLocation ?? ''
+    };
+
+    setIsProfileSubmitting(true);
     try {
-      // Build payload with all profile fields present (could be empty strings)
-      const payload: Record<string, any> = {
-        name: profile.name ?? '',
-        email: profile.email ?? '',
-        contact: profile.contact ?? '',
-        gymName: profile.gymName ?? '',
-        gymLocation: profile.gymLocation ?? '',
-        // permission is required by backend; prefer localStorage value and fallback to 'all'
-        permission: localStorage.getItem('permission') || 'all'
-      };
-
-      // include password only when user provided a new password
-      if (passwords.newPassword) {
-        payload.password = passwords.newPassword;
-      }
-
-      // include identifiers when present in localStorage (staffId or userId or both)
-      const staffId = localStorage.getItem('staffId');
-      const userId = localStorage.getItem('userId');
-
-      if (staffId) payload.staffId = staffId;
-      if (userId) payload.userId = userId;
-
-      // Always call the same PATCH endpoint as requested
-      const res = await apiRequest<{ message?: string; staff?: any }>({
+      const res = await apiRequest<{ message?: string; admin?: any }>({
         method: 'PATCH',
-        endpoint: '/staff/updateStaff',
+        endpoint: '/admin/updateAdmin',
         body: payload
       });
 
-      // Sync returned fields into local state if available
-      if (res && res.staff) {
+      // update only with backend-returned admin fields; if backend returns nothing, do not show static defaults
+      if (res && (res as any).admin) {
+        const admin = (res as any).admin;
         setProfile(prev => ({
-          ...prev,
-          name: res.staff.name ?? prev.name,
-          email: res.staff.email ?? prev.email,
-          contact: res.staff.contact ?? prev.contact,
-          // keep gym fields as they might not be returned; guard with existing values
-          gymName: (res.staff.gymName as string) ?? prev.gymName,
-          gymLocation: (res.staff.gymLocation as string) ?? prev.gymLocation
+          name: admin.name ?? prev.name,
+          email: admin.email ?? prev.email,
+          contact: admin.contact ?? prev.contact,
+          gymName: admin.gymName ?? prev.gymName,
+          gymLocation: admin.gymLocation ?? prev.gymLocation
         }));
       }
 
-      setIsSubmitting(false);
-      setShowToast(true);
+      setShowProfileToast(true);
+      if (res && (res as any).message) console.log('API:', (res as any).message);
+    } catch (err: any) {
+      console.error('Update admin failed:', err);
+      alert(err?.message || 'Failed to update profile. Please try again.');
+    } finally {
+      setIsProfileSubmitting(false);
+    }
+  };
 
-      // Clear password fields after successful update
+  // Submit password -> calls /admin/updatePassword
+  const handlePasswordSubmit = async () => {
+    // run validations, block submit if missing/invalid
+    const ok = validatePasswords();
+    if (!ok) return;
+
+    const userId = readUserId();
+    if (!userId) {
+      alert('Unable to determine current user. Please log in again.');
+      return;
+    }
+
+    // backend expects Id, email and password
+    const payload = {
+      Id: userId,
+      email: profile.email ?? '',
+      password: passwords.newPassword
+    };
+
+    setIsPasswordSubmitting(true);
+    try {
+      const res = await apiRequest<{ message?: string; newPassword?: string; data?: any }>({
+        method: 'PATCH',
+        endpoint: '/admin/updatePassword',
+        body: payload
+      });
+
+      // backend returns newPassword and data; do not display password but show success toast
+      setShowPasswordToast(true);
+
+      // clear password fields
       setPasswords({
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       });
 
-      if (res && res.message) console.log('API:', res.message);
+      if (res && (res as any).message) console.log('API:', (res as any).message);
     } catch (err: any) {
-      console.error('Update failed:', err);
-      setIsSubmitting(false);
-      // simple user-visible feedback (keeps UI intact)
-      alert(err?.message || 'Failed to update profile. Please try again.');
+      console.error('Update password failed:', err);
+      alert(err?.message || 'Failed to update password. Please try again.');
+    } finally {
+      setIsPasswordSubmitting(false);
     }
   };
 
@@ -436,10 +513,9 @@ const Setting: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Profile Picture Section */}
-          <SectionCard title="Profile Picture" subtitle="Upload your profile photo">
-            <ProfilePicture />
-          </SectionCard>
+          {/* PROFILE PICTURE SECTION REMOVED — backend doesn't support it.
+              The ProfilePicture component remains in this file (above) for future use,
+              but it is intentionally not rendered here. */}
 
           {/* Personal Information */}
           <SectionCard 
@@ -506,6 +582,28 @@ const Setting: React.FC = () => {
               isTextarea
               rows={3}
             />
+
+            {/* Inline profile save (kept) */}
+            <div className="flex justify-end mt-4">
+              <button
+                type="button"
+                onClick={handleProfileSubmit}
+                disabled={isProfileSubmitting}
+                className="px-6 py-3 bg-gradient-to-r from-[#EC9A0E] to-[#F47117] text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {isProfileSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} />
+                    Save Profile
+                  </>
+                )}
+              </button>
+            </div>
           </SectionCard>
 
           {/* Password Section */}
@@ -545,39 +643,41 @@ const Setting: React.FC = () => {
               icon={<Lock size={20} />}
               error={errors.confirmPassword}
             />
+
+            {/* Password-specific update button — styled like Save Changes (gradient) */}
+            <div className="flex justify-end mt-4">
+              <button
+                type="button"
+                onClick={handlePasswordSubmit}
+                disabled={isPasswordSubmitting}
+                className="px-6 py-3 bg-gradient-to-r from-[#EC9A0E] to-[#F47117] text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isPasswordSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} />
+                    Update Password
+                  </>
+                )}
+              </button>
+            </div>
           </SectionCard>
 
-          {/* Submit Button */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-end">
-            <button
-              type="button"
-              className="px-8 py-4 bg-[#8C9BB0]/20 text-[#94A3B8] rounded-lg font-semibold hover:bg-[#8C9BB0]/30 transition-all duration-300 border border-[#8C9BB0]"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="px-8 py-4 bg-gradient-to-r from-[#EC9A0E] to-[#F47117] text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Saving Changes...
-                </>
-              ) : (
-                <>
-                  <Save size={20} />
-                  Save Changes
-                </>
-              )}
-            </button>
-          </div>
+          {/* Page-level Cancel + Save Changes buttons REMOVED as requested.
+              (If you want them back, uncomment the block below and wire handlers.)
+          */}
+
         </div>
 
-        {showToast && (
-          <Toast message="Profile updated successfully!" onClose={() => setShowToast(false)} />
+        {showProfileToast && (
+          <Toast message="Profile updated successfully!" onClose={() => setShowProfileToast(false)} />
+        )}
+        {showPasswordToast && (
+          <Toast message="Password updated successfully!" onClose={() => setShowPasswordToast(false)} />
         )}
       </div>
     </div>

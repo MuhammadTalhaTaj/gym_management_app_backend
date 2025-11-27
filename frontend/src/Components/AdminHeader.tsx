@@ -29,6 +29,9 @@ interface UserInterface {
 
 function AdminHeader() {
   const [unread,] = useState(1)
+   const User = JSON.parse(localStorage.getItem("user") || "")
+  const Role = localStorage.getItem("role")
+  const userId = Role == "Admin" ? User?.id : User?.createdBy;
   const [members, setMembers] = useState<Member[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const searchRef = useRef<HTMLDivElement | null>(null)
@@ -71,9 +74,9 @@ function AdminHeader() {
     const id = role == "Admin" ? user?.id : user?.createdBy;
     try {
       const res = await apiRequest<{ message: string; data: Member[] }>({
-        method: 'GET',
+        method: 'POST',
         endpoint: '/member/getAllMembers',
-        body: { id: id }
+        body: { adminId: userId }
       })
       setMembers(res.data || [])
     } catch (err) {

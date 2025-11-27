@@ -295,9 +295,10 @@ export const TableRow = ({ member }: { member: any }) => {
     ? expiryDate.toISOString().split('T')[0]
     : '—'; // e.g., "2025-11-15"
 
-
+ const navigate = useNavigate();
   return (
-    <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+    <tr   onClick={() => navigate(`/member/${member.id || member._id}/payments`)}
+ className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
           <div>
@@ -321,7 +322,7 @@ export const TableRow = ({ member }: { member: any }) => {
         <StatusBadge status={status} />
       </td>
       <td className="px-6 py-4">
-        <button className="p-1 hover:bg-gray-100 rounded transition-colors">
+        <button   onClick={(e) => e.stopPropagation()} className="p-1 hover:bg-gray-100 rounded transition-colors">
           <MoreVertical className="w-5 h-5 text-gray-600" />
         </button>
       </td>

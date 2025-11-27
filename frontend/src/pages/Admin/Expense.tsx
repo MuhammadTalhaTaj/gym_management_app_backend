@@ -1,10 +1,9 @@
 // src/pages/Expense.tsx
 import { useEffect, useMemo, useState } from 'react';
-import { 
-  // TrendingUp, TrendingDown,
-   DollarSign, Calendar, Receipt, BarChart3, Edit2, Trash2 } from 'lucide-react';
+import {
+  DollarSign, Calendar, Receipt, BarChart3, Edit2, Trash2
+} from 'lucide-react';
 import { apiRequest } from '../../config/api'; // existing helper (keep path consistent with your project)
-
 
 interface TimePeriodSelector {
   periods: string[];
@@ -12,162 +11,20 @@ interface TimePeriodSelector {
   onChange: (val: string) => void;
 }
 interface FilterDropdownProps{
-// label: string;
-value: any;
-options: string[];
-onChange: any;
+  value: any;
+  options: string[];
+  onChange: any;
 }
-interface Pagination{
-  currentPage: any ;
-  totalPages: any;
-  onPageChange : any
+interface PaginationProps{
+  currentPage: number;
+  totalPages: number;
+  onPageChange : (p:number) => void;
 }
-interface ExpenseRow{
+interface ExpenseRowProps{
   expense: any;
-  onEdit: any;
-  onDelete: any;
+  onEdit: (id: any) => void;
+  onDelete: (id: any) => void;
 }
-// Dynamic data file (fallback)
-const FALLBACK = {
-  stats: [
-    {
-      id: 1,
-      icon: DollarSign,
-      label: 'Total Expenses',
-      value: '$12,847',
-      change: '+12%',
-      isPositive: true,
-      bgColor: 'bg-[#344E75]'
-    },
-    {
-      id: 2,
-      icon: Calendar,
-      label: 'This Month',
-      value: '$3,240',
-      change: '-12%',
-      isPositive: false,
-      bgColor: 'bg-[#344E75]'
-    },
-    {
-      id: 3,
-      icon: Receipt,
-      label: 'Total Transactions',
-      value: '142',
-      change: '+41%',
-      isPositive: true,
-      bgColor: 'bg-[#344E75]'
-    },
-    {
-      id: 4,
-      icon: BarChart3,
-      label: 'Avg per Day',
-      value: '$906',
-      change: '+27%',
-      isPositive: true,
-      bgColor: 'bg-[#344E75]'
-    }
-  ],
-  categories: [
-    {
-      id: 1,
-      name: 'Food & Dining',
-      transactions: 48,
-      amount: 1240,
-      percentage: 38,
-      icon: '🍴',
-      color: 'bg-[#3D8BF2]'
-    },
-    {
-      id: 2,
-      name: 'Transportation',
-      transactions: 25,
-      amount: 890,
-      percentage: 27,
-      icon: '🚗',
-      color: 'bg-[#F47117]'
-    },
-    {
-      id: 3,
-      name: 'Shopping',
-      transactions: 38,
-      amount: 620,
-      percentage: 19,
-      icon: '🛍️',
-      color: 'bg-[#11BF7F]'
-    },
-    {
-      id: 4,
-      name: 'Entertainment',
-      transactions: 18,
-      amount: 490,
-      percentage: 16,
-      icon: '🎬',
-      color: 'bg-[#EC9A0E]'
-    }
-  ],
-  expenses: [
-    {
-      id: 1,
-      name: 'Lunch at Restaurant',
-      category: 'Food & Dining',
-      amount: 45.50,
-      date: 'Dec 15, 2024',
-      notes: 'Team lunch meeting',
-      icon: '🍴',
-      color: 'bg-[#3D8BF2]'
-    },
-    {
-      id: 2,
-      name: 'Gas Station',
-      category: 'Transportation',
-      amount: 62.00,
-      date: 'Dec 14, 2024',
-      notes: 'Full tank refill',
-      icon: '🚗',
-      color: 'bg-[#F47117]'
-    },
-    {
-      id: 3,
-      name: 'Online Shopping',
-      category: 'Shopping',
-      amount: 128.99,
-      date: 'Dec 13, 2024',
-      notes: 'New clothes for winter',
-      icon: '🛍️',
-      color: 'bg-[#11BF7F]'
-    },
-    {
-      id: 4,
-      name: 'Movie Tickets',
-      category: 'Entertainment',
-      amount: 32.00,
-      date: 'Dec 12, 2024',
-      notes: 'Weekend movie night',
-      icon: '🎬',
-      color: 'bg-[#EC9A0E]'
-    },
-    {
-      id: 5,
-      name: 'Coffee Shop',
-      category: 'Food & Dining',
-      amount: 12.50,
-      date: 'Dec 11, 2024',
-      notes: 'Morning coffee and pastry',
-      icon: '🍴',
-      color: 'bg-[#3D8BF2]'
-    },
-    {
-      id: 6,
-      name: 'Taxi Ride',
-      category: 'Transportation',
-      amount: 25.00,
-      date: 'Dec 10, 2024',
-      notes: 'Airport pickup',
-      icon: '🚗',
-      color: 'bg-[#F47117]'
-    }
-  ]
-};
 
 // simple heuristics to pick an icon emoji and color from a name/notes
 const pickIconAndColor = (name = '', notes = '') => {
@@ -189,64 +46,8 @@ const formatDate = (isoOrDate : any) => {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-// Stat Card Component (kept identical)
-// const StatCard = ({ icon: Icon, label, value, change, isPositive, bgColor } : any) => (
-//   <div className={`${bgColor} rounded-xl p-6 border border-[#8C9BB0]/20`}>
-//     <div className="flex items-start justify-between mb-4">
-//       <div className={`p-3 rounded-lg ${isPositive ? 'bg-[#11BF7F]/20' : 'bg-[#F24949]/20'}`}>
-//         <Icon className={`w-6 h-6 ${isPositive ? 'text-[#11BF7F]' : 'text-[#F24949]'}`} />
-//       </div>
-//       <span className={`text-sm font-semibold ${isPositive ? 'text-[#11BF7F]' : 'text-[#F24949]'}`}>
-//         {change}
-//       </span>
-//     </div>
-//     <div>
-//       <h3 className="text-3xl font-bold text-white mb-1">{value}</h3>
-//       <p className="text-[#94A3B8] text-sm">{label}</p>
-//     </div>
-//   </div>
-// );
-
-// Time Period Selector Component (kept identical)
-const TimePeriodSelector = ({ periods, active, onChange }:TimePeriodSelector) => (
-  <div className="flex gap-2 bg-[#1E293B] rounded-lg p-1">
-    {periods.map(period => (
-      <button
-        key={period}
-        onClick={() => onChange(period)}
-        className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-          active === period
-            ? 'bg-[#EC9A0E] text-[#1E293B]'
-            : 'text-[#94A3B8] hover:text-white'
-        }`}
-      >
-        {period}
-      </button>
-    ))}
-  </div>
-);
-
-// Category Card Component (kept identical)
-// const CategoryCard = ({ name, transactions, amount, percentage, icon, color }:any) => (
-//   <div className="flex items-center justify-between p-4 bg-[#344E75]/30 rounded-lg border border-[#8C9BB0]/10 hover:border-[#8C9BB0]/30 transition-all">
-//     <div className="flex items-center gap-4 flex-1">
-//       <div className={`${color} p-3 rounded-lg text-2xl`}>
-//         {icon}
-//       </div>
-//       <div className="flex-1">
-//         <h4 className="text-white font-medium mb-1">{name}</h4>
-//         <p className="text-[#94A3B8] text-sm">{transactions} transactions</p>
-//       </div>
-//     </div>
-//     <div className="text-right">
-//       <p className="text-white font-bold text-lg mb-1">${amount}</p>
-//       <p className="text-[#94A3B8] text-sm">{percentage}%</p>
-//     </div>
-//   </div>
-// );
-
-// Expense Row Component (kept identical)
-const ExpenseRow = ({ expense, onEdit, onDelete }:ExpenseRow) => (
+// Expense Row Component
+const ExpenseRow = ({ expense, onEdit, onDelete }: ExpenseRowProps) => (
   <tr className="border-b border-[#8C9BB0]/10 hover:bg-[#344E75]/20 transition-all">
     <td className="py-4 px-4">
       <div className="flex items-center gap-3">
@@ -259,7 +60,7 @@ const ExpenseRow = ({ expense, onEdit, onDelete }:ExpenseRow) => (
         </div>
       </div>
     </td>
-    <td className="py-4 px-4 text-white font-semibold">${Number(expense.amount).toFixed(2)}</td>
+    <td className="py-4 px-4 text-white font-semibold">${Number(expense.amount || 0).toFixed(2)}</td>
     <td className="py-4 px-4 text-[#94A3B8]">{expense.date}</td>
     <td className="py-4 px-4 text-[#94A3B8]">{expense.notes}</td>
     <td className="py-4 px-4">
@@ -281,8 +82,8 @@ const ExpenseRow = ({ expense, onEdit, onDelete }:ExpenseRow) => (
   </tr>
 );
 
-// Pagination & FilterDropdown (kept identical)
-const Pagination = ({ currentPage, totalPages, onPageChange }:Pagination) => (
+// Pagination & FilterDropdown
+const Pagination = ({ currentPage, totalPages, onPageChange }: PaginationProps) => (
   <div className="flex items-center gap-2">
     <button
       onClick={() => onPageChange(currentPage - 1)}
@@ -333,25 +134,24 @@ const FilterDropdown = ({ value, options, onChange }:FilterDropdownProps) => (
   </div>
 );
 
-// Main Dashboard Component (with data fetching & fallback logic)
+// Main Dashboard Component (with data fetching, no fallback)
 const Expense = () => {
-  // const [activePeriod, setActivePeriod] = useState('1M');
   const [categoryFilter, setCategoryFilter] = useState('All Categories');
   const [timeFilter, setTimeFilter] = useState('Last 30 days');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // state holding the live dashboard data; initialize with fallback
+  // state holding the live dashboard data - start empty (no static fallback)
   const [state, setState] = useState({
-    stats: FALLBACK.stats,
-    categories: FALLBACK.categories,
-    expenses: FALLBACK.expenses
+    stats: [] as any[],
+    categories: [] as any[],
+    expenses: [] as any[]
   });
-  const [, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // pagination config
   const PAGE_SIZE = 6;
 
-  // fetch expenses from /Expense/getExpense and update UI data if non-empty
+  // fetch expenses from /Expense/getExpense and update UI data
   useEffect(() => {
     let mounted = true;
     const load = async () => {
@@ -362,19 +162,20 @@ const Expense = () => {
           endpoint: '/Expense/getExpense'
         });
 
-        // backend: { message: "...", data: [ { _id, name, amount, notes, date }, ... ] }
+        // expected backend shape: { message: "...", data: [ { _id, name, amount, notes, date }, ... ] }
         const list = Array.isArray(res?.data) ? res.data : [];
 
         if (!mounted) return;
 
         if (!Array.isArray(list) || list.length === 0) {
-          // keep fallback (already set)
+          // set empty state when backend returns nothing
+          setState({ stats: [], categories: [], expenses: [] });
           setLoading(false);
           return;
         }
 
         // Map backend items to UI shape
-        const mapped = list.map((it, idx) => {
+        const mapped = list.map((it: any, idx: number) => {
           const { icon, color, category } = pickIconAndColor(it.name, it.notes);
           return {
             id: it._id ?? `bk-${idx}`,
@@ -392,8 +193,8 @@ const Expense = () => {
         const totalExpenses = mapped.reduce((s, x) => s + Number(x.amount || 0), 0);
         const now = new Date();
 
-        // better compute this month using raw list dates:
-        const totalThisMonth = list.reduce((s, it) => {
+        // compute this month's total using original list dates
+        const totalThisMonth = list.reduce((s: number, it: any) => {
           const d = it.date ? new Date(it.date) : null;
           if (!d || Number.isNaN(d.getTime())) return s;
           if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
@@ -403,7 +204,6 @@ const Expense = () => {
         }, 0);
 
         const totalTransactions = mapped.length;
-        // compute avg per day across last 30 days (or use days span)
         const daysSpan = 30;
         const avgPerDay = totalExpenses / daysSpan;
 
@@ -414,7 +214,7 @@ const Expense = () => {
             icon: DollarSign,
             label: 'Total Expenses',
             value: `$${totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-            change: '+0%', // placeholder
+            change: '+0%',
             isPositive: true,
             bgColor: 'bg-[#344E75]'
           },
@@ -423,7 +223,7 @@ const Expense = () => {
             icon: Calendar,
             label: 'This Month',
             value: `$${Number(totalThisMonth).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-            change: totalThisMonth >= 0 ? '-0%' : '-0%',
+            change: '-0%',
             isPositive: false,
             bgColor: 'bg-[#344E75]'
           },
@@ -449,13 +249,13 @@ const Expense = () => {
 
         // derive categories summary (group by category)
         const catMap: Record<string, any> = {};
-        mapped.forEach(e => {
+        mapped.forEach((e) => {
           const k = e.category || 'Other';
           if (!catMap[k]) catMap[k] = { name: k, transactions: 0, amount: 0, icon: e.icon, color: e.color };
           catMap[k].transactions += 1;
           catMap[k].amount += Number(e.amount || 0);
         });
-        const categories = Object.values(catMap).map((c, i) => {
+        const categories = Object.values(catMap).map((c: any, i: number) => {
           return {
             id: i + 1,
             name: c.name,
@@ -469,19 +269,20 @@ const Expense = () => {
 
         // compute percentages
         const totalForCats = categories.reduce((s, c) => s + c.amount, 0) || 1;
-        categories.forEach(c => {
+        categories.forEach((c: any) => {
           c.percentage = Math.round((c.amount / totalForCats) * 100);
         });
 
         // Apply mapped results to state
         setState({
           stats,
-          categories: categories.length ? categories : FALLBACK.categories,
+          categories,
           expenses: mapped
         });
       } catch (err) {
-        // on any error — keep fallback (no state change)
-        console.error('Failed to load expenses, using fallback', err);
+        // on any error — set empty state (no static fallback)
+        console.error('Failed to load expenses', err);
+        if (mounted) setState({ stats: [], categories: [], expenses: [] });
       } finally {
         if (mounted) setLoading(false);
       }
@@ -512,7 +313,7 @@ const Expense = () => {
     return state.expenses.slice(start, start + PAGE_SIZE);
   }, [state.expenses, currentPage]);
 
-  const showingStart = state.expenses.length === 0 ? 0 : (state.expenses.length ? (Math.min((currentPage - 1) * PAGE_SIZE + 1, state.expenses.length)) : 0);
+  const showingStart = state.expenses.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const showingEnd = Math.min(currentPage * PAGE_SIZE, state.expenses.length);
 
   return (
@@ -525,13 +326,11 @@ const Expense = () => {
               <h2 className="text-xl font-bold text-white">Recent Expenses</h2>
               <div className="flex flex-wrap items-center gap-3">
                 <FilterDropdown
-                  // label="Category"
                   value={categoryFilter}
-                  options={['All Categories', 'Food & Dining', 'Transportation', 'Shopping', 'Entertainment']}
+                  options={['All Categories', 'Food & Dining', 'Transportation', 'Shopping', 'Entertainment', 'Groceries', 'Other']}
                   onChange={setCategoryFilter}
                 />
                 <FilterDropdown
-                  // label="Time"
                   value={timeFilter}
                   options={['Last 30 days', 'Last 7 days', 'This month', 'Last month']}
                   onChange={setTimeFilter}

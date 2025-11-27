@@ -93,7 +93,7 @@ const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
 
 const PermissionBadge: React.FC<{ permissions: string }> = ({ permissions }) => {
   const getColor = (permission?: string) => {
-    switch (permission) {
+    switch ((permission || '').toLowerCase()) {
       case "view+add+update":
         return "text-red-500";
       case "view+add":
@@ -110,9 +110,9 @@ const PermissionBadge: React.FC<{ permissions: string }> = ({ permissions }) => 
   const capitalize = (str: string) => {
     if (!str) return "";
     return str
-      .split("+")               // split words by '+' since your permissions use '+'
+      .split("+")
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" + ");             // join back with ' + '
+      .join(" + ");
   };
   return (
     <span className={`text-xs sm:text-sm font-medium ${getColor(permissions)}`}>
@@ -120,7 +120,6 @@ const PermissionBadge: React.FC<{ permissions: string }> = ({ permissions }) => 
     </span>
   );
 };
-
 
 // ---------- Edit Form Modal (appears when clicking edit) ----------
 type EditFormState = {
@@ -163,7 +162,7 @@ function readCurrentUserId(): string | null {
 // Simple validators
 const isEmailValid = (email: string) => /^\S+@\S+\.\S+$/.test(email);
 const isContactValid = (contact: string) => {
-  const digits = contact.replace(/\D/g, '');
+  const digits = (contact || '').replace(/\D/g, '');
   return digits.length >= 7;
 };
 
@@ -172,7 +171,7 @@ const StaffCard: React.FC<{ staff: any; onView: (id: any) => void; onEdit: (id: 
   <div className="bg-[var(--primary-100)] rounded-lg p-4 mb-3 shadow-sm border border-[#8C9BB0]/10">
     <div className="flex items-start justify-between mb-3">
       <div className="flex items-center gap-3">
-        <img src={staff.avatar ?? "https://cdn-icons-png.flaticon.com/512/219/219983.png"} alt={staff.name} className="w-12 h-12 rounded-full object-cover" />
+        {/* <img src={staff.avatar ?? "https://cdn-icons-png.flaticon.com/512/219/219983.png"} alt={staff.name} className="w-12 h-12 rounded-full object-cover" /> */}
         <div>
           <p className="font-semibold text-[var(--primary-300)] text-sm">{staff.name}</p>
           <p className="text-xs text-[var(--primary-300)]">{staff.email}</p>
@@ -184,7 +183,7 @@ const StaffCard: React.FC<{ staff: any; onView: (id: any) => void; onEdit: (id: 
     <div className="space-y-2 mb-3">
       <div className="flex items-center justify-between">
         <span className="text-xs text-[#8C9BB0]">Role:</span>
-        <RoleBadge role={staff.role} />
+        <RoleBadge role={staff.role || ''} />
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-[#8C9BB0]">Phone:</span>
@@ -192,7 +191,7 @@ const StaffCard: React.FC<{ staff: any; onView: (id: any) => void; onEdit: (id: 
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-[#8C9BB0]">Permissions:</span>
-        <PermissionBadge permissions={staff.permission} />
+        <PermissionBadge permissions={staff.permission || ''} />
       </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-[#8C9BB0]">Created:</span>
@@ -210,13 +209,12 @@ const StaffCard: React.FC<{ staff: any; onView: (id: any) => void; onEdit: (id: 
 
 
 const formatDate = (timestamp: any) => {
+  if (!timestamp) return '—';
   const date = new Date(timestamp);
-
-  // Format as "Nov 24, 2025"
+  if (isNaN(date.getTime())) return '—';
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-  const formattedDate = date.toLocaleDateString('en-US', options);
-  return formattedDate
-}
+  return date.toLocaleDateString('en-US', options);
+};
 // ---------- Desktop Table View (unchanged) ----------
 const StaffTable: React.FC<{ data: any[]; onView: (id: any) => void; onEdit: (id: any) => void; onDelete: (id: any) => void }> = ({ data, onView, onEdit, onDelete }) => (
   <div className="overflow-x-auto">
@@ -237,7 +235,7 @@ const StaffTable: React.FC<{ data: any[]; onView: (id: any) => void; onEdit: (id
           <tr key={staff.id} className="border-b border-[#8C9BB0]/10 hover:bg-[var(--primary-200)] transition-colors">
             <td className="py-4 px-4">
               <div className="flex items-center gap-3">
-                <img src={staff.avatar ?? "https://cdn-icons-png.flaticon.com/512/219/219983.png"} alt={staff.name} className="w-10 h-10 rounded-full object-cover" />
+                {/* <img src={staff.avatar ?? "https://cdn-icons-png.flaticon.com/512/219/219983.png"} alt={staff.name} className="w-10 h-10 rounded-full object-cover" /> */}
                 <div>
                   <p className="font-semibold text-[var(--primary-300)]">{staff.name}</p>
                   <p className="text-sm text-[var(--primary-300)]">{staff.email}</p>
@@ -246,10 +244,10 @@ const StaffTable: React.FC<{ data: any[]; onView: (id: any) => void; onEdit: (id
             </td>
             <td className="py-4 px-4 text-[var(--primary-300)]">{staff.contact}</td>
             <td className="py-4 px-4">
-              <RoleBadge role={staff.role} />
+              <RoleBadge role={staff.role || ''} />
             </td>
             <td className="py-4 px-4">
-              <PermissionBadge permissions={staff.permission} />
+              <PermissionBadge permissions={staff.permission || ''} />
             </td>
             <td className="py-4 px-4 text-[var(--primary-300)]">{ formatDate( staff.createdAt )}</td>
 
@@ -268,14 +266,20 @@ const StaffTable: React.FC<{ data: any[]; onView: (id: any) => void; onEdit: (id
 );
 
 // ---------- Pagination (unchanged) ----------
-const Pagination: React.FC<{ currentPage: number; totalPages: number; onPageChange: (p: number) => void; }> = ({ currentPage, totalPages, onPageChange }) => (
+const Pagination: React.FC<{
+  currentPage: number;
+  totalPages: number;
+  totalResults: number;
+  onPageChange: (p: number) => void;
+}> = ({ currentPage, totalPages, totalResults, onPageChange }) => (
   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
     <p className="text-xs sm:text-sm text-[var(--primary-300)]">
-      Showing 1 to 4 of {initialStaffData.length} results
+      Showing {totalResults === 0 ? 0 : (currentPage - 1) * 4 + 1} to {Math.min(totalResults, currentPage * 4)} of {totalResults} results
     </p>
+
     <div className="flex gap-2">
       <button
-        onClick={() => onPageChange(currentPage - 1)}
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
         className="px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg border border-[#8C9BB0]/30 text-[var(--primary-300)] font-medium hover:bg-[var(--primary-200)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
@@ -294,7 +298,7 @@ const Pagination: React.FC<{ currentPage: number; totalPages: number; onPageChan
         </button>
       ))}
       <button
-        onClick={() => onPageChange(currentPage + 1)}
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
         className="px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg border border-[#8C9BB0]/30 text-[var(--primary-300)] font-medium hover:bg-[var(--primary-200)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
@@ -303,7 +307,6 @@ const Pagination: React.FC<{ currentPage: number; totalPages: number; onPageChan
     </div>
   </div>
 );
-
 
 // ---------- Mock data (kept same values) ----------
 const initialStaffData: Array<{
@@ -317,70 +320,52 @@ const initialStaffData: Array<{
   status: string;
   avatar: string;
 }> = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@company.com',
-      phone: '+1 (555) 123-4567',
-      role: 'Project Manager',
-      permissions: 'All',
-      created: 'Jan 15, 2024',
-      status: 'Active',
-      avatar: 'https://i.pravatar.cc/150?img=1'
-    },
-    {
-      id: 2,
-      name: 'Michael Chen',
-      email: 'michael.chen@company.com',
-      phone: '+1 (555) 234-5678',
-      role: 'Senior Developer',
-      permissions: 'View + Add + Update',
-      created: 'Dec 8, 2023',
-      status: 'Active',
-      avatar: 'https://i.pravatar.cc/150?img=2'
-    },
-    {
-      id: 3,
-      name: 'Emma Davis',
-      email: 'emma.davis@company.com',
-      phone: '+1 (555) 345-6789',
-      role: 'UX Designer',
-      permissions: 'View + Add',
-      created: 'Feb 22, 2024',
-      status: 'Active',
-      avatar: 'https://i.pravatar.cc/150?img=3'
-    },
-    {
-      id: 4,
-      name: 'David Wilson',
-      email: 'david.wilson@company.com',
-      phone: '+1 (555) 456-7890',
-      role: 'HR Manager',
-      permissions: 'View',
-      created: 'Nov 10, 2023',
-      status: 'Inactive',
-      avatar: 'https://i.pravatar.cc/150?img=4'
-    }
-  ];
-
-const statsData = [
-  { label: 'Total Staff', value: 24, icon: Users, color: 'bg-[#11BF7F]/10', iconColor: 'text-[#11BF7F]', borderColor: 'border-l-[#11BF7F]' },
-  { label: 'Active Staff', value: 18, icon: UserCheck, color: 'bg-[#3D8BF2]/10', iconColor: 'text-[#3D8BF2]', borderColor: 'border-l-[#3D8BF2]' },
-  { label: 'Departments', value: 6, icon: Building2, color: 'bg-[#EC9A0E]/10', iconColor: 'text-[#EC9A0E]', borderColor: 'border-l-[#EC9A0E]' },
-  { label: 'New This Month', value: 3, icon: UserPlus, color: 'bg-[#F27117]/10', iconColor: 'text-[#F27117]', borderColor: 'border-l-[#F27117]' }
+  {
+    id: 1,
+    name: 'Sarah Johnson',
+    email: 'sarah.johnson@company.com',
+    phone: '+1 (555) 123-4567',
+    role: 'Project Manager',
+    permissions: 'All',
+    created: 'Jan 15, 2024',
+    status: 'Active',
+    avatar: 'https://i.pravatar.cc/150?img=1'
+  },
+  {
+    id: 2,
+    name: 'Michael Chen',
+    email: 'michael.chen@company.com',
+    phone: '+1 (555) 234-5678',
+    role: 'Senior Developer',
+    permissions: 'View + Add + Update',
+    created: 'Dec 8, 2023',
+    status: 'Active',
+    avatar: 'https://i.pravatar.cc/150?img=2'
+  },
+  {
+    id: 3,
+    name: 'Emma Davis',
+    email: 'emma.davis@company.com',
+    phone: '+1 (555) 345-6789',
+    role: 'UX Designer',
+    permissions: 'View + Add',
+    created: 'Feb 22, 2024',
+    status: 'Active',
+    avatar: 'https://i.pravatar.cc/150?img=3'
+  },
+  {
+    id: 4,
+    name: 'David Wilson',
+    email: 'david.wilson@company.com',
+    phone: '+1 (555) 456-7890',
+    role: 'HR Manager',
+    permissions: 'View',
+    created: 'Nov 10, 2023',
+    status: 'Inactive',
+    avatar: 'https://i.pravatar.cc/150?img=4'
+  }
 ];
 
-interface StaffType {
-  id: number | string;
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  permissions: string;
-  created: string;
-  status: string;
-  // avatar: string;
-}
 // ---------- Main Component ----------
 const Staff: React.FC = () => {
   const navigate = useNavigate();
@@ -388,10 +373,9 @@ const Staff: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedRole] = useState('All Roles');
   const [selectedPermission] = useState('All Permissions');
-  // const [mobileMenuOpen] = useState(false);
 
   // make staff state editable
-  const [staffList, setStaffList] = useState<StaffType[]>([]);
+  const [staffList, setStaffList] = useState<any[]>([]);
 
   // Edit modal state
   const [editingStaffId, setEditingStaffId] = useState<number | string | null>(null);
@@ -410,55 +394,84 @@ const Staff: React.FC = () => {
   const [deleteLoadingId, setDeleteLoadingId] = useState<number | string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // PAGE SIZE
+  const PAGE_SIZE = 4;
+
+  // Derived values (after state declared)
+  const totalStaffCount = Array.isArray(staffList) ? staffList.length : 0;
+  const statsData = [
+    {
+      label: 'Total Staff',
+      value: totalStaffCount,
+      icon: Users,
+      color: 'bg-[#11BF7F]/10',
+      iconColor: 'text-[#11BF7F]',
+      borderColor: 'border-l-[#11BF7F]'
+    }
+  ];
+
   useEffect(() => {
     (async () => {
-      const role = localStorage.getItem("role")
-      const userString = localStorage.getItem("user")
-
-      const user = userString ? JSON.parse(userString) : {}
-
+      const role = localStorage.getItem("role");
+      const userString = localStorage.getItem("user");
+      const user = userString ? JSON.parse(userString) : {};
       const adminId = role === "Admin" ? user?.id : user?.createdBy;
+
       try {
         const res = await apiRequest({
           method: "GET",
           endpoint: `/staff/getAllStaff/${adminId}`,
         });
-        const { staff } = res
-        console.log("Staff: ", staff);
 
-        setStaffList(staff)
+        // backend response may be { staff: [...] } or similar
+        const rawStaff = res?.staff ?? res?.data?.staff ?? [];
 
+        // normalize to a predictable shape
+        const normalized = Array.isArray(rawStaff) ? rawStaff.map((s: any) => ({
+          id: s._id ?? s.id ?? String(Math.random()).slice(2),
+          name: s.name ?? '',
+          email: s.email ?? '',
+          contact: s.contact ?? s.phone ?? '',
+          role: s.role ?? '',
+          permission: s.permission ?? s.permissions ?? '',
+          createdAt: s.createdAt ?? s.created ?? null,
+          avatar: s.avatar ?? `https://i.pravatar.cc/150?u=${encodeURIComponent(s.email ?? s._id ?? s.id ?? '')}`
+        })) : [];
+
+        setStaffList(normalized);
+        console.log("Staff: ", normalized);
       } catch (error: any) {
         if (error?.response?.status === 404) {
-          setStaffList([])
-        }
-        else {
-          console.error(error)
+          setStaffList([]);
+        } else {
+          console.error(error);
         }
       }
     })();
-  }, [])
+  }, []);
 
   // Filtered data
   const filteredData = staffList.filter(staff =>
-    staff.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    staff.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    staff.role.toLowerCase().includes(searchTerm.toLowerCase())
+    (staff.name ?? '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (staff.email ?? '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (staff.role ?? '').toString().toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
 
   // view / edit / delete handlers
   const handleView = (id: number | string) => console.log('View staff:', id);
 
   const openEditModal = (id: number | string) => {
-    const staff = staffList.find(s => s.id === id);
+    const staff = staffList.find(s => String(s.id) === String(id));
     if (!staff) return;
     setEditingStaffId(id);
     setEditForm({
       name: staff.name || '',
       email: staff.email || '',
-      contact: staff.phone || '',
+      contact: staff.contact || '',
       password: '',
-      permission: staff.permissions || ''
+      permission: staff.permission || ''
     });
     setEditError(null);
     setEditSuccess(null);
@@ -497,10 +510,9 @@ const Staff: React.FC = () => {
         body: { staffId: id, userId }
       });
 
-      // remove staff locally
-      setStaffList(prev => prev.filter(s => String(s.id) !== String(id) && String((s as any)._id) !== String(id)));
+      // remove staff locally by normalized id
+      setStaffList(prev => prev.filter(s => String(s.id) !== String(id)));
 
-      // optionally log or display message
       console.log(res?.message ?? 'Staff deleted successfully.');
     } catch (err: any) {
       setDeleteError(err?.message ?? 'Failed to delete staff.');
@@ -559,7 +571,6 @@ const Staff: React.FC = () => {
       name: editForm.name.trim(),
       email: editForm.email.trim().toLowerCase(),
       contact: editForm.contact.trim(),
-      // include password only if provided
       ...(editForm.password ? { password: editForm.password } : {}),
       permission: permissionMapToBackend[editForm.permission] || editForm.permission,
       staffId: editingStaffId,
@@ -574,37 +585,43 @@ const Staff: React.FC = () => {
         body: payload
       });
 
-      // on success, backend returns staff in res.staff
       const updatedStaff = res?.staff;
+
       if (updatedStaff) {
-        // update local staffList mapping by id
-        setStaffList(prev => prev.map(s => {
-          if (String(s.id) === String(updatedStaff.id) || String(s.id) === String(editingStaffId) || String((s as any)._id) === String(updatedStaff.id)) {
-            // keep avatar and created/status if not returned by backend
-            return {
-              ...s,
-              name: updatedStaff.name ?? s.name,
-              email: updatedStaff.email ?? s.email,
-              phone: updatedStaff.contact ?? s.phone,
-              permissions: updatedStaff.permission ?? s.permissions,
-              role: updatedStaff.role ?? s.role
-            };
-          }
-          return s;
-        }));
+        // normalize updatedStaff similarly and merge
+        const normalizedUpdated = {
+          id: updatedStaff._id ?? updatedStaff.id ?? editingStaffId,
+          name: updatedStaff.name ?? undefined,
+          email: updatedStaff.email ?? undefined,
+          contact: updatedStaff.contact ?? updatedStaff.phone ?? undefined,
+          permission: updatedStaff.permission ?? updatedStaff.permissions ?? undefined,
+          role: updatedStaff.role ?? undefined,
+          createdAt: updatedStaff.createdAt ?? undefined,
+          avatar: updatedStaff.avatar ?? undefined
+        };
+
+        setStaffList(prev => prev.map(s => (String(s.id) === String(normalizedUpdated.id) ? {
+          ...s,
+          name: normalizedUpdated.name ?? s.name,
+          email: normalizedUpdated.email ?? s.email,
+          contact: normalizedUpdated.contact ?? s.contact,
+          permission: normalizedUpdated.permission ?? s.permission,
+          role: normalizedUpdated.role ?? s.role,
+          createdAt: normalizedUpdated.createdAt ?? s.createdAt,
+          avatar: normalizedUpdated.avatar ?? s.avatar
+        } : s)));
       } else {
-        // fallback: optimistic update from form
-        setStaffList(prev => prev.map(s => (s.id === editingStaffId ? {
+        // optimistic local update using form values
+        setStaffList(prev => prev.map(s => (String(s.id) === String(editingStaffId) ? {
           ...s,
           name: payload.name,
           email: payload.email,
-          phone: payload.contact,
-          permissions: editForm.permission
+          contact: payload.contact,
+          permission: editForm.permission
         } : s)));
       }
 
       setEditSuccess(res?.message ?? 'Staff updated successfully.');
-      // close after short delay so user sees success
       setTimeout(() => {
         closeEditModal();
       }, 700);
@@ -616,6 +633,11 @@ const Staff: React.FC = () => {
   };
 
   // page render
+  // compute page slice for display (if you'd like to only render the page portion)
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageEnd = pageStart + PAGE_SIZE;
+  const pagedData = filteredData.slice(pageStart, pageEnd);
+
   return (
     <div className="min-h-screen w-full bg-[var(--primary-200)]">
       {/* Header */}
@@ -691,7 +713,7 @@ const Staff: React.FC = () => {
 
           {/* Mobile Card View */}
           <div className="block lg:hidden p-4">
-            {filteredData.map((staff) => (
+            {pagedData.map((staff) => (
               <StaffCard
                 key={staff.id}
                 staff={staff}
@@ -705,7 +727,7 @@ const Staff: React.FC = () => {
           {/* Desktop Table View */}
           <div className="hidden lg:block">
             <StaffTable
-              data={filteredData}
+              data={pagedData}
               onView={handleView}
               onEdit={openEditModal}
               onDelete={handleDelete}
@@ -715,8 +737,9 @@ const Staff: React.FC = () => {
           <div className="p-4 sm:p-6 border-t border-[#8C9BB0]/20">
             <Pagination
               currentPage={currentPage}
-              totalPages={3}
-              onPageChange={setCurrentPage}
+              totalPages={totalPages}
+              totalResults={filteredData.length}
+              onPageChange={(p) => setCurrentPage(Math.max(1, Math.min(totalPages, p)))}
             />
           </div>
         </div>
