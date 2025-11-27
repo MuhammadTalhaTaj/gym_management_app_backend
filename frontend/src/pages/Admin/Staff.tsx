@@ -532,17 +532,28 @@ const [selectedPermission, setSelectedPermission] = useState<string>('All Permis
   }, [staffList]);
 
   // Filtered data - now reacts to selectedRole and selectedPermission
-  const filteredData = useMemo(() => {
-    return staffList.filter(staff => {
-      const q = (searchTerm ?? '').toString().toLowerCase();
-      const matchesSearch = (staff.name ?? '').toString().toLowerCase().includes(q) ||
-        (staff.email ?? '').toString().toLowerCase().includes(q) ||
-        (staff.role ?? '').toString().toLowerCase().includes(q);
-      const matchesRole = selectedRole === 'All Roles' || (staff.role ?? '') === selectedRole;
-      const matchesPerm = selectedPermission === 'All Permissions' || (staff.permission ?? '') === selectedPermission;
-      return matchesSearch && matchesRole && matchesPerm;
-    });
-  }, [staffList, searchTerm, selectedRole, selectedPermission]);
+ const filteredData = staffList.filter(staff => {
+  // search match (name, email, role)
+  const q = (searchTerm || '').toString().toLowerCase();
+  const nameMatch = (staff.name ?? '').toString().toLowerCase().includes(q);
+  const emailMatch = (staff.email ?? '').toString().toLowerCase().includes(q);
+  const roleText = (staff.role ?? '').toString().toLowerCase();
+  const roleMatch = roleText.includes(q);
+
+  const searchMatch = q === '' ? true : (nameMatch || emailMatch || roleMatch);
+
+  // role filter match
+  const roleFilter = (selectedRole || 'All Roles');
+  const roleFilterActive = roleFilter !== 'All Roles';
+  const roleMatches = !roleFilterActive || ((staff.role || '').toString().toLowerCase() === roleFilter.toString().toLowerCase());
+
+  // permission filter match
+  const permissionFilterKey = uiPermissionToKey(selectedPermission || 'All Permissions'); // '' if All
+  const staffPermKey = normalizePermissionKey(staff.permission || staff.permissions || '');
+  const permissionMatches = !permissionFilterKey || staffPermKey === permissionFilterKey;
+
+  return searchMatch && roleMatches && permissionMatches;
+});
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
 
