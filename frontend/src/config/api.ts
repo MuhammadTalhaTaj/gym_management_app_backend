@@ -44,7 +44,7 @@ async function ensureRefreshed(): Promise<string> {
  * Build fetch config from opts and token
  */
 function buildFetchConfig(opts: ApiRequestOptions, accessToken?: string): RequestInit {
-  const headers: Record<string,string> = {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...opts.headers
   };
@@ -59,7 +59,7 @@ function buildFetchConfig(opts: ApiRequestOptions, accessToken?: string): Reques
     credentials: "include", // include cookies by default (useful for refresh cookie)
   };
 
-  if (opts.body && ["POST","PUT","PATCH", "DELETE"].includes(opts.method)) {
+  if (opts.body && ["POST", "PUT", "PATCH", "DELETE"].includes(opts.method)) {
     config.body = JSON.stringify(opts.body);
   }
 
@@ -116,7 +116,11 @@ export async function apiRequest<T = any>(opts: ApiRequestOptions): Promise<T> {
       storeAccessToken(null);
       callAuthFailureHandler();
     }
-    throw new Error((data && data.message) || `API error on ${opts.endpoint} (status ${response.status})`);
+    throw {
+      status: response.status,
+      message: data?.message || `API error on ${opts.endpoint}`,
+      data
+    };
   }
 
   return opts.mapFn ? opts.mapFn(data) : data;

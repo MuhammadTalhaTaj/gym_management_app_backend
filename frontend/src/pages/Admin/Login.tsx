@@ -165,8 +165,12 @@ const LoginForm = ({ data }: any) => {
       // navigate to dashboard
       navigate('/dashboard');
     } catch (err: any) {
-      // preserve message from backend when available
-      setError(err?.message || 'Login failed. Please check your credentials.');
+      if(err.status === 400){
+        setError("Invalid email or password")
+      }
+      else{
+        console.error(err.message)
+      }
     } finally {
       setLoading(false);
     }
@@ -176,7 +180,7 @@ const LoginForm = ({ data }: any) => {
     <div className="w-full lg:w-1/2 bg-white p-8 lg:p-12 flex items-center justify-center">
       <div className="w-full max-w-md">
         <Logo title={data.branding.title} subtitle={data.branding.subtitle} />
-        
+
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-[var(--primary-200)] mb-2">
             {data.welcomeSection.heading}
@@ -271,7 +275,7 @@ const LoginForm = ({ data }: any) => {
           <p className="text-center text-sm text-[var(--primary-300)]">
             Don't have an account?{' '}
             <button className="text-[var(--tertiary-400)] hover:underline font-semibold"
-             onClick={()=>{navigate('/signup')}}>
+              onClick={() => { navigate('/signup') }}>
               Sign up here
             </button>
           </p>
@@ -286,7 +290,7 @@ const InfoPanel = ({ data }: any) => (
   <div className="hidden lg:flex w-1/2 bg-[var(--primary-200)] relative overflow-hidden">
     {/* Background overlay */}
     <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary-200)] to-[var(--primary-100)] opacity-95"></div>
-    
+
     {/* Decorative elements */}
     <div className="absolute top-20 right-20 w-64 h-64 bg-[var(--secondary-100)] rounded-full opacity-10 blur-3xl"></div>
     <div className="absolute bottom-20 left-20 w-96 h-96 bg-[var(--tertiary-400)] rounded-full opacity-10 blur-3xl"></div>
@@ -299,7 +303,7 @@ const InfoPanel = ({ data }: any) => (
       <h2 className="text-4xl font-bold text-white mb-4">
         {data.rightSide.title}
       </h2>
-      
+
       <p className="text-white/70 mb-8 leading-relaxed">
         {data.rightSide.description}
       </p>

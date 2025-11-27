@@ -111,8 +111,8 @@ export async function loginRequest(payload: LoginPayload, remember = false): Pro
     };
   } catch (err: any) {
     // Normalize error messages for callers
-    const message = err?.message ?? String(err) ?? "Login request failed";
-    throw new Error(message);
+    // const message = err?.message ?? String(err) ?? "Login request failed";
+    throw err
   }
 }
 
