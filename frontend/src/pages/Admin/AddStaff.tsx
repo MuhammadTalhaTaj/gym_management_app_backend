@@ -1,4 +1,4 @@
-// src/pages/AddStaff.tsx
+  // src/pages/AddStaff.tsx
 import React, { useState } from 'react';
 import { Eye, EyeOff, Users, UserCheck, UserPlus, Shield, User, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -451,11 +451,11 @@ const AddStaff: React.FC = () => {
               <span className="hidden sm:inline">← Back to Staff List</span>
               <span className="sm:hidden">← Back</span>
             </button>
-            <img
+            {/* <img
               src="https://i.pravatar.cc/150?img=5"
               alt="User"
               className="w-10 h-10 rounded-full object-cover border-2 border-[var(--tertiary-400)]"
-            />
+            /> */}
           </div>
         </div>
       </header>
@@ -572,7 +572,7 @@ const AddStaff: React.FC = () => {
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             {/* Team Overview */}
-            <Card className="p-6">
+            {/* <Card className="p-6">
               <h3 className="text-lg font-semibold text-[var(--primary-300)] mb-4">Team Overview</h3>
               <div className="space-y-4">
                 <StatsCard
@@ -597,7 +597,7 @@ const AddStaff: React.FC = () => {
                   iconColor="text-orange-600"
                 />
               </div>
-            </Card>
+            </Card> */}
 
             {/* Permission Levels */}
             <Card className="p-6">
@@ -610,14 +610,14 @@ const AddStaff: React.FC = () => {
             </Card>
 
             {/* Recent Activity */}
-            <Card className="p-6">
+            {/* <Card className="p-6">
               <h3 className="text-lg font-semibold text-[var(--primary-300)] mb-4">Recent Activity</h3>
               <div className="space-y-4">
                 {staffData.recentActivity.map(activity => (
                   <ActivityItem key={activity.id} activity={activity} />
                 ))}
               </div>
-            </Card>
+            </Card> */}
           </div>
         </div>
       </main>

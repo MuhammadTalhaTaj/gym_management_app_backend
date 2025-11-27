@@ -128,6 +128,15 @@ function AdminSidebar() {
       Add Payment
     </NavLink>
   </li>
+  <li className={isActive('/addplan') ? 'active-link' : ''}>
+    <NavLink to="/addplan">
+      <FontAwesomeIcon className="adminSidebarIcon"
+        icon={faCirclePlus}
+        style={{ color: isActive('/addplan') ? 'var(--secondary-100)' : 'var(--primary-300)' }}
+      />
+      Add Plan
+    </NavLink>
+  </li>
   {/* <li className={isActive('/finance') ? 'active-link' : ''}>
     <NavLink to="/finance">
       <FontAwesomeIcon className="adminSidebarIcon"

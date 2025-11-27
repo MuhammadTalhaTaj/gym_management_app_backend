@@ -1,6 +1,7 @@
 // src/pages/AddPlan.tsx
 import React, { useState } from 'react';
 import { apiRequest } from '../../config/api'; // API helper
+import CustomAlert from '../../components/CustomAlert'; 
 
 // Data file - formConfig.js
 const formConfig = {
@@ -72,7 +73,7 @@ const InputField = ({ label, required, type = 'text', placeholder, value, onChan
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className={`w-full bg-[var(--primary-20)] text-white border border-[var(--primary-10)] rounded-lg px-4 py-3 ${
+        className={`w-full bg-[var(--primary-200)] text-[var(--primary-300)] border border-[var(--primary-10)] rounded-lg px-4 py-3 ${
           prefix ? 'pl-8' : ''
         } focus:outline-none focus:ring-2 focus:ring-[var(--secondary-100)] placeholder-[var(--primary-30)] transition-all`}
       />
@@ -89,7 +90,7 @@ const SelectField = ({ label, required, options, value, onChange }: any) => (
     <select
       value={value}
       onChange={onChange}
-      className="w-full bg-[var(--primary-20)] text-white border border-[var(--primary-10)] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--secondary-100)] appearance-none cursor-pointer transition-all"
+      className="w-full bg-[var(--primary-200)] text-[var(--primary-300)] border border-[var(--primary-100)] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--secondary-100)] appearance-none cursor-pointer transition-all"
       style={{
         backgroundImage:
           "url(\"data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%238C9BB0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
@@ -167,6 +168,16 @@ const Button = ({ children, variant = 'primary', onClick, icon }: any) => {
 
 // Main Component
 const AddPlan = () => {
+  const [toast, setToast] = useState({
+  open: false,
+  text: '',
+  severity: 'success' as 'success' | 'error' | 'warning' | 'info'
+});
+
+const showToast = (text: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+  setToast({ open: true, text, severity });
+};
+const handleToastClose = () => setToast(prev => ({ ...prev, open: false }));
   const [formData, setFormData] = useState({ planName: '', durationType: '', duration: '', amount: '' });
   const [loading, setLoading] = useState(false);
 
@@ -186,26 +197,29 @@ const AddPlan = () => {
   const handleSubmit = async () => {
     const missing = validate();
     if (missing.length > 0) {
-      alert(`Provide required fields: ${missing.join(', ')}`);
+      showToast(`Provide required fields: ${missing.join(', ')}`, 'warning');
       return;
     }
-
+const createdBy = localStorage.getItem('createdBy');
+const role = localStorage.getItem('role');
     const payload = {
       name: formData.planName,
       durationType: formData.durationType,
       duration: Number(formData.duration),
-      amount: Number(formData.amount)
+      amount: Number(formData.amount),
+      createdBy: createdBy,
+      role: role
     };
 
     setLoading(true);
     try {
       const res = await apiRequest({ method: 'POST', endpoint: '/plan/addplan', body: payload });
-      alert(res?.message ?? 'Plan added successfully');
+      showToast(res?.message ?? 'Plan added successfully', 'success');
       setFormData({ planName: '', durationType: '', duration: '', amount: '' });
       console.log('Plan added:', res);
     } catch (err: any) {
       console.warn('Add plan failed:', err);
-      alert(err?.message ?? 'Failed to add plan. See console for details.');
+      showToast(err?.message ?? 'Failed to add plan. See console for details.', 'error');
     } finally {
       setLoading(false);
     }
