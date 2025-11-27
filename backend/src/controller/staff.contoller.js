@@ -247,4 +247,4 @@ const removeStaff = asyncHandler(async(req,res)=>{
     })
 })
 
-export {staffSignup,staffLogin,staffLogout,staffRefreshAccessToken,staffPermission, updateStaff, getAllStaff }
+export {staffSignup,staffLogin,staffLogout,staffRefreshAccessToken,staffPermission, updateStaff, getAllStaff, removeStaff }

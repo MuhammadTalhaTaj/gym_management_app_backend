@@ -23,4 +23,15 @@ const planSchema= mongoose.Schema({
  },
 }, {timestamps:true})
 
+planSchema.pre("findOneAndDelete", async function (next) {
+  const planId = this.getQuery()._id;
+
+  await mongoose.model("Member").updateMany(
+    { plan: planId },
+    { $set: { plan: null } }
+  );
+
+  next();
+});
+
 export const Plan= mongoose.model('Plan',planSchema)

@@ -6,9 +6,9 @@ import { Payment } from "../model/payment.model.js";
 import mongoose from "mongoose"
 
 const addPayment = asyncHandler(async (req, res) => {
-  const { amount, memberId, plan, paymentDate } = req.body;
+  const { amount, memberId, plan, paymentDate, userId, currentUser } = req.body;
 
-  if (!amount || !memberId || !plan || !paymentDate) {
+  if (!amount || !memberId || !plan || !paymentDate || !userId) {
     throw new APIError(400, "Provide required fields");
   }
 
