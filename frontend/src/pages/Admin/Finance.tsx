@@ -54,15 +54,24 @@ const Header = ({ user }: any) => (
 // Time Toggle Component
 const TimeToggle = ({ activeView, onViewChange }: any) => {
   const views = ['Day', 'Week', 'Month'];
+
   return (
-    <div className="inline-flex bg-[var(--primary-200)] rounded-lg p-1">
+    <div className="flex bg-[var(--primary-200)] rounded-lg p-1 flex-wrap justify-center md:justify-start">
       {views.map((view) => (
         <button
           key={view}
           onClick={() => onViewChange(view)}
-          className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
-            activeView === view ? 'bg-[var(--primary-100)] text-white shadow-sm' : 'text-gray-600 hover:text-[var(--primary-300)]'
-          }`}
+          className={`
+            flex-1 md:flex-none
+            min-w-[60px] md:min-w-0
+            px-4 py-2
+            rounded-md
+            text-sm font-medium
+            transition-all
+            ${activeView === view
+              ? 'bg-[var(--primary-100)] text-white shadow-sm'
+              : 'text-gray-600 hover:text-[var(--primary-300)]'}
+          `}
         >
           {view}
         </button>
@@ -70,6 +79,7 @@ const TimeToggle = ({ activeView, onViewChange }: any) => {
     </div>
   );
 };
+
 
 // Stat Card Component
 const StatCard = ({ title, amount, percentageChange, isExpense }: StatCardProps) => {
@@ -150,8 +160,11 @@ const IncomeExpenseChart = ({ data }: { data: DashboardResponse | null }) => {
 
   return (
     <div className="bg-[var(--primary-100)] rounded-2xl p-6 shadow-sm border border-gray-100">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-bold text-[var(--primary-300)]">Income vs. Expense</h3>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-6">
+        <h3 className="text-xl font-bold text-[var(--primary-300)]">
+          Income vs. Expense
+        </h3>
+
         <TimeToggle activeView={activeView} onViewChange={setActiveView} />
       </div>
       <ResponsiveContainer width="100%" height={350}>
@@ -288,4 +301,3 @@ const Finance = () => {
 };
 
 export default Finance;
- 

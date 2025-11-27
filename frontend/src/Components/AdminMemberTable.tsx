@@ -1,5 +1,5 @@
 // src/pages/AdminMemberTable.tsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 
 // Status Badge Component (unchanged)
@@ -86,13 +86,18 @@ const TableHeader = () => {
 
 // Main Component (fetches expired members from dashboard controller)
 const AdminMemberTable = ({data}:{data:any}) => {
-  // const { data, loading } = useDashboardData()
-  const [members,] = useState<any[]>([]);
-
+  const [members,setMembers] = useState<any[]>([]);
   const handleView = (id: any) => { console.log('View member:', id); };
   const handleEdit = (id: any) => { console.log('Edit member:', id); };
   const handleDelete = (id: any) => { console.log('Delete member:', id); };
 
+  useEffect(()=>{
+    if(data){
+      console.log("Data: ",data);
+      
+      setMembers(data.expiredMembersList)
+    }
+  },[data])
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 lg:p-8">
       <div className="max-w-7xl mx-auto">

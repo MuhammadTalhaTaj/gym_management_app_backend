@@ -1,8 +1,10 @@
 // src/pages/AddExpense.tsx
-import  { useEffect, useState } from 'react';
-import { X, Check, Tag,
+import { useEffect, useState } from 'react';
+import {
+  X, Check, Tag,
   //  DollarSign,
-   Calendar, FileText, Utensils, Fuel, ShoppingCart, ArrowRight } from 'lucide-react';
+  Calendar, FileText, Utensils, Fuel, ShoppingCart, ArrowRight
+} from 'lucide-react';
 import { apiRequest } from '../../config/api'; // <- existing import
 
 // Data configuration file
@@ -81,9 +83,8 @@ const InputField = ({ label, required, type = 'text', placeholder, value, onChan
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className={`w-full bg-[var(--primary-200)] text-white rounded-lg ${
-          Icon ? 'pl-12' : 'pl-4'
-        } pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--secondary-100)] placeholder-[var(--tertiary-500)]`}
+        className={`w-full bg-[var(--primary-200)] text-white rounded-lg ${Icon ? 'pl-12' : 'pl-4'
+          } pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--secondary-100)] placeholder-[var(--tertiary-500)]`}
       />
     </div>
   </div>
@@ -110,7 +111,7 @@ const AmountDateRow = ({ amount, onAmountChange, date, onDateChange }: any) => (
         />
       </div>
     </div>
-    
+
     <div>
       <label className="block text-white text-sm mb-2">
         Date <span className="text-[var(--tertiary-100)]">*</span>
@@ -145,9 +146,8 @@ const TextareaField = ({ label, optional, placeholder, value, onChange, icon: Ic
         value={value}
         onChange={onChange}
         rows={4}
-        className={`w-full bg-[var(--primary-200)] text-white rounded-lg ${
-          Icon ? 'pl-12' : 'pl-4'
-        } pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--secondary-100)] placeholder-[var(--tertiary-500)] resize-none`}
+        className={`w-full bg-[var(--primary-200)] text-white rounded-lg ${Icon ? 'pl-12' : 'pl-4'
+          } pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--secondary-100)] placeholder-[var(--tertiary-500)] resize-none`}
       />
     </div>
   </div>
@@ -162,11 +162,10 @@ const QuickAmountButtons = ({ amounts, onSelect, selectedAmount }: any) => (
         <button
           key={amount}
           onClick={() => onSelect(amount)}
-          className={`py-3 rounded-lg font-medium transition-all ${
-            selectedAmount === amount
-              ? 'bg-[var(--secondary-100)] text-white'
-              : 'bg-[var(--primary-200)] text-white hover:bg-opacity-80'
-          }`}
+          className={`py-3 rounded-lg font-medium transition-all ${selectedAmount === amount
+            ? 'bg-[var(--secondary-100)] text-white'
+            : 'bg-[var(--primary-200)] text-white hover:bg-opacity-80'
+            }`}
         >
           ${amount}
         </button>
@@ -202,7 +201,7 @@ const ActionButtons = ({ onCancel, onSubmit, submitting }: any) => (
 const RecentExpenseItem = ({ expense }: any) => (
   <div className="bg-[var(--primary-200)] rounded-xl p-4 flex items-center justify-between hover:bg-opacity-80 transition-all cursor-pointer">
     <div className="flex items-center gap-4">
-      <div 
+      <div
         className="w-12 h-12 rounded-xl flex items-center justify-center"
         style={{ backgroundColor: expense.iconBg + '30' }}
       >
@@ -227,7 +226,7 @@ const RecentExpensesSection = ({ expenses }: any) => (
         <ArrowRight className="w-4 h-4" />
       </button>
     </div>
-    
+
     <div className="space-y-3">
       {expenses.map((expense: any) => (
         <RecentExpenseItem key={expense.id} expense={expense} />
@@ -246,13 +245,82 @@ const pickIconType = (name: string, notes?: string) => {
   return 'restaurant';
 };
 
+
+const allowedCategories = [
+  "Rent",
+  "Utility",
+  "Equipment Purchase",
+  "Maintenance",
+  "Salaries",
+  "Training",
+  "Supplies",
+  "Insurance",
+  "Others",
+];
+
+type CategoryOption = { _id?: string | number; id?: string | number; name: string; } & Record<string, any>;
+
+type SelectOption = string | { id?: any; _id?: any; name: string }; type SelectProps = { label: string; required?: boolean; options: SelectOption[]; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; placeholder?: string; };
+
+const Select: React.FC<SelectProps> = ({
+  label,
+  required,
+  options,
+  value,
+  onChange,
+  placeholder,
+}) => {
+  // Filter options to only allowed categories
+  const filteredOptions = options.filter((option) => {
+    const name = typeof option === "string" ? option : (option as CategoryOption).name;
+    return allowedCategories.includes(name);
+  });
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="text-sm font-medium text-white">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <select
+        value={value}
+        onChange={onChange}
+        className={`w-full px-4 py-2.5 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+    ${value ? "text-white" : "text-gray-400"}
+    appearance-none bg-[var(--primary-200)] cursor-pointer`}
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "right 1rem center",
+        }}
+      >
+        <option value="">{placeholder}</option>
+        {filteredOptions.map((option, index) => (
+          <option
+            key={index}
+            value={
+              typeof option === "string"
+                ? option
+                : String((option as CategoryOption)._id ?? (option as any).id ?? (option as any).name ?? index)
+            }
+          >
+            {typeof option === "string" ? option : (option as any).name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+
+
 // Main Component
 const AddExpense = () => {
   const [formData, setFormData] = useState({
     expenseName: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
-    notes: ''
+    notes: '',
+    category: '',
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -273,7 +341,7 @@ const AddExpense = () => {
       try {
         const res = await apiRequest<{ message: string; data: any[] }>({
           method: 'GET',
-          endpoint: '/Expense/getExpense'
+          endpoint: '/expense/getExpense'
         });
 
         const list = Array.isArray(res?.data) ? res.data : [];
@@ -295,8 +363,8 @@ const AddExpense = () => {
               icon === 'fuel'
                 ? 'var(--tertiary-400)'
                 : icon === 'grocery'
-                ? 'var(--tertiary-300)'
-                : 'var(--tertiary-200)';
+                  ? 'var(--tertiary-300)'
+                  : 'var(--tertiary-200)';
             return { id, name, amount, time, icon, iconBg };
           });
 
@@ -314,17 +382,25 @@ const AddExpense = () => {
     if (!formData.amount || Number(formData.amount) <= 0) return;
 
     setSubmitting(true);
+    const role = localStorage.getItem("role")
+    const userString = localStorage.getItem("user")
+    const user = userString ? JSON.parse(userString) : {}
+
+    const userId = role === "Admin" ? user?.id : user?.createdBy
     try {
       const payload = {
         name: formData.expenseName,
         amount: Number(parseFloat(String(formData.amount)).toFixed(2)),
         date: formData.date,
-        notes: formData.notes
+        notes: formData.notes,
+        currentUser: localStorage.getItem("role"),
+        createdBy: userId,
+        category: formData.category.toLowerCase() || ""
       };
 
       const res = await apiRequest<{ message: string; data: any }>({
         method: 'POST',
-        endpoint: '/Expense/addExpense',
+        endpoint: '/expense/addExpense',
         body: payload
       });
 
@@ -350,7 +426,8 @@ const AddExpense = () => {
         expenseName: '',
         amount: '',
         date: new Date().toISOString().split('T')[0],
-        notes: ''
+        notes: '',
+        category: ''
       });
     } catch (err) {
       console.error('Failed to add expense', err);
@@ -364,7 +441,8 @@ const AddExpense = () => {
       expenseName: '',
       amount: '',
       date: new Date().toISOString().split('T')[0],
-      notes: ''
+      notes: '',
+      category: ''
     });
   };
 
@@ -393,6 +471,19 @@ const AddExpense = () => {
             date={formData.date}
             onDateChange={handleInputChange('date')}
           />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+
+            <Select
+              label="Category"
+              required
+              placeholder="Select Category"
+              options={allowedCategories}
+              value={formData.category}
+              onChange={handleInputChange("category")}
+
+            />
+          </div>
 
           <TextareaField
             label="Notes"
