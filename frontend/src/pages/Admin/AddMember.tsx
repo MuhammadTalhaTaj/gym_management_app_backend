@@ -28,14 +28,6 @@ const formData = {
   ]
 };
 
-// function getStoredUserId(user: any): string | null {
-//   const role = localStorage.getItem("role")
-//   console.log("Role: ",role);
-  
-//   const userId = role === "Admin" ? user?.id : user?.createdBy
-//   return userId ?? null;
-// }
-
 // types for plans coming from service or fallback
 type PlanOption = {
   _id?: string | number;
@@ -190,9 +182,16 @@ const AddMember: React.FC = () => {
 
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [success, setSuccess] = useState<boolean>(false)
+  const [message, setMessage] = useState<string | null>(null); // developer message area (kept)
+  const [success, setSuccess] = useState<boolean>(false); // kept for backward compatibility if you depend on it elsewhere
+
+  // CustomAlert (user-facing toast) state
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastText, setToastText] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'warning' | 'info'>('success');
+
   const user = JSON.parse(localStorage.getItem("user") || "")
+
   useEffect(() => {
     // fetch real plans via service
     const loadPlans = async () => {
@@ -210,10 +209,10 @@ const AddMember: React.FC = () => {
           setPlans(mapped);
         }
       } catch (err:any) {
-        if(err.response.status == 404){
-          setPlans(formData.membershipPlans)
-        }
-        else{
+        // keep fallback static plans for UI
+        if (err?.response?.status === 404) {
+          setPlans(formData.membershipPlans);
+        } else {
           console.error('Failed to fetch plans:', err);
         }
       } finally {
@@ -247,16 +246,26 @@ const AddMember: React.FC = () => {
     return admission + planAmount - discount - collected;
   };
 
+  // helper to show user-friendly toast
+  const showToast = (text: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToastText(text);
+    setToastSeverity(severity);
+    setToastOpen(true);
+  };
+  const handleToastClose = () => setToastOpen(false);
+
   // BEFORE sending to backend, check required fields and map names
   const handleSubmit = async () => {
+    // reset developer message area
     setMessage(null);
-    console.log("User passed: ",user);
+
     const role = localStorage.getItem("role")
     const userId = role === "Admin" ? user?.id : user?.createdBy
-    console.log("User ID: ",userId);
-    
+
     if (!userId) {
+      // developer message kept, but also show a friendly toast to the user
       setMessage('You must be logged in to register a member. (missing userId)');
+      showToast('You are not signed in. Please sign in to add a member.', 'error');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -299,11 +308,16 @@ const AddMember: React.FC = () => {
 
     if (missing.length > 0) {
       const missingMessageLines = [
-        `Can't submit: backend requires these fields but they are missing:`,
+        `Can't submit: Following fields are required but they are missing:`,
         ...missing.map(m => `• ${m}`)
       ];
+      // keep developer message area intact (unchanged UI)
       setMessage(missingMessageLines.join('\n'));
-      // small UX: scroll to top so message is visible
+
+      // show a plain-language toast for the user
+      showToast('Please fill all required fields before submitting.', 'warning');
+
+      // small UX: scroll to top so the developer message is visible if needed
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -311,8 +325,20 @@ const AddMember: React.FC = () => {
     setSubmitting(true);
     try {
       // pass payload (contains currentUser). cast to any to avoid strict type mismatch if AddMemberPayload doesn't include currentUser
-      await addMember(payload as any)
-      setSuccess(true)
+      const res = await addMember(payload as any);
+
+      // Backend normally returns { message: "...", data: { member, payment } }
+      const backendMessage = (res && (res.message || (res.data && res.data.message))) || '';
+
+      // Friendly success text for lay users
+      const successText = backendMessage && typeof backendMessage === 'string'
+        ? backendMessage // "New Member and Payment added successfully" is already layman-friendly
+        : 'Member registered and payment recorded successfully.';
+
+      setSuccess(true);
+      // show friendly toast
+      showToast(successText, 'success');
+
       // reset form (preserving fallback UI behavior)
       setFormState({
         fullName: '',
@@ -330,13 +356,42 @@ const AddMember: React.FC = () => {
         // notes: ''
       });
     } catch (err: any) {
-      if (err.response?.status == 404) {
-        setMessage("Plan not found")
+      // Map backend errors to plain user-friendly messages
+      const status = err?.response?.status ?? err?.status ?? null;
+      const backendMsg = (err?.response?.data?.message || err?.message || '').toString();
+
+      // Developer logging left intact
+      console.error("Error: ", err);
+
+      if (status === 400) {
+        // handle common 400 messages
+        if (backendMsg.includes('Provide required fields')) {
+          showToast('Please complete all required fields and try again.', 'error');
+        } else if (backendMsg.includes('Id is not in valid format')) {
+          showToast('There is a problem with your account. Please sign out and sign in again, or contact support.', 'error');
+        } else if (backendMsg.includes('Current user must be admin or staff')) {
+          showToast('Your account is not allowed to add members. Please contact the administrator.', 'error');
+        } else if (backendMsg.includes('Email or Phone is already in use')) {
+          showToast('This email or phone is already registered. Try logging in or use a different contact.', 'error');
+        } else {
+          showToast('Unable to add member. Please check your inputs and try again.', 'error');
+        }
+      } else if (status === 404 || backendMsg.includes('Plan not found')) {
+        showToast('Selected plan was not found. Please choose a different plan.', 'error');
+      } else if (status === 401 || backendMsg.includes('You do not have permission')) {
+        showToast('You do not have permission to add members. Contact your administrator.', 'error');
+      } else if (status === 500 || backendMsg.includes('Payment creation failed')) {
+        showToast('We had trouble saving the payment. No member was created. Please try again.', 'error');
+      } else if (backendMsg.toLowerCase().includes('network') || backendMsg.toLowerCase().includes('fetch')) {
+        showToast('Cannot reach the server. Check your internet and try again.', 'error');
+      } else {
+        // Generic fallback
+        showToast('Something went wrong while saving. Please try again.', 'error');
       }
-      else {
-        console.error("Error: ", err)
-      }
-      setSuccess(false)
+
+      // Keep developer-visible message for debugging if you need it
+      // setMessage(String(backendMsg || 'An unexpected error occurred'));
+      setSuccess(false);
     } finally {
       setSubmitting(false);
     }
@@ -482,12 +537,14 @@ const AddMember: React.FC = () => {
           </button>
         </div>
       </div>
-      {success && <CustomAlert
-        text="Member Added!"
-        severity="success"
-        open={success}
-        onClose={() => setSuccess(false)}
-      />}
+
+      {/* CustomAlert (user-facing friendly messages). Kept outside main card so it doesn't affect layout. */}
+      <CustomAlert
+        text={toastText}
+        severity={toastSeverity}
+        open={toastOpen}
+        onClose={handleToastClose}
+      />
     </div>
   );
 };

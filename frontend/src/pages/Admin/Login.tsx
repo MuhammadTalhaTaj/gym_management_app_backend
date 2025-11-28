@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dumbbell, TrendingUp, Users, CreditCard, Calendar, BarChart3, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { loginRequest } from '../../services/auth';
+import CustomAlert from '../../Components/CustomAlert'; // <-- added
 
 // ============= DATA FILE =============
 const loginData = {
@@ -151,26 +152,64 @@ const LoginForm = ({ data }: any) => {
 
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  // CustomAlert (toast) state
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastText, setToastText] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'warning' | 'info'>('success');
 
   const navigate = useNavigate();
 
+  const showToast = (text: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToastText(text);
+    setToastSeverity(severity);
+    setToastOpen(true);
+  };
+
+  const handleToastClose = () => {
+    setToastOpen(false);
+  };
+
   const handleSubmit = async () => {
-    setError(null);
+    // friendly client-side validation
+    if (!email?.trim() || !password) {
+      showToast('Please enter both your email and password so we can sign you in.', 'warning');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await loginRequest({ email, password, role }, rememberMe);
-      // res has { accessToken, refreshToken, user }
-      // navigate to dashboard
-      navigate('/dashboard');
+      await loginRequest({ email: email.trim(), password, role }, rememberMe);
+      // success: show friendly success toast then navigate
+      showToast('Welcome back! Taking you to your dashboard...', 'success');
+
+      // small delay so user sees the toast (keeps UI same otherwise)
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 700);
     } catch (err: any) {
-      if(err.status === 400){
-        setError("Invalid email or password")
+      // produce normal-user-friendly messages
+      // many backends return status on the thrown object; try common shapes
+      const status = err?.status ?? err?.response?.status ?? null;
+      const msg = (err?.message || '').toString().toLowerCase();
+
+      if (status === 400) {
+        showToast('That email or password doesn’t look right. Please try again.', 'error');
+      } else if (status === 401) {
+        showToast('You are not authorized to sign in. If this is a mistake, contact the admin.', 'error');
+      } else if (status >= 500) {
+        showToast('Our server is having trouble. Please try again in a little while.', 'error');
+      } else if (msg.includes('failed to fetch') || msg.includes('network')) {
+        showToast('Cannot reach the server. Check your internet connection and try again.', 'error');
+      } else {
+        // generic friendly fallback
+        showToast('Sign in failed. Please double-check your details and try again.', 'error');
       }
-      else{
-        console.error(err.message)
-      }
+
+      // also log for developers
+      // eslint-disable-next-line no-console
+      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }
@@ -266,12 +305,7 @@ const LoginForm = ({ data }: any) => {
             {loading ? 'Please wait' : 'Sign In'}
           </button>
 
-          {error && (
-            <div className="mb-4 text-sm text-red-600">
-              {error}
-            </div>
-          )}
-
+          {/* Replaced the raw error area with CustomAlert (toast) - no UI layout changes */}
           <p className="text-center text-sm text-[var(--primary-300)]">
             Don't have an account?{' '}
             <button className="text-[var(--tertiary-400)] hover:underline font-semibold"
@@ -281,6 +315,14 @@ const LoginForm = ({ data }: any) => {
           </p>
         </div>
       </div>
+
+      {/* CustomAlert: shows both success and error messages in plain language */}
+      <CustomAlert
+        text={toastText}
+        open={toastOpen}
+        onClose={handleToastClose}
+        severity={toastSeverity}
+      />
     </div>
   );
 };
