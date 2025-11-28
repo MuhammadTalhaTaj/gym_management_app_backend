@@ -29,12 +29,13 @@ const staffSignup = asyncHandler(async (req, res) => {
         const existingStaff = await Staff.findOne({ email });
         if (existingStaff) throw new APIError(400, "Email already exists");
 
+        const hashpassword= await bcrypt.hash(password,10)
         // Create staff
         const staff = new Staff({
             name,
             email,
             contact,
-            password,
+            password: hashpassword,
             role,
             permission,
             createdBy:userId
@@ -75,6 +76,7 @@ const staffSignup = asyncHandler(async (req, res) => {
 // -------------------- STAFF LOGIN --------------------
 const staffLogin = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
+    console.log(email, password)
     if (!email || !password) throw new APIError(400, "Email and password are required");
     
     const staff = await Staff.findOne({ email: email });
