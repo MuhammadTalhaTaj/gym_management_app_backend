@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import '../assets/styles/AdminSidebar.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDumbbell, faBars, faTimes,faHome,
+import { faDumbbell, faBars, faTimes,faHome,faListCheck,
   // faWallet,
   faUsers,faChartPie,faUser,faEnvelope,faCog,faSignOutAlt,faEnvelopeOpenText,
   // faUserPlus,
@@ -134,7 +134,7 @@ function AdminSidebar() {
   <li className={isActive('/plan') ? 'active-link' : ''}>
     <NavLink to="/plan">
       <FontAwesomeIcon className="adminSidebarIcon"
-        icon={faCirclePlus}
+        icon={faListCheck}
         style={{ color: isActive('/plan') ? 'var(--secondary-100)' : 'var(--primary-300)' }}
       />
       Plan

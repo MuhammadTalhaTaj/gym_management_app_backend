@@ -19,16 +19,16 @@ interface Member {
 
 // Data file simulation - fallback
 const paymentData = {
-  members: [
-    { id: '1', name: 'John Doe', dueAmount: 1500, collectedAmount: 0, plan: { id: '1', name: 'Basic Plan', amount: 500 } },
-    { id: '2', name: 'Jane Smith', dueAmount: 2000, collectedAmount: 0, plan: { id: '2', name: 'Premium Plan', amount: 1000 } },
-    { id: '3', name: 'Mike Johnson', dueAmount: 1200, collectedAmount: 0, plan: { id: '3', name: 'Enterprise Plan', amount: 2000 } }
-  ],
-  plans: [
-    { id: '1', name: 'Basic Plan', amount: 500 },
-    { id: '2', name: 'Premium Plan', amount: 1000 },
-    { id: '3', name: 'Enterprise Plan', amount: 2000 }
-  ],
+  // members: [
+  //   { id: '1', name: 'John Doe', dueAmount: 1500, collectedAmount: 0, plan: { id: '1', name: 'Basic Plan', amount: 500 } },
+  //   { id: '2', name: 'Jane Smith', dueAmount: 2000, collectedAmount: 0, plan: { id: '2', name: 'Premium Plan', amount: 1000 } },
+  //   { id: '3', name: 'Mike Johnson', dueAmount: 1200, collectedAmount: 0, plan: { id: '3', name: 'Enterprise Plan', amount: 2000 } }
+  // ],
+  // plans: [
+  //   { id: '1', name: 'Basic Plan', amount: 500 },
+  //   { id: '2', name: 'Premium Plan', amount: 1000 },
+  //   { id: '3', name: 'Enterprise Plan', amount: 2000 }
+  // ],
   rules: [
     { id: 1, text: 'Payment amount must be greater than $0', icon: CheckCircle },
     { id: 2, text: "Cannot exceed member's due amount", icon: CheckCircle },
@@ -200,17 +200,19 @@ const safeParseAmount = (val: any) => {
 const todayISO = () => new Date().toISOString().split('T')[0];
 
 const AddPayment: React.FC = () => {
-  const [members, setMembers] = useState<Member[]>(
-    paymentData.members.map(m => ({
-      ...m,
-      id: String(m.id),
-      // ensure m.plan conforms to Plan type
-      plan: (m.plan ?? { id: '0', name: 'No Plan', amount: 0 }) as Plan
-    }))
-  );
-  const [plans, setPlans] = useState<Plan[]>(
-    paymentData.plans.map(p => ({ ...p, id: String(p.id) }))
-  );
+  // const [members, setMembers] = useState<Member[]>(
+  //   paymentData.members.map(m => ({
+  //     ...m,
+  //     id: String(m.id),
+  //     // ensure m.plan conforms to Plan type
+  //     plan: (m.plan ?? { id: '0', name: 'No Plan', amount: 0 }) as Plan
+  //   }))
+  // );
+  // const [plans, setPlans] = useState<Plan[]>(
+  //   paymentData.plans.map(p => ({ ...p, id: String(p.id) }))
+  // );
+const [members, setMembers] = useState<Member[]>([]);
+const [plans, setPlans] = useState<Plan[]>([]);
 
   const [selectedMember, setSelectedMember] = useState(''); // will store id as string
   const [selectedPlan, setSelectedPlan] = useState('');

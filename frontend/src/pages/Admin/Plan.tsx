@@ -1,5 +1,6 @@
 // src/pages/Plan.tsx  (or wherever your Plan.tsx lives)
 import React, { useState, useEffect } from 'react';
+import {useNavigate} from 'react-router-dom'
 import { Trash2, Plus, Search, Filter, Calendar, DollarSign, Clock, AlertCircle } from 'lucide-react';
 import { apiRequest } from '../../config/api'; // <- adjust path if needed
 
@@ -63,7 +64,7 @@ const EmptyState: React.FC<{ onAddPlan: () => void }> = ({ onAddPlan }) => (
     <p className="text-[var(--tertiary-500)] mb-6">Get started by creating your first plan</p>
     <button
       onClick={onAddPlan}
-      className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--secondary-100)] text-[var(--primary-100)] rounded-lg hover:bg-[var(--secondary-200)] transition-colors font-medium"
+      className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--secondary-100)] text-[var(--primary-100)] rounded-lg hover:bg-[var(--secondary-100)]/90 transition-colors font-medium"
     >
       <Plus className="w-5 h-5" />
       Create First Plan
@@ -303,8 +304,9 @@ const Plan: React.FC = () => {
       setError(err?.message || (err instanceof Error ? err.message : 'Failed to delete plan'));
     }
   };
-
+const navigate= useNavigate();
   const handleAddPlan = () => {
+    navigate('/addplan')
     // Navigate to add plan page or open modal
     console.log('Add plan clicked');
   };
@@ -333,10 +335,12 @@ const Plan: React.FC = () => {
             <FilterDropdown selectedFilter={selectedFilter} onFilterChange={setSelectedFilter} />
             <button
               onClick={handleAddPlan}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[var(--secondary-100)] text-[var(--primary-100)] rounded-lg hover:bg-[var(--secondary-200)] transition-colors font-medium whitespace-nowrap"
+              
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[var(--secondary-100)] text-[var(--primary-100)] rounded-lg hover:bg-[var(--secondary-100)]/90 transition-colors font-medium whitespace-nowrap"
             >
               <Plus className="w-5 h-5" />
-              <span className="hidden sm:inline">Add Plan</span>
+              <span
+               className="hidden sm:inline">Add Plan</span>
             </button>
           </div>
         </div>
