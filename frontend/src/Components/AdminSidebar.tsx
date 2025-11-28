@@ -29,6 +29,9 @@ function AdminSidebar() {
     if (path === '/enquiries') {
       return p === '/enquiries' || p === '/addenquiries';
     }
+     if (path === '/plan') {
+      return p === '/plan' || p === '/addplan';
+    }
     return p === path;
   };
 
@@ -128,13 +131,13 @@ function AdminSidebar() {
       Add Payment
     </NavLink>
   </li>
-  <li className={isActive('/addplan') ? 'active-link' : ''}>
-    <NavLink to="/addplan">
+  <li className={isActive('/plan') ? 'active-link' : ''}>
+    <NavLink to="/plan">
       <FontAwesomeIcon className="adminSidebarIcon"
         icon={faCirclePlus}
-        style={{ color: isActive('/addplan') ? 'var(--secondary-100)' : 'var(--primary-300)' }}
+        style={{ color: isActive('/plan') ? 'var(--secondary-100)' : 'var(--primary-300)' }}
       />
-      Add Plan
+      Plan
     </NavLink>
   </li>
   {/* <li className={isActive('/finance') ? 'active-link' : ''}>

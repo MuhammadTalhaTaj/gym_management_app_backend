@@ -200,7 +200,7 @@ const handleToastClose = () => setToast(prev => ({ ...prev, open: false }));
       showToast(`Provide required fields: ${missing.join(', ')}`, 'warning');
       return;
     }
-const createdBy = localStorage.getItem('createdBy');
+const createdBy = localStorage.getItem('userId');
 const role = localStorage.getItem('role');
     const payload = {
       name: formData.planName,
@@ -208,7 +208,7 @@ const role = localStorage.getItem('role');
       duration: Number(formData.duration),
       amount: Number(formData.amount),
       createdBy: createdBy,
-      role: role
+      currentUser: role
     };
 
     setLoading(true);
