@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Calendar, DollarSign, Users, CreditCard, CheckCircle, Info, AlertCircle } from 'lucide-react';
 import { apiRequest } from '../../config/api'; // <- API helper import
+import CustomAlert from '../../Components/CustomAlert';
 
 interface Plan {
   id: string;
@@ -21,13 +22,9 @@ interface Member {
 const paymentData = {
   // members: [
   //   { id: '1', name: 'John Doe', dueAmount: 1500, collectedAmount: 0, plan: { id: '1', name: 'Basic Plan', amount: 500 } },
-  //   { id: '2', name: 'Jane Smith', dueAmount: 2000, collectedAmount: 0, plan: { id: '2', name: 'Premium Plan', amount: 1000 } },
-  //   { id: '3', name: 'Mike Johnson', dueAmount: 1200, collectedAmount: 0, plan: { id: '3', name: 'Enterprise Plan', amount: 2000 } }
   // ],
   // plans: [
   //   { id: '1', name: 'Basic Plan', amount: 500 },
-  //   { id: '2', name: 'Premium Plan', amount: 1000 },
-  //   { id: '3', name: 'Enterprise Plan', amount: 2000 }
   // ],
   rules: [
     { id: 1, text: 'Payment amount must be greater than $0', icon: CheckCircle },
@@ -211,8 +208,8 @@ const AddPayment: React.FC = () => {
   // const [plans, setPlans] = useState<Plan[]>(
   //   paymentData.plans.map(p => ({ ...p, id: String(p.id) }))
   // );
-const [members, setMembers] = useState<Member[]>([]);
-const [plans, setPlans] = useState<Plan[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
 
   const [selectedMember, setSelectedMember] = useState(''); // will store id as string
   const [selectedPlan, setSelectedPlan] = useState('');
@@ -221,6 +218,18 @@ const [plans, setPlans] = useState<Plan[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [loadingMemberDetails, setLoadingMemberDetails] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
+
+  // Toast state for CustomAlert
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastText, setToastText] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'warning' | 'info'>('success');
+
+  const showToast = (text: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToastText(text);
+    setToastSeverity(severity);
+    setToastOpen(true);
+  };
+  const handleToastClose = () => setToastOpen(false);
 
   const role = localStorage.getItem("role")
   const userString = localStorage.getItem("user")
@@ -253,7 +262,11 @@ const [plans, setPlans] = useState<Plan[]>([]);
               const list = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
               return list.map((r: any, i: number) => normalizeMember(r, i));
             }
-          }).catch(() => null),
+          }).catch((e) => {
+            // show info toast if member list can't be loaded (non-fatal)
+            console.warn('getAllMembers failed', e);
+            return null;
+          }),
           apiRequest({
             method: 'GET',
             endpoint: `/plan/getPlans/${userId}`,
@@ -261,7 +274,10 @@ const [plans, setPlans] = useState<Plan[]>([]);
               const list = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
               return list.map((r: any, i: number) => normalizePlan(r, i));
             }
-          }).catch(() => null)
+          }).catch((e) => {
+            console.warn('getPlans failed', e);
+            return null;
+          })
         ]);
 
         if (!isMounted) return;
@@ -272,15 +288,23 @@ const [plans, setPlans] = useState<Plan[]>([]);
 
         if (Array.isArray(plansRes) && plansRes.length > 0) {
           setPlans(plansRes as Plan[]);
+        } else {
+          // if no plans returned, show friendly info so admin knows why plan list is empty
+          // but don't spam — only if we have a user id
+          if (userId) {
+            showToast('No membership plans were found. You can still select a plan later.', 'info');
+          }
         }
       } catch (err) {
         console.error('Failed to load members/plans, using fallback', err);
         // keep fallback local data
+        showToast('Could not load members or plans. Using local data where available.', 'info');
       }
     };
 
     load();
     return () => { isMounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // When selectedMember changes, call viewPayments API to fetch due/collected and payments history
@@ -332,6 +356,7 @@ const [plans, setPlans] = useState<Plan[]>([]);
         console.warn('Failed to load member payment history, using existing data/fallback', err);
         // non-fatal, we won't block user
         setGlobalError('Could not load member details. Using cached/fallback data.');
+        showToast('Could not fetch member details. Using cached data if available.', 'info');
       } finally {
         if (isActive) setLoadingMemberDetails(false);
       }
@@ -362,28 +387,28 @@ const [plans, setPlans] = useState<Plan[]>([]);
     setGlobalError(null);
 
     if (!selectedMember) {
-      window.alert('Select a member first.');
+      showToast('Please select a member from the list before processing a payment.', 'warning');
       return false;
     }
     if (!selectedPlan) {
-      window.alert('Select a plan.');
+      showToast('Please select a payment plan for this member.', 'warning');
       return false;
     }
     if (amount <= 0) {
-      window.alert('Payment amount must be greater than 0.');
+      showToast('Payment must be greater than zero. Enter a valid amount.', 'warning');
       return false;
     }
     if (!memberObj) {
-      window.alert('Selected member not found.');
+      showToast('Selected member could not be found. Please refresh and try again.', 'error');
       return false;
     }
     if (typeof memberObj.dueAmount === 'number') {
       if (memberObj.dueAmount <= 0) {
-        window.alert('The member has no outstanding balance.');
+        showToast('This member has no outstanding balance.', 'info');
         return false;
       }
       if (amount > Number(memberObj.dueAmount)) {
-        window.alert('Payment amount cannot be greater than the member\'s due amount.');
+        showToast('Entered amount is more than the member\'s outstanding balance. Please enter a lower amount.', 'warning');
         return false;
       }
     }
@@ -392,11 +417,11 @@ const [plans, setPlans] = useState<Plan[]>([]);
     chosen.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
     if (isNaN(chosen.getTime())) {
-      window.alert('Invalid payment date.');
+      showToast('Payment date is invalid. Please choose a valid date.', 'warning');
       return false;
     }
     if (chosen > today) {
-      window.alert('Payment date cannot be in the future.');
+      showToast('Payment date cannot be in the future. Please choose today or an earlier date.', 'warning');
       return false;
     }
     return true;
@@ -415,14 +440,13 @@ const [plans, setPlans] = useState<Plan[]>([]);
         plan: selectedPlan,
         paymentDate,
         userId,
-         
       };
 
       const res = await apiRequest({
         method: 'POST',
         endpoint: '/payment/addpayment',
         body: payload
-      }).catch((e) => { throw e; });
+      });
 
       // backend returns { message, data: { member, payment } }
       const updatedMember = res?.data?.member ?? res?.member ?? null;
@@ -434,7 +458,7 @@ const [plans, setPlans] = useState<Plan[]>([]);
           prev.map(m => (String(m.id) === String(normalized.id) ? normalized : m)) as Member[]
         );
         setPaymentAmount('');
-        window.alert(res?.message ?? 'Payment processed successfully');
+        showToast(res?.message ?? 'Payment processed successfully.', 'success');
       } else {
         // fallback local update if backend didn't return updated member
         setMembers(prev => prev.map(m => (String(m.id) === String(selectedMember) ? {
@@ -443,11 +467,32 @@ const [plans, setPlans] = useState<Plan[]>([]);
           collectedAmount: newCollected
         } : m)) as Member[]);
         setPaymentAmount('');
-        window.alert(res?.message ?? 'Payment processed successfully (no updated member returned)');
+        showToast(res?.message ?? 'Payment processed successfully (no updated member returned).', 'success');
       }
     } catch (err: any) {
       console.error('Payment failed', err);
-      window.alert(err?.message ?? 'Failed to process payment');
+
+      const status = err?.response?.status ?? err?.status ?? null;
+      const backendMsg = (err?.response?.data?.message || err?.message || '').toString().toLowerCase();
+
+      if (status === 400) {
+        if (backendMsg.includes('provide') || backendMsg.includes('required')) {
+          showToast('Some required information is missing. Please check the form and try again.', 'error');
+        } else {
+          showToast('We could not process this payment because the information sent looked wrong. Please check and try again.', 'error');
+        }
+      } else if (status === 401) {
+        showToast('You are not authorized to perform this action. Please log in with an account that has permission.', 'error');
+      } else if (status === 404) {
+        showToast('Could not find the server resource. Try again later or contact support.', 'error');
+      } else if (status === 500) {
+        showToast('Something went wrong on our side. Please try again in a few minutes.', 'error');
+      } else if (backendMsg.includes('network') || backendMsg.includes('failed to fetch')) {
+        showToast('Cannot reach the server. Check your internet connection and try again.', 'error');
+      } else {
+        showToast(err?.message ?? 'Failed to process payment. Please try again.', 'error');
+      }
+
       setGlobalError('Failed to process payment. See console for details.');
     } finally {
       if (mountedRef.current) setSubmitting(false);
@@ -571,6 +616,14 @@ const [plans, setPlans] = useState<Plan[]>([]);
           </div>
         </div>
       </div>
+
+      {/* CustomAlert for friendly user messages */}
+      <CustomAlert
+        text={toastText}
+        severity={toastSeverity}
+        open={toastOpen}
+        onClose={handleToastClose}
+      />
     </div>
   );
 };

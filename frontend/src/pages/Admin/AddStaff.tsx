@@ -1,8 +1,9 @@
-  // src/pages/AddStaff.tsx
+// src/pages/AddStaff.tsx
 import React, { useState } from 'react';
 import { Eye, EyeOff, Users, UserCheck, UserPlus, Shield, User, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../config/api';
+import CustomAlert from '../../Components/CustomAlert'; // <-- custom alert import
 
 // ---------- Data (kept the same) ----------
 export const staffData = {
@@ -271,6 +272,18 @@ const AddStaff: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Toast state for CustomAlert
+  const [toast, setToast] = useState<{ open: boolean; text: string; severity: 'success' | 'error' | 'warning' | 'info' }>({
+    open: false,
+    text: '',
+    severity: 'success'
+  });
+
+  const showToast = (text: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToast({ open: true, text, severity });
+  };
+  const closeToast = () => setToast(prev => ({ ...prev, open: false }));
+
   const handleInputChange = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const value = e.target.value;
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -311,50 +324,71 @@ const AddStaff: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    // clear previous messages
     setError(null);
     setSuccessMessage(null);
 
-    // client-side validations
+    // client-side validations (user-friendly messages)
     if (!formData.fullName.trim()) {
-      setError('Full name is required.');
+      const msg = 'Please enter the staff member’s full name.';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
     if (!formData.contactNumber.trim()) {
-      setError('Contact number is required.');
+      const msg = 'Please enter a contact number for the staff member.';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
     if (!isContactValid(formData.contactNumber.trim())) {
-      setError('Please enter a valid contact number.');
+      const msg = 'That phone number looks incorrect. Please include country code or a valid number.';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
     if (!formData.email.trim()) {
-      setError('Email address is required.');
+      const msg = 'Please enter an email address.';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
     if (!isEmailValid(formData.email.trim())) {
-      setError('Please enter a valid email address.');
+      const msg = 'Please enter a valid email address (for example: name@example.com).';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
     if (!formData.password) {
-      setError('Password is required.');
+      const msg = 'Please choose a password for the staff member.';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters.');
+      const msg = 'Password must be at least 8 characters long.';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
     if (!formData.jobRole || formData.jobRole === staffData.jobRoles[0]) {
-      setError('Please select a job role.');
+      const msg = 'Please select a job role.';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
     if (!formData.permission || formData.permission === staffData.permissions[0]) {
-      setError('Please select a permission level.');
+      const msg = 'Please select a permission level.';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
 
     const userId = readCurrentUserId();
     if (!userId) {
-      setError('Cannot determine current user. Please login again.');
+      const msg = 'We could not find your account. Please sign in again and try.';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
 
@@ -363,7 +397,9 @@ const AddStaff: React.FC = () => {
     const mappedPermission = permissionMap[normalized as keyof typeof permissionMap];
 
     if (!mappedPermission) {
-      setError('Invalid permission selected.');
+      const msg = 'Selected permission is not valid. Please pick a different option.';
+      setError(msg);
+      showToast(msg, 'error');
       return;
     }
 
@@ -385,21 +421,23 @@ const AddStaff: React.FC = () => {
         body: payload
       });
 
-      // Backend returns accessToken and staff object on success (201). We intentionally DO NOT overwrite currently stored admin tokens.
-      setSuccessMessage('Staff member created successfully.');
+      // success
+      const successMsg = 'Staff member created successfully. You will be returned to the staff list.';
+      setSuccessMessage(successMsg);
+      showToast(successMsg, 'success');
 
       // clear sensitive fields but keep role/permission for convenience
       setFormData(prev => ({ ...prev, password: '', email: '', fullName: '', contactNumber: '' }));
 
-      // small delay to let user see success message before redirect (optional)
+      // small delay to let user see success message before redirect
       setTimeout(() => {
         navigate('/staff');
       }, 700);
     } catch (err: any) {
-      // handle common error shapes
-      let msg = 'Failed to create staff member.';
+      // Map common error shapes into friendly messages for lay users
+      let msg = 'Failed to create staff member. Please try again.';
       if (!err) {
-        msg = 'Unknown error occurred.';
+        msg = 'Unknown error occurred. Please try again.';
       } else if (err instanceof Error) {
         msg = err.message || msg;
       } else if (typeof err === 'string') {
@@ -408,12 +446,23 @@ const AddStaff: React.FC = () => {
         msg = err.message;
       }
 
-      // user-friendly network error
-      if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('network')) {
-        msg = 'Network error. Please check your connection or try again later.';
+      // network-specific
+      const lower = (msg || '').toLowerCase();
+      if (lower.includes('failed to fetch') || lower.includes('network')) {
+        msg = 'Network error. Please check your internet connection and try again.';
+      } else if (lower.includes('email or phone') || lower.includes('already in use') || lower.includes('duplicate')) {
+        msg = 'The email or phone number is already used by another account. Use a different email or phone number.';
+      } else if (lower.includes('permission') || lower.includes('not authorized') || err?.status === 401) {
+        msg = 'You do not have permission to add staff. Please sign in with an admin account.';
+      } else if (err?.status === 400) {
+        // backend sent validation / missing fields
+        msg = 'Some information is missing or incorrect. Please review the form and try again.';
+      } else if (err?.status === 500) {
+        msg = 'Something went wrong on the server. Please try again in a few minutes.';
       }
 
       setError(msg);
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -430,6 +479,8 @@ const AddStaff: React.FC = () => {
       jobRole: staffData.jobRoles[0],
       permission: staffData.permissions[0]
     });
+    // close toast if shown
+    closeToast();
   };
 
   return (
@@ -451,11 +502,6 @@ const AddStaff: React.FC = () => {
               <span className="hidden sm:inline">← Back to Staff List</span>
               <span className="sm:hidden">← Back</span>
             </button>
-            {/* <img
-              src="https://i.pravatar.cc/150?img=5"
-              alt="User"
-              className="w-10 h-10 rounded-full object-cover border-2 border-[var(--tertiary-400)]"
-            /> */}
           </div>
         </div>
       </header>
@@ -562,7 +608,7 @@ const AddStaff: React.FC = () => {
                   </Button>
                 </div>
 
-                {/* feedback */}
+                {/* feedback - kept as inline text as well for accessibility/consistency */}
                 {error && <div className="text-sm text-red-600 mt-2">{error}</div>}
                 {successMessage && <div className="text-sm text-green-600 mt-2">{successMessage}</div>}
               </div>
@@ -571,35 +617,6 @@ const AddStaff: React.FC = () => {
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
-            {/* Team Overview */}
-            {/* <Card className="p-6">
-              <h3 className="text-lg font-semibold text-[var(--primary-300)] mb-4">Team Overview</h3>
-              <div className="space-y-4">
-                <StatsCard
-                  icon={Users}
-                  label="Total Staff"
-                  value={staffData.teamOverview.totalStaff}
-                  iconBg="bg-blue-100"
-                  iconColor="text-blue-600"
-                />
-                <StatsCard
-                  icon={UserCheck}
-                  label="Active"
-                  value={staffData.teamOverview.activeStaff}
-                  iconBg="bg-green-100"
-                  iconColor="text-green-600"
-                />
-                <StatsCard
-                  icon={UserPlus}
-                  label="New This Month"
-                  value={staffData.teamOverview.newThisMonth}
-                  iconBg="bg-orange-100"
-                  iconColor="text-orange-600"
-                />
-              </div>
-            </Card> */}
-
-            {/* Permission Levels */}
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-[var(--primary-300)] mb-4">Permission Levels</h3>
               <div className="space-y-4">
@@ -608,19 +625,17 @@ const AddStaff: React.FC = () => {
                 ))}
               </div>
             </Card>
-
-            {/* Recent Activity */}
-            {/* <Card className="p-6">
-              <h3 className="text-lg font-semibold text-[var(--primary-300)] mb-4">Recent Activity</h3>
-              <div className="space-y-4">
-                {staffData.recentActivity.map(activity => (
-                  <ActivityItem key={activity.id} activity={activity} />
-                ))}
-              </div>
-            </Card> */}
           </div>
         </div>
       </main>
+
+      {/* CustomAlert toast */}
+      <CustomAlert
+        text={toast.text}
+        open={toast.open}
+        onClose={closeToast}
+        severity={toast.severity}
+      />
     </div>
   );
 };

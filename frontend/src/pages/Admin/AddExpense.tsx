@@ -1,11 +1,12 @@
 // src/pages/AddExpense.tsx
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X, Check, Tag,
   //  DollarSign,
   Calendar, FileText, Utensils, Fuel, ShoppingCart, ArrowRight
 } from 'lucide-react';
 import { apiRequest } from '../../config/api'; // <- existing import
+import CustomAlert from '../../Components/CustomAlert';
 
 // Data configuration file
 const expenseFormConfig = {
@@ -326,6 +327,18 @@ const AddExpense = () => {
   const [submitting, setSubmitting] = useState(false);
   const [recentExpenses, setRecentExpenses] = useState<any[]>(expenseFormConfig.recentExpenses);
 
+  // CustomAlert state (toast)
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastText, setToastText] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'warning' | 'info'>('success');
+
+  const showToast = (text: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToastText(text);
+    setToastSeverity(severity);
+    setToastOpen(true);
+  };
+  const handleToastClose = () => setToastOpen(false);
+
   const handleInputChange = (field: string) => (e: any) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
   };
@@ -371,15 +384,34 @@ const AddExpense = () => {
         if (mounted) setRecentExpenses(mapped);
       } catch (err) {
         console.error('Failed to load recent expenses', err);
+        // Non-fatal: show a friendly toast so user knows recent list couldn't be loaded
+        showToast('Could not load recent expenses. You can still add a new expense.', 'info');
       }
     };
     loadRecent();
     return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async () => {
-    if (!formData.expenseName.trim()) return;
-    if (!formData.amount || Number(formData.amount) <= 0) return;
+    // client-side validation with friendly messages
+    if (!formData.expenseName.trim()) {
+      showToast('Please enter a name for the expense (for example: Grocery, Fuel).', 'warning');
+      return;
+    }
+    if (!formData.amount || Number(formData.amount) <= 0) {
+      showToast('Please enter an amount greater than 0.', 'warning');
+      return;
+    }
+    if (!formData.date) {
+      showToast('Please select a date for this expense.', 'warning');
+      return;
+    }
+    // ensure category selected and is allowed
+    if (!formData.category || !allowedCategories.includes(formData.category)) {
+      showToast('Please select a category from the list.', 'warning');
+      return;
+    }
 
     setSubmitting(true);
     const role = localStorage.getItem("role")
@@ -429,8 +461,37 @@ const AddExpense = () => {
         notes: '',
         category: ''
       });
-    } catch (err) {
+
+      // Friendly success message for laymen
+      const friendly = res?.message && typeof res.message === 'string'
+        ? res.message
+        : 'Expense recorded successfully.';
+
+      showToast(friendly, 'success');
+    } catch (err: any) {
       console.error('Failed to add expense', err);
+
+      // Map common backend / network errors to friendly messages
+      const status = err?.response?.status ?? err?.status ?? null;
+      const backendMsg = (err?.response?.data?.message || err?.message || '').toString().toLowerCase();
+
+      if (status === 400) {
+        if (backendMsg.includes('invalid') || backendMsg.includes('bad')) {
+          showToast('We could not save that expense because some information looks incorrect. Please check and try again.', 'error');
+        } else {
+          showToast('Could not save the expense. Please check the details and try again.', 'error');
+        }
+      } else if (status === 401) {
+        showToast('You are not allowed to add expenses. Please sign in with an account that has permission.', 'error');
+      } else if (status === 404) {
+        showToast('Could not find the server resource. Try again later or contact support.', 'error');
+      } else if (status === 500) {
+        showToast('Something went wrong on our side. Please try again in a few minutes.', 'error');
+      } else if (backendMsg.includes('network') || backendMsg.includes('failed to fetch')) {
+        showToast('Cannot reach our servers. Check your internet connection and try again.', 'error');
+      } else {
+        showToast('Unable to save the expense. Please try again.', 'error');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -509,6 +570,14 @@ const AddExpense = () => {
 
         <RecentExpensesSection expenses={recentExpenses} />
       </div>
+
+      {/* CustomAlert: user-facing friendly messages */}
+      <CustomAlert
+        text={toastText}
+        severity={toastSeverity}
+        open={toastOpen}
+        onClose={handleToastClose}
+      />
     </div>
   );
 };

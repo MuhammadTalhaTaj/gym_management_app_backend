@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { User, Mail, Phone, MapPin, Building2, Lock, Camera, Save, X, Eye, EyeOff, Check } from 'lucide-react';
 import { apiRequest } from '../../config/api'; // keep using the unified API helper
+import CustomAlert from '../../Components/CustomAlert'; // <-- CustomAlert (adjust path if your project uses different casing)
 
 // types.ts - Type definitions
 interface AdminProfile {
@@ -24,14 +25,6 @@ interface ValidationErrors {
 
 /*
   NOTE: static example data removed from runtime (kept commented here for reference)
-
-const initialProfileData: AdminProfile = {
-  name: 'John Doe',
-  email: 'john.doe@gymadmin.com',
-  contact: '+1 234 567 8900',
-  gymName: 'FitZone Elite',
-  gymLocation: '123 Fitness Street, New York, NY 10001'
-};
 */
 
 // Helper to read userId (tries multiple locations)
@@ -265,33 +258,6 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({ password }) => {
   );
 };
 
-// Success Toast
-interface ToastProps {
-  message: string;
-  onClose: () => void;
-}
-
-const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
-  React.useEffect(() => {
-    const timer = setTimeout(onClose, 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  return (
-    <div className="fixed top-4 right-4 z-50 animate-slide-in">
-      <div className="bg-[#11BF7F] text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3">
-        <div className="bg-white/20 p-1 rounded-full">
-          <Check size={20} />
-        </div>
-        <span className="font-medium">{message}</span>
-        <button onClick={onClose} className="ml-4 hover:bg-white/20 p-1 rounded transition-colors">
-          <X size={18} />
-        </button>
-      </div>
-    </div>
-  );
-};
-
 // Main Component
 const Setting: React.FC = () => {
   // start with empty profile — no static fallback shown ever
@@ -309,10 +275,20 @@ const Setting: React.FC = () => {
     confirmPassword: ''
   });
   const [errors, setErrors] = useState<ValidationErrors>({});
-  const [showProfileToast, setShowProfileToast] = useState(false);
-  const [showPasswordToast, setShowPasswordToast] = useState(false);
   const [isProfileSubmitting, setIsProfileSubmitting] = useState(false);
   const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
+
+  // central toast state using your CustomAlert
+  const [toast, setToast] = useState<{ open: boolean; text: string; severity: 'success'|'error'|'warning'|'info' }>({
+    open: false,
+    text: '',
+    severity: 'success'
+  });
+
+  const showToast = (text: string, severity: 'success'|'error'|'warning'|'info' = 'success') => {
+    setToast({ open: true, text, severity });
+  };
+  const closeToast = () => setToast(prev => ({ ...prev, open: false }));
 
   // Initialize from real localStorage user if present (NOT static example)
   useEffect(() => {
@@ -392,11 +368,15 @@ const Setting: React.FC = () => {
   // Submit profile -> calls /admin/updateAdmin
   const handleProfileSubmit = async () => {
     // validate for UI feedback (will not populate static example data)
-    validateProfile();
+    const valid = validateProfile();
+    if (!valid) {
+      showToast('Some fields need attention. Please check the highlighted items.', 'warning');
+      return;
+    }
 
     const userId = readUserId();
     if (!userId) {
-      alert('Unable to determine current user. Please log in again.');
+      showToast('We could not find your account. Please sign in and try again.', 'error');
       return;
     }
 
@@ -429,11 +409,28 @@ const Setting: React.FC = () => {
         }));
       }
 
-      setShowProfileToast(true);
+      // friendly success message for lay users
+      showToast('Profile updated successfully.', 'success');
       if (res && (res as any).message) console.log('API:', (res as any).message);
     } catch (err: any) {
       console.error('Update admin failed:', err);
-      alert(err?.message || 'Failed to update profile. Please try again.');
+      // map common shapes to friendly text
+      let msg = 'Unable to save changes. Please try again.';
+      const lower = (err?.message || '').toString().toLowerCase();
+      if (lower.includes('network') || lower.includes('failed to fetch')) {
+        msg = 'Unable to save. Check your internet connection and try again.';
+      } else if (err?.status === 400) {
+        msg = 'Some details were invalid. Please check the form and try again.';
+      } else if (err?.status === 401) {
+        msg = 'You are not authorized to make this change. Please sign in again.';
+      } else if (err?.status === 500) {
+        msg = 'Server error while saving. Try again in a few minutes.';
+      } else if (err?.message) {
+        // prefer backend message when it is user-friendly
+        msg = err.message;
+      }
+
+      showToast(msg, 'error');
     } finally {
       setIsProfileSubmitting(false);
     }
@@ -443,11 +440,14 @@ const Setting: React.FC = () => {
   const handlePasswordSubmit = async () => {
     // run validations, block submit if missing/invalid
     const ok = validatePasswords();
-    if (!ok) return;
+    if (!ok) {
+      showToast('Please fix the password fields highlighted above.', 'warning');
+      return;
+    }
 
     const userId = readUserId();
     if (!userId) {
-      alert('Unable to determine current user. Please log in again.');
+      showToast('We could not find your account. Please sign in and try again.', 'error');
       return;
     }
 
@@ -467,7 +467,7 @@ const Setting: React.FC = () => {
       });
 
       // backend returns newPassword and data; do not display password but show success toast
-      setShowPasswordToast(true);
+      showToast('Password updated successfully.', 'success');
 
       // clear password fields
       setPasswords({
@@ -479,7 +479,18 @@ const Setting: React.FC = () => {
       if (res && (res as any).message) console.log('API:', (res as any).message);
     } catch (err: any) {
       console.error('Update password failed:', err);
-      alert(err?.message || 'Failed to update password. Please try again.');
+      let msg = 'Unable to update password. Please try again.';
+      const lower = (err?.message || '').toString().toLowerCase();
+      if (lower.includes('network') || lower.includes('failed to fetch')) {
+        msg = 'Unable to update password. Check your internet connection and try again.';
+      } else if (err?.status === 400) {
+        msg = 'Password change failed. Please check the information and try again.';
+      } else if (err?.status === 401) {
+        msg = 'Current password is incorrect.';
+      } else if (err?.message) {
+        msg = err.message;
+      }
+      showToast(msg, 'error');
     } finally {
       setIsPasswordSubmitting(false);
     }
@@ -513,10 +524,6 @@ const Setting: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          {/* PROFILE PICTURE SECTION REMOVED — backend doesn't support it.
-              The ProfilePicture component remains in this file (above) for future use,
-              but it is intentionally not rendered here. */}
-
           {/* Personal Information */}
           <SectionCard 
             title="Personal Information" 
@@ -666,19 +673,15 @@ const Setting: React.FC = () => {
               </button>
             </div>
           </SectionCard>
-
-          {/* Page-level Cancel + Save Changes buttons REMOVED as requested.
-              (If you want them back, uncomment the block below and wire handlers.)
-          */}
-
         </div>
 
-        {showProfileToast && (
-          <Toast message="Profile updated successfully!" onClose={() => setShowProfileToast(false)} />
-        )}
-        {showPasswordToast && (
-          <Toast message="Password updated successfully!" onClose={() => setShowPasswordToast(false)} />
-        )}
+        {/* Central CustomAlert */}
+        <CustomAlert
+          text={toast.text}
+          open={toast.open}
+          onClose={closeToast}
+          severity={toast.severity}
+        />
       </div>
     </div>
   );
