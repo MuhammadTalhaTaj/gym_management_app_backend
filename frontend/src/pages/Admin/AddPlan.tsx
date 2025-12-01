@@ -271,7 +271,7 @@ const AddPlan = () => {
                   required={formConfig.amount.required}
                   type="number"
                   placeholder={formConfig.amount.placeholder}
-                  prefix="$"
+                  prefix="₨"
                   value={formData.amount}
                   onChange={(e: any) => handleInputChange('amount', e.target.value)}
                 />

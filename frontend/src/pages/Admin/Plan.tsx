@@ -1,7 +1,7 @@
 // src/pages/Plan.tsx  (or wherever your Plan.tsx lives)
 import React, { useState, useEffect } from 'react';
 import {useNavigate} from 'react-router-dom'
-import { Trash2, Plus, Search, Filter, Calendar, DollarSign, Clock, AlertCircle } from 'lucide-react';
+import { Trash2, Plus, Search, Filter, Calendar, Banknote, Clock, AlertCircle } from 'lucide-react';
 import { apiRequest } from '../../config/api'; // <- adjust path if needed
 
 // Types
@@ -193,9 +193,9 @@ const PlanCard: React.FC<{
           <span className="capitalize">{getDurationText()}</span>
         </div>
         <div className="flex items-center gap-3 text-[var(--tertiary-500)]">
-          <DollarSign className="w-5 h-5 text-[var(--tertiary-300)]" />
+          <Banknote className="w-5 h-5 text-[var(--tertiary-300)]" />
           <span className="text-lg font-semibold text-[var(--secondary-100)]">
-            ${plan.amount.toLocaleString()}
+             ₨ {plan.amount.toLocaleString()}
           </span>
         </div>
       </div>

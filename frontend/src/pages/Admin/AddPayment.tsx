@@ -1,6 +1,6 @@
 // src/pages/AddPayment.tsx
 import React, { useEffect, useState, useRef } from 'react';
-import { Calendar, DollarSign, Users, CreditCard, CheckCircle, Info, AlertCircle } from 'lucide-react';
+import { Calendar, Banknote, Users, CreditCard, CheckCircle, Info, AlertCircle } from 'lucide-react';
 import { apiRequest } from '../../config/api'; // <- API helper import
 import CustomAlert from '../../Components/CustomAlert';
 
@@ -27,7 +27,7 @@ const paymentData = {
   //   { id: '1', name: 'Basic Plan', amount: 500 },
   // ],
   rules: [
-    { id: 1, text: 'Payment amount must be greater than $0', icon: CheckCircle },
+    { id: 1, text: 'Payment amount must be greater than Rs 0', icon: CheckCircle },
     { id: 2, text: "Cannot exceed member's due amount", icon: CheckCircle },
     { id: 3, text: 'Member must have outstanding balance', icon: CheckCircle },
     { id: 4, text: 'Payment date cannot be in the future', icon: CheckCircle }
@@ -86,7 +86,7 @@ const Input: React.FC<{
         className="w-full bg-[var(--tertiary-600)] text-white px-4 py-3 rounded-lg border border-[var(--primary-300)] focus:outline-none focus:ring-2 focus:ring-[var(--secondary-100)] transition-all"
       />
       {type === 'number' && (
-        <DollarSign size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--tertiary-500)]" />
+        <Banknote size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--tertiary-500)]" />
       )}
     </div>
   </div>
@@ -103,19 +103,19 @@ const SummaryCard: React.FC<{ amount: number; remainingDue: number; newCollected
       <div className="flex justify-between items-center">
         <span className="text-[var(--tertiary-500)]">Payment Amount:</span>
         <span className="text-white font-semibold text-xl">
-          ${amount.toFixed(2)}
+          Rs {amount.toFixed(2)}
         </span>
       </div>
       <div className="flex justify-between items-center">
         <span className="text-[var(--tertiary-500)]">Remaining Due:</span>
         <span className="text-[var(--tertiary-100)] font-semibold text-xl">
-          ${remainingDue.toFixed(2)}
+          Rs {remainingDue.toFixed(2)}
         </span>
       </div>
       <div className="flex justify-between items-center">
         <span className="text-[var(--tertiary-500)]">New Collected Total:</span>
         <span className="text-[var(--tertiary-300)] font-semibold text-xl">
-          ${newCollected.toFixed(2)}
+          Rs {newCollected.toFixed(2)}
         </span>
       </div>
     </div>
@@ -548,7 +548,7 @@ const AddPayment: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Input
                     label="Payment Amount"
-                    icon={DollarSign}
+                    icon={Banknote}
                     type="number"
                     value={paymentAmount}
                     onChange={(e) => {

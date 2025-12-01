@@ -60,7 +60,7 @@ const ExpenseRow = ({ expense, onEdit, onDelete }: ExpenseRowProps) => (
         </div>
       </div>
     </td>
-    <td className="py-4 px-4 text-white font-semibold">${Number(expense.amount || 0).toFixed(2)}</td>
+    <td className="py-4 px-4 text-white font-semibold">₨ {Number(expense.amount || 0).toFixed(2)}</td>
     <td className="py-4 px-4 text-[#94A3B8]">{expense.date}</td>
     <td className="py-4 px-4 text-[#94A3B8]">{expense.notes}</td>
     <td className="py-4 px-4">
@@ -324,7 +324,7 @@ const Expense = () => {
           <div className="p-6 border-b border-[#8C9BB0]/20">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <h2 className="text-xl font-bold text-white">Recent Expenses</h2>
-              <div className="flex flex-wrap items-center gap-3">
+              {/* <div className="flex flex-wrap items-center gap-3">
                 <FilterDropdown
                   value={categoryFilter}
                   options={['All Categories', 'Food & Dining', 'Transportation', 'Shopping', 'Entertainment', 'Groceries', 'Other']}
@@ -335,7 +335,7 @@ const Expense = () => {
                   options={['Last 30 days', 'Last 7 days', 'This month', 'Last month']}
                   onChange={setTimeFilter}
                 />
-              </div>
+              </div> */}
             </div>
           </div>
 

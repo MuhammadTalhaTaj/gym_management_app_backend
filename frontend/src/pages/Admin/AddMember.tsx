@@ -1,6 +1,8 @@
 // src/pages/AddMember.tsx
 import React, { useEffect, useState } from 'react';
-import { Calendar, Check } from 'lucide-react';
+import { 
+  // Calendar, 
+  Check } from 'lucide-react';
 import { getPlans } from '../../services/plan';
 // import { addMember } from '../../services/member';
 import CustomAlert from '../../Components/CustomAlert';
@@ -469,7 +471,7 @@ const AddMember: React.FC = () => {
             placeholder="mm / dd / yyyy"
             value={formState.joiningDate}
             onChange={(e) => handleInputChange('joiningDate', e.target.value)}
-            icon={<Calendar size={18} />}
+            // icon={<Calendar size={18} />}
           />
 
           <Select
