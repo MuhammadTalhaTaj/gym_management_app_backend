@@ -1,6 +1,8 @@
 // src/pages/AddStaff.tsx
 import React, { useState } from 'react';
-import { Eye, EyeOff, Users, UserCheck, UserPlus, Shield, User, Lock } from 'lucide-react';
+import { Eye, EyeOff, Users, 
+  // UserCheck,
+   UserPlus, Shield, User, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../config/api';
 import CustomAlert from '../../Components/CustomAlert'; // <-- custom alert import
@@ -207,33 +209,33 @@ const Button: React.FC<{
   );
 };
 
-const StatsCard: React.FC<{ icon: React.ComponentType<any>; label: string; value: number | string; iconBg?: string; iconColor?: string; }> = ({ icon: Icon, label, value, iconBg = '', iconColor = '' }) => (
-  <div className="flex items-center gap-3">
-    <div className={`w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center`}>
-      <Icon size={20} className={iconColor} />
-    </div>
-    <div>
-      <p className="text-xs text-[var(--primary-300)]">{label}</p>
-      <p className="text-2xl font-bold text-[var(--primary-300)]">{value}</p>
-    </div>
-  </div>
-);
+// const StatsCard: React.FC<{ icon: React.ComponentType<any>; label: string; value: number | string; iconBg?: string; iconColor?: string; }> = ({ icon: Icon, label, value, iconBg = '', iconColor = '' }) => (
+//   <div className="flex items-center gap-3">
+//     <div className={`w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center`}>
+//       <Icon size={20} className={iconColor} />
+//     </div>
+//     <div>
+//       <p className="text-xs text-[var(--primary-300)]">{label}</p>
+//       <p className="text-2xl font-bold text-[var(--primary-300)]">{value}</p>
+//     </div>
+//   </div>
+// );
 
-const ActivityItem: React.FC<{ activity: any }> = ({ activity }) => (
-  <div className="flex items-center gap-3">
-    <img
-      src={activity.avatar}
-      alt={activity.name}
-      className="w-10 h-10 rounded-full object-cover"
-    />
-    <div className="flex-1">
-      <p className="text-sm font-medium text-[var(--primary-300)]">
-        {activity.name} {activity.action}
-      </p>
-      <p className="text-xs text-[var(--primary-300)]">{activity.time}</p>
-    </div>
-  </div>
-);
+// const ActivityItem: React.FC<{ activity: any }> = ({ activity }) => (
+//   <div className="flex items-center gap-3">
+//     <img
+//       src={activity.avatar}
+//       alt={activity.name}
+//       className="w-10 h-10 rounded-full object-cover"
+//     />
+//     <div className="flex-1">
+//       <p className="text-sm font-medium text-[var(--primary-300)]">
+//         {activity.name} {activity.action}
+//       </p>
+//       <p className="text-xs text-[var(--primary-300)]">{activity.time}</p>
+//     </div>
+//   </div>
+// );
 
 const PermissionItem: React.FC<{ permission: any }> = ({ permission }) => (
   <div className="flex items-start gap-3">
@@ -415,7 +417,7 @@ const AddStaff: React.FC = () => {
 
     setLoading(true);
     try {
-      const data = await apiRequest<{ accessToken?: string; staff?: any }>({
+       await apiRequest<{ accessToken?: string; staff?: any }>({
         method: 'POST',
         endpoint: '/staff/signup',
         body: payload

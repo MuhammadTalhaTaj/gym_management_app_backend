@@ -28,12 +28,12 @@ const loginData = {
       title: "Payment Tracking",
       color: "tertiary-400"
     },
-    {
-      id: 3,
-      icon: "Calendar",
-      title: "Class Scheduling",
-      color: "secondary-100"
-    },
+    // {
+    //   id: 3,
+    //   icon: "Calendar",
+    //   title: "Class Scheduling",
+    //   color: "secondary-100"
+    // },
     {
       id: 4,
       icon: "BarChart3",
@@ -180,7 +180,7 @@ const LoginForm = ({ data }: any) => {
     setLoading(true);
 
     try {
-      await loginRequest({ email: email.trim(), password, role }, rememberMe);
+      await loginRequest({ email: email.trim(), password, role });
       // success: show friendly success toast then navigate
       showToast('Welcome back! Taking you to your dashboard...', 'success');
 

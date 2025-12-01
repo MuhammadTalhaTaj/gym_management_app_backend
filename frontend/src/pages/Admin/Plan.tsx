@@ -125,10 +125,10 @@ const FilterDropdown: React.FC<{
       className="appearance-none pl-10 pr-10 py-2.5 bg-[var(--primary-200)] border border-[var(--primary-300)] rounded-lg text-[var(--tertiary-500)] focus:outline-none focus:border-[var(--secondary-100)] transition-colors cursor-pointer"
     >
       <option value="all">All Types</option>
-      <option value="monthly">Monthly</option>
-      <option value="yearly">Yearly</option>
-      <option value="weekly">Weekly</option>
-      <option value="daily">Daily</option>
+      <option value="months">Monthly</option>
+      <option value="years">Yearly</option>
+      <option value="weeks">Weekly</option>
+      <option value="days">Daily</option>
     </select>
     <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--tertiary-500)] w-5 h-5 pointer-events-none" />
     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
@@ -142,8 +142,8 @@ const FilterDropdown: React.FC<{
 const PlanCard: React.FC<{
   plan: Plan;
   onDelete: (planId: string) => void;
-  userRole: string;
-}> = ({ plan, onDelete, userRole }) => {
+  // userRole: string;
+}> = ({ plan, onDelete }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -369,7 +369,7 @@ const navigate= useNavigate();
                   key={plan._id}
                   plan={plan}
                   onDelete={handleDeletePlan}
-                  userRole={userRole}
+                  // userRole={userRole}
                 />
               ))}
             </div>

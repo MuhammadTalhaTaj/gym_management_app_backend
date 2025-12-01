@@ -73,6 +73,7 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "electron",
       "esbuild",
       "msw",
       "unrs-resolver"

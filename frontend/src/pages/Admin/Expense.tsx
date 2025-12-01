@@ -5,11 +5,11 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '../../config/api'; // existing helper (keep path consistent with your project)
 
-interface TimePeriodSelector {
-  periods: string[];
-  active: string;
-  onChange: (val: string) => void;
-}
+// interface TimePeriodSelector {
+//   periods: string[];
+//   active: string;
+//   onChange: (val: string) => void;
+// }
 interface FilterDropdownProps{
   value: any;
   options: string[];
@@ -146,7 +146,7 @@ const Expense = () => {
     categories: [] as any[],
     expenses: [] as any[]
   });
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   // pagination config
   const PAGE_SIZE = 6;

@@ -1,26 +1,65 @@
-// src/api/offlinePost.js
+// src/api/offlinePost.ts
 import { addToOutbox } from '../db';
 
-export const sendOrQueue = async ({ method = 'POST', url, body }) => {
-  const payload = { method, url, body, headers: { 'Content-Type': 'application/json' }, createdAt: Date.now() };
+export type OfflinePayload = {
+  method?: string;
+  url: string;
+  body?: any;
+  headers?: Record<string, string>;
+  createdAt: number;
+};
 
-  if (navigator.onLine) {
-    // attempt network send
+export const sendOrQueue = async ({
+  method = 'POST',
+  url,
+  body,
+}: {
+  method?: string;
+  url: string;
+  body?: any;
+}) => {
+  if (!url) {
+    throw new Error('sendOrQueue: url is required');
+  }
+
+  const payload: OfflinePayload = {
+    method,
+    url,
+    body,
+    headers: { 'Content-Type': 'application/json' },
+    createdAt: Date.now(),
+  };
+
+  // navigator may be undefined in some SSR/test environments
+  const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
+
+  if (online) {
     try {
       const res = await fetch(url, {
         method,
         headers: payload.headers,
-        body: JSON.stringify(body),
+        body: typeof body === 'undefined' ? undefined : JSON.stringify(body),
       });
-      if (!res.ok) throw new Error('Network response was not ok');
-      return await res.json();
+
+      if (!res.ok) {
+        // queue on server error as well
+        await addToOutbox(payload);
+        return { offline: true };
+      }
+
+      // attempt to parse JSON safely
+      try {
+        return await res.json();
+      } catch {
+        return {};
+      }
     } catch (err) {
-      // network failed. queue for later
+      // network failed -> queue
       await addToOutbox(payload);
       return { offline: true };
     }
   } else {
-    // offline: queue and return immediate optimistic response if desired
+    // offline: queue
     await addToOutbox(payload);
     return { offline: true };
   }

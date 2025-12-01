@@ -15,7 +15,7 @@ lerna-debug.log*
 **/*.spec.ts
 *__tests__/*
 node_modules
-dist
+# dist
 dist-ssr
 .history/
 *.local

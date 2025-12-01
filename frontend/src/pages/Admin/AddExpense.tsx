@@ -325,8 +325,8 @@ const AddExpense = () => {
   });
 
   const [submitting, setSubmitting] = useState(false);
-  const [recentExpenses, setRecentExpenses] = useState<any[]>(expenseFormConfig.recentExpenses);
-
+  // const [recentExpenses, setRecentExpenses] = useState<any[]>(expenseFormConfig.recentExpenses);
+const [recentExpenses, setRecentExpenses] = useState<any[]>([]);
   // CustomAlert state (toast)
   const [toastOpen, setToastOpen] = useState(false);
   const [toastText, setToastText] = useState('');
@@ -359,10 +359,10 @@ const AddExpense = () => {
 
         const list = Array.isArray(res?.data) ? res.data : [];
 
-        if (list.length === 0) {
-          // fallback
-          return;
-        }
+        // if (list.length === 0) {
+        //   // fallback
+        //   return;
+        // }
 
         const mapped = list
           .slice(-10)

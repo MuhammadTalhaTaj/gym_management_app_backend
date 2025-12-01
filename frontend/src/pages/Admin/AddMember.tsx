@@ -183,7 +183,7 @@ const AddMember: React.FC = () => {
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null); // developer message area (kept)
-  const [success, setSuccess] = useState<boolean>(false); // kept for backward compatibility if you depend on it elsewhere
+  const [, setSuccess] = useState<boolean>(false); // kept for backward compatibility if you depend on it elsewhere
 
   // CustomAlert (user-facing toast) state
   const [toastOpen, setToastOpen] = useState(false);

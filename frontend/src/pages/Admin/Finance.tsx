@@ -19,18 +19,18 @@ interface StatCardProps {
 }
 
 // Static fallback data (kept but NOT used for UI anymore)
-const fallbackData = {
-  stats: {
-    totalIncome: { amount: 12480.5, percentageChange: 15, trend: 'up' },
-    totalExpenses: { amount: 7820.0, percentageChange: 8, trend: 'up' },
-  },
-  chartData: [
-    { week: 'Week 1', Income: 2600, Expenses: 1800 },
-    { week: 'Week 2', Income: 3200, Expenses: 2200 },
-    { week: 'Week 3', Income: 2800, Expenses: 1900 },
-    { week: 'Week 4', Income: 4200, Expenses: 2000 },
-  ],
-};
+// const fallbackData = {
+//   stats: {
+//     totalIncome: { amount: 12480.5, percentageChange: 15, trend: 'up' },
+//     totalExpenses: { amount: 7820.0, percentageChange: 8, trend: 'up' },
+//   },
+//   chartData: [
+//     { week: 'Week 1', Income: 2600, Expenses: 1800 },
+//     { week: 'Week 2', Income: 3200, Expenses: 2200 },
+//     { week: 'Week 3', Income: 2800, Expenses: 1900 },
+//     { week: 'Week 4', Income: 4200, Expenses: 2000 },
+//   ],
+// };
 
 // Header Component
 const Header = ({ user }: any) => (

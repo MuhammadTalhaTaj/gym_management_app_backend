@@ -4,7 +4,8 @@ import '../assets/styles/AdminSidebar.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDumbbell, faBars, faTimes,faHome,faListCheck,
   // faWallet,
-  faUsers,faChartPie,faUser,faEnvelope,faCog,faSignOutAlt,faEnvelopeOpenText,
+  faUsers,faChartPie,faUser,faEnvelope,faCog,faSignOutAlt,
+  // faEnvelopeOpenText,
   // faUserPlus,
    faCirclePlus} from '@fortawesome/free-solid-svg-icons';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';

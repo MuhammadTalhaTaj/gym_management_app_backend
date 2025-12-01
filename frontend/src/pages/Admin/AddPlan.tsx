@@ -1,7 +1,7 @@
 // src/pages/AddPlan.tsx
 import React, { useState } from 'react';
 import { apiRequest } from '../../config/api'; // API helper
-import CustomAlert from '../../components/CustomAlert'; 
+import CustomAlert from '../../Components/CustomAlert'; 
 
 // Data file - formConfig.js
 const formConfig = {

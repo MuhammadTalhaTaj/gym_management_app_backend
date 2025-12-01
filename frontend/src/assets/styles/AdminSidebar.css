@@ -93,6 +93,7 @@
         margin: 0;
     }
     .adminSidebar ul li {
+        width: 100%;
         padding: 0.8rem 8rem;
         padding-left: 1rem;
     }

@@ -3,57 +3,57 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, MoreVertical, Bell } from 'lucide-react';
 import { apiRequest } from '../../config/api';
-import { useLocation } from 'react-router-dom';
+// import { useLocation } from 'react-router-dom';
 // Mock data in a separate structure (simulating a separate file)
-const MOCK_DATA = {
-  members: [
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john.doe@example.com",
-      phone: "+1 234 567 890",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-      membershipPlan: "Annual Gold",
-      expiryDate: "2026-10-15",
-      status: "Active"
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@example.com",
-      phone: "+1 987 654 321",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jane",
-      membershipPlan: "Monthly Basic",
-      expiryDate: "2025-11-30",
-      status: "Due"
-    },
-    {
-      id: 3,
-      name: "Sam Wilson",
-      email: "sam.wilson@example.com",
-      phone: "+1 555 123 456",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sam",
-      membershipPlan: "Quarterly Pro",
-      expiryDate: "2025-08-20",
-      status: "Expired"
-    },
-    {
-      id: 4,
-      name: "Emily Carter",
-      email: "emily.carter@example.com",
-      phone: "+1 444 555 666",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emily",
-      membershipPlan: "Annual Gold",
-      expiryDate: "2027-01-05",
-      status: "Active"
-    }
-  ],
-  admin: {
-    name: "Jane Doe",
-    role: "Administrator",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Admin"
-  }
-};
+// const MOCK_DATA = {
+//   members: [
+//     {
+//       id: 1,
+//       name: "John Doe",
+//       email: "john.doe@example.com",
+//       phone: "+1 234 567 890",
+//       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
+//       membershipPlan: "Annual Gold",
+//       expiryDate: "2026-10-15",
+//       status: "Active"
+//     },
+//     {
+//       id: 2,
+//       name: "Jane Smith",
+//       email: "jane.smith@example.com",
+//       phone: "+1 987 654 321",
+//       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jane",
+//       membershipPlan: "Monthly Basic",
+//       expiryDate: "2025-11-30",
+//       status: "Due"
+//     },
+//     {
+//       id: 3,
+//       name: "Sam Wilson",
+//       email: "sam.wilson@example.com",
+//       phone: "+1 555 123 456",
+//       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sam",
+//       membershipPlan: "Quarterly Pro",
+//       expiryDate: "2025-08-20",
+//       status: "Expired"
+//     },
+//     {
+//       id: 4,
+//       name: "Emily Carter",
+//       email: "emily.carter@example.com",
+//       phone: "+1 444 555 666",
+//       avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emily",
+//       membershipPlan: "Annual Gold",
+//       expiryDate: "2027-01-05",
+//       status: "Active"
+//     }
+//   ],
+//   admin: {
+//     name: "Jane Doe",
+//     role: "Administrator",
+//     avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Admin"
+//   }
+// };
 
 // ---------- UI subcomponents (unchanged styling) ----------
 
