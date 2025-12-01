@@ -33,6 +33,9 @@ function AdminSidebar() {
      if (path === '/plan') {
       return p === '/plan' || p === '/addplan';
     }
+    if (path === '/finance') {
+      return p === '/finance' || p === '/addexpense';
+    }
     return p === path;
   };
 

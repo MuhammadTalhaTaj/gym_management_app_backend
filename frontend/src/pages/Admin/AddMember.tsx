@@ -52,7 +52,7 @@ type InputProps = {
 };
 const Input: React.FC<InputProps> = ({ label, required, type = 'text', placeholder, value, onChange, icon }) => (
   <div className="flex flex-col gap-2">
-    <label className="text-sm font-medium text-gray-700">
+    <label className="text-sm font-medium text-[var(--primary-300)]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <div className="relative">
@@ -61,7 +61,7 @@ const Input: React.FC<InputProps> = ({ label, required, type = 'text', placehold
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder-gray-400"
+        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-[var(--primary-300)] placeholder-gray-400"
       />
       {icon && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -83,13 +83,13 @@ type SelectProps = {
 };
 const Select: React.FC<SelectProps> = ({ label, required, options, value, onChange, placeholder }) => (
   <div className="flex flex-col gap-2">
-    <label className="text-sm font-medium text-gray-700">
+    <label className="text-sm font-medium text-[var(--primary-300)]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <select
       value={value}
       onChange={onChange}
-      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 appearance-none bg-white cursor-pointer"
+      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-[var(--primary-300)] appearance-none bg-[var(--primary-100)] cursor-pointer"
       style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
         backgroundRepeat: 'no-repeat',
@@ -123,7 +123,7 @@ type NumberInputProps = {
 };
 const NumberInput: React.FC<NumberInputProps> = ({ label, required, placeholder, value, onChange, disabled }) => (
   <div className="flex flex-col gap-2">
-    <label className="text-sm font-medium text-gray-700">
+    <label className="text-sm font-medium text-[var(--primary-300)]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <input
@@ -132,14 +132,14 @@ const NumberInput: React.FC<NumberInputProps> = ({ label, required, placeholder,
       value={value as any}
       onChange={onChange}
       disabled={disabled}
-      className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder-gray-400 ${disabled ? 'bg-gray-50 cursor-not-allowed' : ''
+      className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-[var(--primary-300)] placeholder-[var(--primary-300)] ${disabled ? 'text-[var(--primary-300)] cursor-not-allowed' : ''
         }`}
     />
   </div>
 );
 
 const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
-  <h2 className="text-xl font-semibold text-gray-900 mb-6">{title}</h2>
+  <h2 className="text-xl font-semibold text-[var(--primary-300)] mb-6">{title}</h2>
 );
 
 // --- main component ---
@@ -400,14 +400,14 @@ const AddMember: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm p-6 sm:p-8 lg:p-10">
+    <div className="min-h-screen w-full bg-[var(--primary-100)] py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto bg-[var(--primary-200)] rounded-2xl shadow-sm p-6 sm:p-8 lg:p-10">
         {/* Personal Details Section */}
         <SectionHeader title="Personal Details" />
 
         {/* developer message / errors */}
         {message && (
-          <div className="mb-6 p-4 rounded border border-red-200 bg-red-50 text-sm whitespace-pre-wrap">
+          <div className="mb-6 p-4 rounded border text-[var(--primary-300)] border-red-500 bg-[var(--primary-100)] text-sm whitespace-pre-wrap">
             {message}
           </div>
         )}

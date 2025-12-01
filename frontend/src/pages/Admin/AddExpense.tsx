@@ -10,10 +10,10 @@ import CustomAlert from '../../Components/CustomAlert';
 
 // Data configuration file
 const expenseFormConfig = {
-  quickAmounts: [10, 25, 50, 100, 200],
+  quickAmounts: [ 10, 25, 50, 100, 200],
   placeholders: {
     expenseName: 'e.g., Grocery Shopping, Fuel, Restaurant',
-    amount: '0.00',
+    amount: ' 0.00',
     notes: 'Add any additional details or notes about this expense...'
   },
   recentExpenses: [
@@ -100,11 +100,11 @@ const AmountDateRow = ({ amount, onAmountChange, date, onDateChange }: any) => (
       </label>
       <div className="relative">
         <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--tertiary-500)]">
-          $
+          Rs 
         </span>
         <input
           type="number"
-          placeholder="0.00"
+          placeholder=" 0.00"
           value={amount}
           onChange={onAmountChange}
           step="0.01"
@@ -168,7 +168,7 @@ const QuickAmountButtons = ({ amounts, onSelect, selectedAmount }: any) => (
             : 'bg-[var(--primary-200)] text-white hover:bg-opacity-80'
             }`}
         >
-          ${amount}
+          Rs {amount}
         </button>
       ))}
     </div>
@@ -222,10 +222,10 @@ const RecentExpensesSection = ({ expenses }: any) => (
   <div className="bg-[var(--primary-100)] rounded-2xl p-6">
     <div className="flex items-center justify-between mb-5">
       <h3 className="text-xl font-semibold text-white">Recent Expenses</h3>
-      <button className="text-[var(--secondary-100)] text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
+      {/* <button className="text-[var(--secondary-100)] text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
         View All
         <ArrowRight className="w-4 h-4" />
-      </button>
+      </button> */}
     </div>
 
     <div className="space-y-3">
