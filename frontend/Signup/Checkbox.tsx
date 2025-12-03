@@ -21,7 +21,7 @@ const Checkbox = ({ label, checked, onChange, error }: any) => {
               <path
                 d="M3 8l3 3 7-7"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />

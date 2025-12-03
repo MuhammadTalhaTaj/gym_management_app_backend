@@ -22,6 +22,7 @@ import AddStaff from './pages/Admin/AddStaff';
 import Staff from './pages/Admin/Staff';
 import Setting from './pages/Admin/Setting';
 import Plan from './pages/Admin/Plan';
+import ForgetPassword from './pages/Admin/ForgetPassword';
 
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
         {/* Public Routes */}
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgetpassword" element={<ForgetPassword /> } />
         {/* <Route path="/staff/signup" element={<StaffSignup />} /> */}
 
         {/* Protected Admin Area */}

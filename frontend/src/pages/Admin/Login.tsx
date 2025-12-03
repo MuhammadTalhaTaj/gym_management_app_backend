@@ -282,7 +282,7 @@ const LoginForm = ({ data }: any) => {
           {/* END role radios */}
 
           <div className="flex items-center justify-between mb-6">
-            <label className="flex items-center cursor-pointer">
+            {/* <label className="flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 checked={rememberMe}
@@ -290,8 +290,10 @@ const LoginForm = ({ data }: any) => {
                 className="w-4 h-4 text-[var(--tertiary-400)] border-gray-300 rounded focus:ring-[var(--tertiary-400)]"
               />
               <span className="ml-2 text-sm text-[var(--primary-300)]">Remember me</span>
-            </label>
-            <button className="text-sm text-[var(--tertiary-400)] hover:underline">
+            </label> */}
+            <button
+            onClick={()=>{navigate('/ForgetPassword')}}
+            className="text-sm text-[var(--tertiary-400)] hover:underline">
               Forgot password?
             </button>
           </div>

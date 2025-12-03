@@ -8,7 +8,7 @@ import { formConfig } from "../../../Signup/FormConfig";
 import FormInput from "../../../Signup/FormInput";
 import PasswordInput from "../../../Signup/PasswordInput";
 import TextArea from "../../../Signup/TextArea";
-import Checkbox from "../../../Signup/Checkbox";
+// import Checkbox from "../../../Signup/Checkbox";
 import Button from "../../../Signup/Button";
 import Divider from "../../../Signup/Divider";
 import GymIcon from "../../../Signup/GymIcon";
@@ -211,7 +211,7 @@ const Signup: React.FC = () => {
               })}
             </div>
 
-            <Checkbox
+            {/* <Checkbox
               label={formConfig.termsText}
               checked={formData.agreeToTerms}
               onChange={(e: any) =>
@@ -220,7 +220,7 @@ const Signup: React.FC = () => {
                 })
               }
               error={errors.agreeToTerms}
-            />
+            /> */}
 
             <Button onClick={handleSubmit} icon={User} disabled={loading}>
               {loading ? "Creating account..." : formConfig.submitButton}
