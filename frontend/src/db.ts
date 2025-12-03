@@ -1,47 +1,52 @@
-// src/db.js
+// src/db.ts
 import { openDB } from 'idb';
+import type { IDBPDatabase } from 'idb';
 
-const DB_NAME = 'gym-db';
+const DB_NAME = 'gym_management_app_db';
 const DB_VERSION = 1;
-const CACHE_STORE = 'cache';   // store API responses keyed by endpoint
-const OUTBOX_STORE = 'outbox'; // store queued writes
+const OUTBOX_STORE = 'outbox';
+const CACHE_STORE = 'cache';
 
-export const getDB = async () => {
-  return openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains(CACHE_STORE))
-        db.createObjectStore(CACHE_STORE);
-      if (!db.objectStoreNames.contains(OUTBOX_STORE))
-        db.createObjectStore(OUTBOX_STORE, { keyPath: 'id', autoIncrement: true });
-    },
-  });
-};
+let _dbPromise: Promise<IDBPDatabase<any>> | null = null;
 
-// cache helpers
-export const saveToCache = async (key, data) => {
+function getDB() {
+  if (!_dbPromise) {
+    _dbPromise = openDB(DB_NAME, DB_VERSION, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains(OUTBOX_STORE)) {
+          db.createObjectStore(OUTBOX_STORE, { keyPath: 'id', autoIncrement: true });
+        }
+        if (!db.objectStoreNames.contains(CACHE_STORE)) {
+          db.createObjectStore(CACHE_STORE);
+        }
+      },
+    });
+  }
+  return _dbPromise;
+}
+
+export async function addToOutbox(payload: any) {
   const db = await getDB();
-  await db.put(CACHE_STORE, { data, updatedAt: Date.now() }, key);
-};
+  return db.add(OUTBOX_STORE, payload);
+}
 
-export const readFromCache = async (key) => {
+export async function getOutboxItems() {
   const db = await getDB();
-  const rec = await db.get(CACHE_STORE, key);
-  return rec?.data ?? null;
-};
+  return db.getAll(OUTBOX_STORE);
+}
 
-// outbox helpers
-export const addToOutbox = async (payload) => {
+export async function removeOutboxItem(id?: IDBValidKey) {
+  if (typeof id === 'undefined' || id === null) return;
   const db = await getDB();
-  // payload example: { method: 'POST', url: '/api/member', body: {...}, headers: {...}, createdAt: Date.now() }
-  await db.add(OUTBOX_STORE, payload);
-};
+  return db.delete(OUTBOX_STORE, id);
+}
 
-export const getOutboxItems = async () => {
+export async function saveToCache(key: string, value: any) {
   const db = await getDB();
-  return await db.getAll(OUTBOX_STORE);
-};
+  return db.put(CACHE_STORE, value, key);
+}
 
-export const removeOutboxItem = async (id) => {
+export async function readFromCache(key: string) {
   const db = await getDB();
-  return await db.delete(OUTBOX_STORE, id);
-};
+  return db.get(CACHE_STORE, key);
+}

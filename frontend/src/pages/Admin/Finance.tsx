@@ -19,18 +19,18 @@ interface StatCardProps {
 }
 
 // Static fallback data (kept but NOT used for UI anymore)
-const fallbackData = {
-  stats: {
-    totalIncome: { amount: 12480.5, percentageChange: 15, trend: 'up' },
-    totalExpenses: { amount: 7820.0, percentageChange: 8, trend: 'up' },
-  },
-  chartData: [
-    { week: 'Week 1', Income: 2600, Expenses: 1800 },
-    { week: 'Week 2', Income: 3200, Expenses: 2200 },
-    { week: 'Week 3', Income: 2800, Expenses: 1900 },
-    { week: 'Week 4', Income: 4200, Expenses: 2000 },
-  ],
-};
+// const fallbackData = {
+//   stats: {
+//     totalIncome: { amount: 12480.5, percentageChange: 15, trend: 'up' },
+//     totalExpenses: { amount: 7820.0, percentageChange: 8, trend: 'up' },
+//   },
+//   chartData: [
+//     { week: 'Week 1', Income: 2600, Expenses: 1800 },
+//     { week: 'Week 2', Income: 3200, Expenses: 2200 },
+//     { week: 'Week 3', Income: 2800, Expenses: 1900 },
+//     { week: 'Week 4', Income: 4200, Expenses: 2000 },
+//   ],
+// };
 
 // Header Component
 const Header = ({ user }: any) => (
@@ -41,7 +41,7 @@ const Header = ({ user }: any) => (
         <Bell size={24} />
       </button>
       <div className="flex items-center gap-3">
-        <img src={user.avatar} alt={user.name} className="w-12 h-12 rounded-full object-cover" />
+        {/* <img src={user.avatar} alt={user.name} className="w-12 h-12 rounded-full object-cover" /> */}
         <div className="hidden sm:block">
           <p className="text-sm font-semibold text-white">{user.name}</p>
           <p className="text-xs text-[var(--primary-300)]">{user.role}</p>
@@ -96,7 +96,7 @@ const StatCard = ({ title, amount, percentageChange, isExpense }: StatCardProps)
         <div>
           <p className="text-sm text-white mb-1">{title}</p>
           <h2 className="text-4xl font-bold text-[var(--primary-300)] mb-2 wrap-anywhere">
-            ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ₨ {amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h2>
           <p className={`text-sm ${textColor} font-medium`}>+{percentageChange}% from last month</p>
         </div>
@@ -180,7 +180,7 @@ const IncomeExpenseChart = ({ data }: { data: DashboardResponse | null }) => {
           <Legend
             iconType="square"
             wrapperStyle={{ paddingTop: '20px' }}
-            formatter={(value) => <span style={{ color: '#374151', fontSize: '14px', marginLeft: '8px' }}>{value}</span>}
+            formatter={(value) => <span style={{ color: 'white', fontSize: '14px', marginLeft: '8px' }}>{value}</span>}
           />
           <Bar dataKey="Income" fill="#4ade80" radius={[8, 8, 0, 0]} />
           <Bar dataKey="Expenses" fill="#f87171" radius={[8, 8, 0, 0]} />
@@ -229,11 +229,21 @@ const Finance = () => {
   const handleAddExpense = () => navigate('/addexpense');
 
   // Fallback user info for header (unchanged visual)
-  const user = {
-    name: 'Eleanor Pena',
-    role: 'Administrator',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
-  };
+  // Load user data from localStorage
+const storedUser = localStorage.getItem("user");
+let parsedUser: any = null;
+
+try {
+  parsedUser = storedUser ? JSON.parse(storedUser) : null;
+} catch {
+  parsedUser = null;
+}
+
+const user = {
+  name: parsedUser?.name || "User",
+  role: localStorage.getItem("role") || "Staff",
+};
+
 
   // **Never use fallbackData for stats** — always derive from dashboardData or default to zeros
   const stats = {

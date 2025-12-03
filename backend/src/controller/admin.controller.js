@@ -68,7 +68,7 @@ const updatePassword= asyncHandler(async(req,res)=>{
 
     console.log(hashpassword)
     res.status(200).json({
-        message:"Ok gee",
+        message:"Password Updated Successfully",
         newPassword:password,
         data:admin
     })

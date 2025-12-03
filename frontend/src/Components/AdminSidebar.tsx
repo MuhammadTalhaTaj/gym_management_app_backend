@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import '../assets/styles/AdminSidebar.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDumbbell, faBars, faTimes,faHome,
+import { faDumbbell, faBars, faTimes,faHome,faListCheck,
   // faWallet,
-  faUsers,faChartPie,faUser,faEnvelope,faCog,faSignOutAlt,faEnvelopeOpenText,
+  faUsers,faChartPie,faUser,faEnvelope,faCog,faSignOutAlt,
+  // faEnvelopeOpenText,
   // faUserPlus,
    faCirclePlus} from '@fortawesome/free-solid-svg-icons';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -28,6 +29,12 @@ function AdminSidebar() {
     }
     if (path === '/enquiries') {
       return p === '/enquiries' || p === '/addenquiries';
+    }
+     if (path === '/plan') {
+      return p === '/plan' || p === '/addplan';
+    }
+    if (path === '/finance') {
+      return p === '/finance' || p === '/addexpense';
     }
     return p === path;
   };
@@ -126,6 +133,15 @@ function AdminSidebar() {
         style={{ color: isActive('/addpayment') ? 'var(--secondary-100)' : 'var(--primary-300)' }}
       />
       Add Payment
+    </NavLink>
+  </li>
+  <li className={isActive('/plan') ? 'active-link' : ''}>
+    <NavLink to="/plan">
+      <FontAwesomeIcon className="adminSidebarIcon"
+        icon={faListCheck}
+        style={{ color: isActive('/plan') ? 'var(--secondary-100)' : 'var(--primary-300)' }}
+      />
+      Plan
     </NavLink>
   </li>
   {/* <li className={isActive('/finance') ? 'active-link' : ''}>

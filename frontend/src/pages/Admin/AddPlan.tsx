@@ -1,6 +1,7 @@
 // src/pages/AddPlan.tsx
 import React, { useState } from 'react';
 import { apiRequest } from '../../config/api'; // API helper
+import CustomAlert from '../../Components/CustomAlert'; 
 
 // Data file - formConfig.js
 const formConfig = {
@@ -72,7 +73,7 @@ const InputField = ({ label, required, type = 'text', placeholder, value, onChan
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className={`w-full bg-[var(--primary-20)] text-white border border-[var(--primary-10)] rounded-lg px-4 py-3 ${
+        className={`w-full bg-[var(--primary-200)] text-[var(--primary-300)] border border-[var(--primary-10)] rounded-lg px-4 py-3 ${
           prefix ? 'pl-8' : ''
         } focus:outline-none focus:ring-2 focus:ring-[var(--secondary-100)] placeholder-[var(--primary-30)] transition-all`}
       />
@@ -89,7 +90,7 @@ const SelectField = ({ label, required, options, value, onChange }: any) => (
     <select
       value={value}
       onChange={onChange}
-      className="w-full bg-[var(--primary-20)] text-white border border-[var(--primary-10)] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--secondary-100)] appearance-none cursor-pointer transition-all"
+      className="w-full bg-[var(--primary-200)] text-[var(--primary-300)] border border-[var(--primary-100)] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--secondary-100)] appearance-none cursor-pointer transition-all"
       style={{
         backgroundImage:
           "url(\"data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%238C9BB0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
@@ -122,51 +123,19 @@ const Button = ({ children, variant = 'primary', onClick, icon }: any) => {
   );
 };
 
-// Plan Preview Component
-// const PlanPreview = ({ planName, duration, durationType, amount }: any) => {
-//   const getDurationText = () => {
-//     if (!duration || !durationType) return 'Duration will appear here';
-//     return `${duration} ${durationType}`;
-//   };
-
-//   return (
-//     <Card>
-//       <SectionHeader
-//         icon={
-//           <svg className="w-6 h-6 text-[var(--secondary-100)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-//             <path
-//               strokeLinecap="round"
-//               strokeLinejoin="round"
-//               strokeWidth={2}
-//               d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-//             />
-//           </svg>
-//         }
-//         title="Plan Preview"
-//         subtitle=""
-//       />
-//       <div className="bg-[var(--primary-20)] rounded-lg p-8 text-center">
-//         <div className="w-16 h-16 bg-[var(--secondary-20)] rounded-full flex items-center justify-center mx-auto mb-4">
-//           <svg className="w-8 h-8 text-[var(--secondary-100)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//             <path
-//               strokeLinecap="round"
-//               strokeLinejoin="round"
-//               strokeWidth={2}
-//               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-//             />
-//           </svg>
-//         </div>
-//         <h3 className="text-white text-xl md:text-2xl font-semibold mb-2">{planName || 'Plan Name'}</h3>
-//         <p className="text-[var(--tertiary-500)] text-sm mb-4">{getDurationText()}</p>
-//         <p className="text-[var(--secondary-100)] text-3xl md:text-4xl font-bold">${amount || '0.00'}</p>
-//       </div>
-//     </Card>
-//   );
-// };
-
 // Main Component
 const AddPlan = () => {
+  const [toast, setToast] = useState({
+    open: false,
+    text: '',
+    severity: 'success' as 'success' | 'error' | 'warning' | 'info'
+  });
+
+  const showToast = (text: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToast({ open: true, text, severity });
+  };
+  const handleToastClose = () => setToast(prev => ({ ...prev, open: false }));
+
   const [formData, setFormData] = useState({ planName: '', durationType: '', duration: '', amount: '' });
   const [loading, setLoading] = useState(false);
 
@@ -186,32 +155,72 @@ const AddPlan = () => {
   const handleSubmit = async () => {
     const missing = validate();
     if (missing.length > 0) {
-      alert(`Provide required fields: ${missing.join(', ')}`);
+      // friendly message for layman users
+      showToast('Please complete all required fields: Plan name, duration type, duration, and amount.', 'warning');
       return;
     }
+
+    // Read createdBy robustly (support both stored user json or a userId key)
+    let createdBy: string | null = null;
+    try {
+      const raw = localStorage.getItem('user');
+      const parsed = raw ? JSON.parse(raw) : null;
+      createdBy = parsed?.id ?? parsed?._id ?? localStorage.getItem('userId') ?? null;
+    } catch {
+      createdBy = localStorage.getItem('userId') ?? null;
+    }
+    const role = localStorage.getItem('role') ?? '';
 
     const payload = {
       name: formData.planName,
       durationType: formData.durationType,
       duration: Number(formData.duration),
-      amount: Number(formData.amount)
+      amount: Number(formData.amount),
+      createdBy: createdBy,
+      currentUser: role
     };
 
     setLoading(true);
     try {
       const res = await apiRequest({ method: 'POST', endpoint: '/plan/addplan', body: payload });
-      alert(res?.message ?? 'Plan added successfully');
+
+      // success: show friendly message
+      showToast(res?.message ?? 'Plan saved. Members can now subscribe to this plan.', 'success');
+
+      // reset form
       setFormData({ planName: '', durationType: '', duration: '', amount: '' });
       console.log('Plan added:', res);
     } catch (err: any) {
       console.warn('Add plan failed:', err);
-      alert(err?.message ?? 'Failed to add plan. See console for details.');
+
+      // map common server responses to plain-language messages
+      const status = err?.status ?? err?.response?.status ?? null;
+      const backendMsg = (err?.message || err?.response?.data?.message || '').toString().toLowerCase();
+
+      if (status === 400) {
+        // validation or bad input
+        showToast('Some information looks incorrect. Please double-check your entries and try again.', 'error');
+      } else if (status === 401) {
+        showToast('You do not have permission to add plans. Please sign in with an admin account.', 'error');
+      } else if (status === 404) {
+        showToast('Could not find the server resource. Please try again later.', 'error');
+      } else if (status === 500) {
+        showToast('Something went wrong on our side. Please try again in a few minutes.', 'error');
+      } else if (backendMsg.includes('duplicate') || backendMsg.includes('already')) {
+        showToast('A plan with similar details already exists. Try a different name or amount.', 'warning');
+      } else if (backendMsg.includes('network') || backendMsg.includes('failed to fetch')) {
+        showToast('Cannot reach the server. Check your internet connection and try again.', 'error');
+      } else {
+        // fallback generic message
+        showToast(err?.message ?? 'Failed to add plan. Please try again.', 'error');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = () => {
+    // no UI change required; keep behavior
     console.log('Form cancelled');
   };
 
@@ -262,7 +271,7 @@ const AddPlan = () => {
                   required={formConfig.amount.required}
                   type="number"
                   placeholder={formConfig.amount.placeholder}
-                  prefix="$"
+                  prefix="₨"
                   value={formData.amount}
                   onChange={(e: any) => handleInputChange('amount', e.target.value)}
                 />
@@ -293,18 +302,16 @@ const AddPlan = () => {
               </div>
             </Card>
           </div>
-
-          {/* Preview Section */}
-          {/* <div className="lg:sticky lg:top-6 h-fit">
-            <PlanPreview
-              planName={formData.planName}
-              duration={formData.duration}
-              durationType={formData.durationType}
-              amount={formData.amount}
-            />
-          </div> */}
         </div>
       </div>
+
+      {/* CustomAlert for user-facing messages */}
+      <CustomAlert
+        text={toast.text}
+        open={toast.open}
+        onClose={handleToastClose}
+        severity={toast.severity}
+      />
     </div>
   );
 };

@@ -24,7 +24,7 @@ export interface LoginResult {
  *  - if remember === false => use sessionStorage for tokens/user
  * Additionally, role is stored in BOTH localStorage and sessionStorage so it can be read from anywhere.
  */
-export async function loginRequest(payload: LoginPayload, remember = false): Promise<LoginResult> {
+export async function loginRequest(payload: LoginPayload): Promise<LoginResult> {
   // Basic validation
   if (!payload) {
     throw new Error("Missing payload");

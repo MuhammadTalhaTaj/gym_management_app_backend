@@ -180,7 +180,7 @@ const Enquiries = () => {
     if (!ok) return;
 
     const id = userId;
-    const enquiryId = enquiry._id ?? enquiry.id ?? enquiry.enquiryId ?? enquiryId;
+    const enquiryId = enquiry._id ?? enquiry.id ?? enquiry.enquiryId ;
 
     if (!id || !enquiryId) {
       alert('Missing user id or enquiry id.');

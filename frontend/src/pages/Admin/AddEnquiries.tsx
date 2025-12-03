@@ -1,7 +1,8 @@
 // src/pages/AddEnquiries.tsx
-import { useState } from 'react';
+import  { useState } from 'react';
 import { FileText, User, Calendar } from 'lucide-react';
 import { apiRequest } from '../../config/api'; // <- uses your existing apiRequest helper
+import CustomAlert from '../../Components/CustomAlert';
 
 // Data Configuration File
 const formConfig = {
@@ -250,6 +251,18 @@ const AddEnquiries = () => {
   const [errors, setErrors] = useState<any>({});
   const [loading, setLoading] = useState(false);
 
+  // CustomAlert state
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastText, setToastText] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'success' | 'error' | 'warning' | 'info'>('success');
+
+  const showToast = (text: string, severity: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+    setToastText(text);
+    setToastSeverity(severity);
+    setToastOpen(true);
+  };
+  const handleToastClose = () => setToastOpen(false);
+
   const handleChange = (e: any) => {
     const { name, value } = e.target;
     setFormData((prev: any) => ({
@@ -293,6 +306,8 @@ const AddEnquiries = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      // friendly toast for laymen
+      showToast('Please complete all required fields highlighted on the form.', 'warning');
       return;
     }
 
@@ -332,14 +347,45 @@ const AddEnquiries = () => {
 
       // backend responds with { message: "...", data: newEnquiry }
       console.log('Add enquiry response:', res);
-      alert(res?.message ?? 'Enquiry saved successfully!');
+
+      // Friendly success message for non-tech users
+      const friendly = res?.message && typeof res.message === 'string'
+        ? res.message
+        : 'Enquiry saved. We will follow up as scheduled.';
+
+      showToast(friendly, 'success');
 
       // reset form after success
       handleReset();
     } catch (err: any) {
-      // surface backend error to user
       console.error('Error:', err);
-      alert(err?.message ?? 'Failed to save enquiry. See console for details.');
+
+      // map likely backend errors to friendly text
+      const status = err?.response?.status ?? err?.status ?? null;
+      const backendMsg = (err?.response?.data?.message || err?.message || '').toString();
+
+      if (status === 400) {
+        if (backendMsg.includes('duplicate') || backendMsg.toLowerCase().includes('already')) {
+          // duplicate enquiry
+          showToast('This enquiry appears to be a duplicate. Please check the details.', 'error');
+        } else if (backendMsg.includes('Provide required fields')) {
+          showToast('Some required information is missing. Please check the form and try again.', 'error');
+        } else {
+          showToast('We could not save the enquiry. Please check your entries and try again.', 'error');
+        }
+      } else if (status === 401) {
+        showToast('You are not allowed to perform this action. Please contact your administrator.', 'error');
+      } else if (status === 404) {
+        showToast('We could not find the required resource. Please try again or contact support.', 'error');
+      } else if (status === 500) {
+        // server error
+        showToast('Something went wrong on our side. Please try again in a few minutes.', 'error');
+      } else if (backendMsg.toLowerCase().includes('network') || backendMsg.toLowerCase().includes('fetch')) {
+        showToast('Cannot reach the server. Please check your internet connection.', 'error');
+      } else {
+        // fallback generic message
+        showToast('Unable to save the enquiry. Please try again.', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -443,6 +489,14 @@ const AddEnquiries = () => {
           </div>
         </div>
       </div>
+
+      {/* CustomAlert: user-facing friendly messages */}
+      <CustomAlert
+        text={toastText}
+        severity={toastSeverity}
+        open={toastOpen}
+        onClose={handleToastClose}
+      />
     </div>
   );
 };

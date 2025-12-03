@@ -7,9 +7,12 @@ import { apiRequest } from "../config/api";
  * This function returns an array of plan objects (each expected to have _id, name, amount).
  */
 export async function getPlans() {
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+const role = localStorage.getItem('role');
+const userId = role === "Admin" ? user?.id : user?.createdBy;
   const res = await apiRequest<{ message?: string; data?: any[] } | any[]>({
     method: "GET",
-    endpoint: "/plan/getPlans"
+    endpoint: `/plan/getPlans/${userId}`
   });
 
   // backend might return array directly or { data: [...] }

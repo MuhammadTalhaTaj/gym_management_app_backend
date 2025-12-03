@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faDollarSign, faFileInvoiceDollar, faHourglassHalf, faUserPlus } from '@fortawesome/free-solid-svg-icons'
+import { faMoneyBillWave, faFileInvoiceDollar, faHourglassHalf, faUserPlus } from '@fortawesome/free-solid-svg-icons'
 // import { useDashboardData } from '../hooks/useDashboardData'
 import '../assets/styles/AdminDashboardStats.css'
 import { useEffect, useState } from 'react'
@@ -37,12 +37,12 @@ function AdminDashboardStats({ data }: { data: any }) {
   return (
     <div className='adminDashboardStats'>
       <div className="adminStatsCard adminStatsCard1">
-        <FontAwesomeIcon className='adminStatsDollar' icon={faDollarSign} />
+        <FontAwesomeIcon className='adminStatsDollar' icon={faMoneyBillWave} />
         <div className="adminStatsCard11">
           <p className='text-[var(--primary-300)]'>Today's Earning</p>
           <p className="text-2xl font-bold text-white">
             {typeof revenue === 'number'
-              ? `$${revenue.toLocaleString()}`
+              ? `₨ ${revenue.toLocaleString()}`
               : revenue}
           </p>
         </div>
@@ -67,12 +67,12 @@ function AdminDashboardStats({ data }: { data: any }) {
       </div>
 
       <div className="adminStatsCard adminStatsCard4">
-        <FontAwesomeIcon className='adminStatsInvoice' icon={faFileInvoiceDollar} />
+        <FontAwesomeIcon className='adminStatsInvoice' icon={faMoneyBillWave} />
         <div className="adminStatsCard11">
           <p className='text-[var(--primary-300)]'>Total Due Amount</p>
           <p className="text-2xl font-bold text-white">
             {typeof due === 'number'
-              ? `$${due.toLocaleString()}`
+              ? `₨ ${due.toLocaleString()}`
               : due}
           </p>
         </div>

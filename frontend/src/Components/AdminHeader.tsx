@@ -71,7 +71,7 @@ function AdminHeader() {
     return () => document.removeEventListener('mousedown', onDocClick)
   }, [])
   const fetchMembers = async () => {
-    const id = role == "Admin" ? user?.id : user?.createdBy;
+    // const id = role == "Admin" ? user?.id : user?.createdBy;
     try {
       const res = await apiRequest<{ message: string; data: Member[] }>({
         method: 'POST',

@@ -1,10 +1,14 @@
-// src/pages/Staff.tsx
-import React, { useEffect, useState } from 'react';
+// @ts-nocheck
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, Download, Filter, Eye, Edit, Trash2, UserPlus, Users, UserCheck, Building2,
+  Search, Download, Filter, Eye, Edit, Trash2, UserPlus, Users,
 } from 'lucide-react';
 import { apiRequest } from '../../config/api';
+import { staffData } from './AddStaff';
+// Excel libraries
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 // ---------- Helpers & small components (unchanged styling) ----------
 const StatCard: React.FC<{ stat: any }> = ({ stat }) => {
@@ -37,12 +41,12 @@ const SearchBar: React.FC<{ value: string; onChange: (v: string) => void }> = ({
   </div>
 );
 
-const FilterButton: React.FC<{ children: React.ReactNode; onClick?: () => void }> = ({ children, onClick }) => (
+const FilterButton: React.FC<{ label: React.ReactNode; onClick?: () => void; className?: string }> = ({ label, onClick, className }) => (
   <button
     onClick={onClick}
-    className="px-3 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg border border-[#8C9BB0]/30 text-[var(--primary-300)] font-medium hover:bg-[var(--primary-100)] transition-colors flex items-center gap-2 whitespace-nowrap"
+    className={`px-3 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg border border-[#8C9BB0]/30 text-[var(--primary-300)] font-medium hover:bg-[var(--primary-100)] transition-colors flex items-center gap-2 whitespace-nowrap ${className ?? ''}`}
   >
-    {children}
+    {label}
   </button>
 );
 
@@ -121,7 +125,7 @@ const PermissionBadge: React.FC<{ permissions: string }> = ({ permissions }) => 
   );
 };
 
-// ---------- Edit Form Modal (appears when clicking edit) ----------
+// ---------- Edit Form Modal helpers ----------
 type EditFormState = {
   name: string;
   email: string;
@@ -171,13 +175,11 @@ const StaffCard: React.FC<{ staff: any; onView: (id: any) => void; onEdit: (id: 
   <div className="bg-[var(--primary-100)] rounded-lg p-4 mb-3 shadow-sm border border-[#8C9BB0]/10">
     <div className="flex items-start justify-between mb-3">
       <div className="flex items-center gap-3">
-        {/* <img src={staff.avatar ?? "https://cdn-icons-png.flaticon.com/512/219/219983.png"} alt={staff.name} className="w-12 h-12 rounded-full object-cover" /> */}
         <div>
           <p className="font-semibold text-[var(--primary-300)] text-sm">{staff.name}</p>
           <p className="text-xs text-[var(--primary-300)]">{staff.email}</p>
         </div>
       </div>
-      {/* <StatusBadge status={staff.status} /> */}
     </div>
 
     <div className="space-y-2 mb-3">
@@ -207,7 +209,6 @@ const StaffCard: React.FC<{ staff: any; onView: (id: any) => void; onEdit: (id: 
   </div>
 );
 
-
 const formatDate = (timestamp: any) => {
   if (!timestamp) return '—';
   const date = new Date(timestamp);
@@ -215,6 +216,7 @@ const formatDate = (timestamp: any) => {
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
   return date.toLocaleDateString('en-US', options);
 };
+
 // ---------- Desktop Table View (unchanged) ----------
 const StaffTable: React.FC<{ data: any[]; onView: (id: any) => void; onEdit: (id: any) => void; onDelete: (id: any) => void }> = ({ data, onView, onEdit, onDelete }) => (
   <div className="overflow-x-auto">
@@ -226,7 +228,6 @@ const StaffTable: React.FC<{ data: any[]; onView: (id: any) => void; onEdit: (id
           <th className="text-left py-4 px-4 text-xs font-semibold text-[var(--primary-300)] uppercase tracking-wider">Role</th>
           <th className="text-left py-4 px-4 text-xs font-semibold text-[var(--primary-300)] uppercase tracking-wider">Permissions</th>
           <th className="text-left py-4 px-4 text-xs font-semibold text-[var(--primary-300)] uppercase tracking-wider">Created</th>
-          {/* <th className="text-left py-4 px-4 text-xs font-semibold text-[var(--primary-300)] uppercase tracking-wider">Status</th> */}
           <th className="text-left py-4 px-4 text-xs font-semibold text-[var(--primary-300)] uppercase tracking-wider">Actions</th>
         </tr>
       </thead>
@@ -235,7 +236,6 @@ const StaffTable: React.FC<{ data: any[]; onView: (id: any) => void; onEdit: (id
           <tr key={staff.id} className="border-b border-[#8C9BB0]/10 hover:bg-[var(--primary-200)] transition-colors">
             <td className="py-4 px-4">
               <div className="flex items-center gap-3">
-                {/* <img src={staff.avatar ?? "https://cdn-icons-png.flaticon.com/512/219/219983.png"} alt={staff.name} className="w-10 h-10 rounded-full object-cover" /> */}
                 <div>
                   <p className="font-semibold text-[var(--primary-300)]">{staff.name}</p>
                   <p className="text-sm text-[var(--primary-300)]">{staff.email}</p>
@@ -368,11 +368,50 @@ const initialStaffData: Array<{
 
 // ---------- Main Component ----------
 const Staff: React.FC = () => {
+  // normalize permission string from staff item or UI, e.g. "View + Add" -> "view+add"
+const normalizePermissionKey = (s?: string) => {
+  if (!s) return '';
+  return s
+    .toString()
+    .toLowerCase()
+    .replace(/\s*\+\s*/g, '+') // "View + Add" -> "view+add"
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+// map UI permission text -> permission key used on staff objects/backend
+const uiPermissionToKey = (uiText: string) => {
+  const t = uiText?.trim?.();
+  if (!t || t === 'All Permissions') return ''; // empty -> no filter
+  switch (t.toLowerCase()) {
+    case 'full access':
+    case 'all':
+      return 'all';
+    case 'view only':
+      return 'view';
+    case 'view + add':
+    case 'view+add':
+      return 'view+add';
+    case 'view + add + update':
+    case 'view+add+update':
+      return 'view+add+update';
+    default:
+      return normalizePermissionKey(t);
+  }
+};
+
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedRole] = useState('All Roles');
-  const [selectedPermission] = useState('All Permissions');
+
+  // Keep role & permission as state so filters work
+  const [selectedRole, setSelectedRole] = useState<string>('All Roles');
+const [selectedPermission, setSelectedPermission] = useState<string>('All Permissions');
+
+
+  // dropdown visibility
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  const [showPermissionDropdown, setShowPermissionDropdown] = useState(false);
 
   // make staff state editable
   const [staffList, setStaffList] = useState<any[]>([]);
@@ -410,6 +449,23 @@ const Staff: React.FC = () => {
     }
   ];
 
+  // refs for clicking outside dropdown to close
+  const roleRef = useRef<HTMLDivElement | null>(null);
+  const permRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (roleRef.current && !roleRef.current.contains(e.target as Node)) {
+        setShowRoleDropdown(false);
+      }
+      if (permRef.current && !permRef.current.contains(e.target as Node)) {
+        setShowPermissionDropdown(false);
+      }
+    };
+    window.addEventListener('click', handler);
+    return () => window.removeEventListener('click', handler);
+  }, []);
+
   useEffect(() => {
     (async () => {
       const role = localStorage.getItem("role");
@@ -432,11 +488,19 @@ const Staff: React.FC = () => {
           name: s.name ?? '',
           email: s.email ?? '',
           contact: s.contact ?? s.phone ?? '',
-          role: s.role ?? '',
-          permission: s.permission ?? s.permissions ?? '',
+          role: s.role ?? s.jobRole ?? '',
+          permission: (s.permission ?? s.permissions ?? '').toString(),
           createdAt: s.createdAt ?? s.created ?? null,
           avatar: s.avatar ?? `https://i.pravatar.cc/150?u=${encodeURIComponent(s.email ?? s._id ?? s.id ?? '')}`
         })) : [];
+
+        // fallback to mock if empty (but still keep empty if backend returned [])
+        if (normalized.length === 0) {
+          // If backend returns nothing, we still set empty list (user asked not to show static data),
+          // but for UX locally we can keep initial mock when developer explicitly wants to test locally.
+          // Here we will set the normalized result (even if empty). You can uncomment the following line to use mock:
+          // setStaffList(initialStaffData as any[]);
+        }
 
         setStaffList(normalized);
         console.log("Staff: ", normalized);
@@ -450,12 +514,46 @@ const Staff: React.FC = () => {
     })();
   }, []);
 
-  // Filtered data
-  const filteredData = staffList.filter(staff =>
-    (staff.name ?? '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (staff.email ?? '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (staff.role ?? '').toString().toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Build role/permission options from current staffList (unique)
+  const roleOptions = useMemo(() => {
+    const set = new Set<string>();
+    staffList.forEach(s => {
+      if (s.role) set.add(s.role);
+    });
+    return ['All Roles', ...Array.from(set).filter(Boolean)];
+  }, [staffList]);
+
+  const permissionOptions = useMemo(() => {
+    const set = new Set<string>();
+    staffList.forEach(s => {
+      if (s.permission) set.add(s.permission);
+    });
+    return ['All Permissions', ...Array.from(set).filter(Boolean)];
+  }, [staffList]);
+
+  // Filtered data - now reacts to selectedRole and selectedPermission
+ const filteredData = staffList.filter(staff => {
+  // search match (name, email, role)
+  const q = (searchTerm || '').toString().toLowerCase();
+  const nameMatch = (staff.name ?? '').toString().toLowerCase().includes(q);
+  const emailMatch = (staff.email ?? '').toString().toLowerCase().includes(q);
+  const roleText = (staff.role ?? '').toString().toLowerCase();
+  const roleMatch = roleText.includes(q);
+
+  const searchMatch = q === '' ? true : (nameMatch || emailMatch || roleMatch);
+
+  // role filter match
+  const roleFilter = (selectedRole || 'All Roles');
+  const roleFilterActive = roleFilter !== 'All Roles';
+  const roleMatches = !roleFilterActive || ((staff.role || '').toString().toLowerCase() === roleFilter.toString().toLowerCase());
+
+  // permission filter match
+  const permissionFilterKey = uiPermissionToKey(selectedPermission || 'All Permissions'); // '' if All
+  const staffPermKey = normalizePermissionKey(staff.permission || staff.permissions || '');
+  const permissionMatches = !permissionFilterKey || staffPermKey === permissionFilterKey;
+
+  return searchMatch && roleMatches && permissionMatches;
+});
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
 
@@ -632,6 +730,143 @@ const Staff: React.FC = () => {
     }
   };
 
+  // ---------- EXPORT (ExcelJS) ----------
+  // Export currently filteredData (not paginated) with distinct column colors & auto-fit widths
+  const handleExport = async () => {
+    try {
+      const dataToExport = filteredData; // use filtered results
+      if (!dataToExport || dataToExport.length === 0) {
+        alert('No data to export.');
+        return;
+      }
+
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Your App';
+      workbook.created = new Date();
+      const sheet = workbook.addWorksheet('Staff');
+
+      // Columns we will export and their header labels
+      const columns = [
+        { key: 'name', header: 'Name' },
+        { key: 'email', header: 'Email' },
+        { key: 'contact', header: 'Contact' },
+        { key: 'role', header: 'Role' },
+        { key: 'permission', header: 'Permission' },
+        { key: 'createdAt', header: 'Created At' }
+      ];
+
+      // Pick a palette of column header colors (ARGB). We'll reuse for column body w/ lighter shade.
+      const headerColors = [
+        'FF2F80ED', // blue
+        'FF1ABC9C', // teal
+        'FFF2994A', // orange
+        'FF9B59B6', // purple
+        'FFEB5757', // red
+        'FFF2C94C'  // yellow
+      ];
+
+      // Set columns with header style placeholders; width will be set dynamically
+      sheet.columns = columns.map((col, idx) => ({
+        header: col.header,
+        key: col.key,
+        width: 10 // placeholder, will adjust below
+      }));
+
+      // Add rows
+      dataToExport.forEach(item => {
+        sheet.addRow({
+          name: item.name ?? '',
+          email: item.email ?? '',
+          contact: item.contact ?? '',
+          role: item.role ?? '',
+          permission: item.permission ?? '',
+          createdAt: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''
+        });
+      });
+
+      // Auto-calc widths based on max text length in each column (header + cells)
+      sheet.columns.forEach((col, colIndex) => {
+        let maxLength = (col.header || '').toString().length;
+        col.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+          const v = cell.value;
+          const text = v == null ? '' : (typeof v === 'object' && (v as any).richText ? (v as any).richText.map((t: any) => t.text).join('') : v.toString());
+          maxLength = Math.max(maxLength, text.length);
+        });
+        // Set width with clamp to avoid extremely large widths. Factor approximate char -> width.
+        const computed = Math.min(Math.max(Math.floor(maxLength * 1.15) + 2, 12), 60);
+        col.width = computed;
+      });
+
+      // Header styling and column-specific fill
+      sheet.getRow(1).height = 22;
+      sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+      sheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
+
+      sheet.columns.forEach((col, idx) => {
+        const headerCell = sheet.getRow(1).getCell(idx + 1);
+        const hdrColor = headerColors[idx % headerColors.length];
+        headerCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: hdrColor }
+        };
+        headerCell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+        headerCell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+
+        // apply column body styling: alternating row shading and column color tint
+        const bodyFillColor = (() => {
+          // create softer / lighter body color for column by using different values
+          const idxColor = headerColors[idx % headerColors.length];
+          // use a lighter color map for cells (you can customize)
+          const bodyPalette = {
+            'FF2F80ED': 'FFEAF4FF', // light blue
+            'FF1ABC9C': 'FFE8F9F4', // light teal
+            'FFF2994A': 'FFFFF4E8', // light orange
+            'FF9B59B6': 'FFF6ECFA', // light purple
+            'FFEB5757': 'FFFFEAEA', // light red
+            'FFF2C94C': 'FFFFF9E6'  // light yellow
+          } as Record<string, string>;
+          return bodyPalette[idxColor] ?? 'FFFFFFFF';
+        })();
+
+        // Apply borders & cell fills for each cell in this column (except header handled above)
+        for (let r = 2; r <= sheet.rowCount; r++) {
+          const cell = sheet.getRow(r).getCell(idx + 1);
+          // alternating row background (slight)
+          const altFillColor = (r % 2 === 0) ? bodyFillColor : 'FFFFFFFF';
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: altFillColor }
+          };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+          cell.alignment = { vertical: 'middle', horizontal: (idx === 0 ? 'left' : 'left') };
+        }
+      });
+
+      // Freeze header row
+      sheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+      // Write workbook to buffer then prompt download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `staff-export-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (err) {
+      console.error('Export failed', err);
+      alert('Export failed — check console for details.');
+    }
+  };
+
   // page render
   // compute page slice for display (if you'd like to only render the page portion)
   const pageStart = (currentPage - 1) * PAGE_SIZE;
@@ -681,22 +916,47 @@ const Staff: React.FC = () => {
         <div className="bg-[var(--primary-100)] rounded-xl shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col gap-3 sm:gap-4">
             <SearchBar value={searchTerm} onChange={setSearchTerm} />
-            <div className="flex flex-wrap gap-2 sm:gap-3">
-              <FilterButton>
-                <span className="hidden sm:inline">{selectedRole}</span>
-                <span className="sm:hidden">Role</span>
-                <span className="text-[#8C9BB0]">▼</span>
-              </FilterButton>
-              <FilterButton>
-                <span className="hidden sm:inline">{selectedPermission}</span>
-                <span className="sm:hidden">Permissions</span>
-                <span className="text-[#8C9BB0]">▼</span>
-              </FilterButton>
+            <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
+              {/* Role Dropdown wrapper */}
+   {/* Role select */}
+<div>
+  <select
+    value={selectedRole}
+    onChange={(e) => { setSelectedRole(e.target.value); setCurrentPage(1); }}
+    className="px-3 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg border border-[#8C9BB0]/30 text-[var(--primary-300)] font-medium hover:bg-[var(--primary-100)] transition-colors appearance-none bg-[var(--primary-100)] cursor-pointer"
+  >
+    <option>All Roles</option>
+    {staffData.jobRoles && staffData.jobRoles.slice(1).map((r) => (
+      <option key={r} value={r}>{r}</option>
+    ))}
+  </select>
+</div>
+
+{/* Permission select */}
+<div>
+  <select
+    value={selectedPermission}
+    onChange={(e) => { setSelectedPermission(e.target.value); setCurrentPage(1); }}
+    className="px-3 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg border border-[#8C9BB0]/30 text-[var(--primary-300)] font-medium hover:bg-[var(--primary-100)] transition-colors appearance-none bg-[var(--primary-100)] cursor-pointer"
+  >
+    <option>All Permissions</option>
+    {staffData.permissions && staffData.permissions.slice(1).map((p) => (
+      <option key={p} value={p}>{p}</option>
+    ))}
+  </select>
+</div>
+
+
               <button className="px-3 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg bg-[#1E293B] text-white font-medium hover:bg-[#1E293B]/90 transition-colors flex items-center gap-2">
                 <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Filter
               </button>
-              <button className="px-3 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg border border-[#8C9BB0]/30 text-[var(--primary-300)] font-medium hover:bg-[var(--primary-200)] transition-colors flex items-center gap-2">
+
+              {/* Export button now calls handleExport */}
+              <button
+                onClick={handleExport}
+                className="px-3 sm:px-5 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg border border-[#8C9BB0]/30 text-[var(--primary-300)] font-medium hover:bg-[var(--primary-200)] transition-colors flex items-center gap-2"
+              >
                 <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Export
               </button>

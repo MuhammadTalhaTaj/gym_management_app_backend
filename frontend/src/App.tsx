@@ -17,10 +17,12 @@ import { AuthProvider } from './context/AuthContext';
 import Enquiries from './pages/Admin/Enquiries';
 // import Payment from './pages/Admin/MemberPayments';
 import MemberPayments from './pages/Admin/MemberPayments';
-import StaffSignup from './pages/Admin/StaffSignup';
+// import StaffSignup from './pages/Admin/StaffSignup';
 import AddStaff from './pages/Admin/AddStaff';
 import Staff from './pages/Admin/Staff';
 import Setting from './pages/Admin/Setting';
+import Plan from './pages/Admin/Plan';
+import ForgetPassword from './pages/Admin/ForgetPassword';
 
 
 function App() {
@@ -31,7 +33,8 @@ function App() {
         {/* Public Routes */}
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/staff/signup" element={<StaffSignup />} />
+        <Route path="/forgetpassword" element={<ForgetPassword /> } />
+        {/* <Route path="/staff/signup" element={<StaffSignup />} /> */}
 
         {/* Protected Admin Area */}
         <Route
@@ -55,6 +58,7 @@ function App() {
                   <Route path="/addexpense" element={<AddExpense />} />
                   <Route path="/staff" element={<Staff /> } />
                   <Route path="/addstaff" element={<AddStaff /> } />
+                  <Route path="/plan" element={<Plan /> } />
                   <Route path="/expense" element={<Expense /> } />
                   <Route path="/setting" element={<Setting /> } />
                   <Route path="/enquiries" element={ <Enquiries /> } />
