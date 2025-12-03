@@ -17,16 +17,16 @@ const signup = asyncHandler(async (req, res) => {
     throw new APIError(400, "Missing required field");
   }
 
-  // 2️⃣ Format checks
-  if (!EMAIL_RE.test(email)) {
-    throw new APIError(400, "Invalid email format");
-  }
-  if (!CONTACT_RE.test(contact)) {
-    throw new APIError(400, "Invalid contact format");
-  }
-  if (password.length < PASSWORD_MIN) {
-    throw new APIError(400, `Password must be at least ${PASSWORD_MIN} characters`);
-  }
+  // // 2️⃣ Format checks
+  // if (!EMAIL_RE.test(email)) {
+  //   throw new APIError(400, "Invalid email format");
+  // }
+  // if (!CONTACT_RE.test(contact)) {
+  //   throw new APIError(400, "Invalid contact format");
+  // }
+  // if (password.length < PASSWORD_MIN) {
+  //   throw new APIError(400, `Password must be at least ${PASSWORD_MIN} characters`);
+  // }
 
   try {
     // 3️⃣ Check for duplicate gym using case-insensitive comparison
@@ -36,7 +36,7 @@ const signup = asyncHandler(async (req, res) => {
     });
 
     if (existingGym) {
-      throw new APIError(400, "Gym already exists in this location");
+      throw new APIError(409, "Gym already exists in this location");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
@@ -71,8 +71,8 @@ const signup = asyncHandler(async (req, res) => {
     // 8️⃣ Handle duplicate key errors (for email and contact)
     if (err.code === 11000) {
       const dupKey = Object.keys(err.keyValue)[0];
-      if (dupKey === "email") throw new APIError(400, "Email already in use");
-      if (dupKey === "contact") throw new APIError(400, "Contact already in use");
+      if (dupKey === "email") throw new APIError(409, "Email already in use");
+      if (dupKey === "contact") throw new APIError(409, "Contact already in use");
       console.log("Duplicate key found: ", dupKey)
       throw new APIError(400, "Duplicate key error");
     }
@@ -97,7 +97,7 @@ const login = asyncHandler(async (req, res) => {
   if (!admin) throw new APIError(404, "Admin not found");
 
   const isPasswordCorrect = await admin.isPasswordCorrect(password);
-  if (!isPasswordCorrect) throw new APIError(400, "Invalid email or password");
+  if (!isPasswordCorrect) throw new APIError(401, "Invalid email or password");
 
   const accessToken = generateAccessToken(admin._id);
   const rawRefreshToken = generateRefreshToken(admin._id);

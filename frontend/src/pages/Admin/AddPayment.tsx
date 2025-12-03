@@ -403,7 +403,6 @@ const AddPayment: React.FC = () => {
   const handleProcessPayment = async () => {
     if (submitting) return; // prevent double submit
     if (!validate()) return;
-
     setSubmitting(true);
     setGlobalError(null);
     try {
@@ -413,7 +412,7 @@ const AddPayment: React.FC = () => {
         plan: selectedPlan,
         paymentDate,
         userId,
-         
+        currentUser: localStorage.getItem("role")
       };
 
       const res = await apiRequest({
