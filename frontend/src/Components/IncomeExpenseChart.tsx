@@ -1,7 +1,7 @@
 // src/components/IncomeExpenseChart.tsx
 import React, { useState, useMemo, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
-import { Menu } from 'lucide-react';
+// import { Menu } from 'lucide-react';
 
 // Data types
 type DataPoint = {
@@ -35,21 +35,90 @@ const TimePeriodSelector: React.FC<TimePeriodSelectorProps> = ({ periods, active
   );
 };
 
-// Legend Component
-const ChartLegend: React.FC = () => {
+// Updated Legend Component — interactive and accessible.
+// Props:
+// - hoveredSeries: 'income' | 'expense' | null (transient hover)
+// - selectedSeries: 'income' | 'expense' | null (clicked while mouse inside)
+// - onHover: (series | null) => void
+// - onToggle: (series) => void
+type ChartLegendProps = {
+  hoveredSeries: "income" | "expense" | null;
+  selectedSeries: "income" | "expense" | null;
+  onHover: (s: "income" | "expense" | null) => void;
+  onToggle: (s: "income" | "expense") => void;
+};
+const ChartLegend: React.FC<ChartLegendProps> = ({ hoveredSeries, selectedSeries, onHover, onToggle }) => {
+  const effective = selectedSeries ?? hoveredSeries;
+
+  const handleKey = (e: React.KeyboardEvent, series: "income" | "expense") => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onToggle(series);
+    }
+  };
+
+  // returns circle style: always visible, but lowered opacity when it's not the active one while some active exists
+  const circleStyle = (series: "income" | "expense") => {
+    if (!effective) {
+      return {};
+    }
+    return {
+      opacity: effective === series ? 1 : 0.45, // lower but not fully disappeared
+      transition: 'opacity 160ms ease',
+    } as React.CSSProperties;
+  };
+
+  // label opacity when dimmed
+  const labelStyle = (series: "income" | "expense") => {
+    if (!effective) return {};
+    return { opacity: effective === series ? 1 : 0.6, transition: 'opacity 160ms ease' } as React.CSSProperties;
+  };
+
   return (
     <div className="flex items-center gap-3 sm:gap-6">
-      <div className="flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
-        <span className="text-slate-300 text-xs sm:text-sm font-medium">Income</span>
+      {/* Income legend item */}
+      <div
+        role="button"
+        aria-pressed={selectedSeries === "income"}
+        tabIndex={0}
+        onMouseEnter={() => onHover("income")}
+        onMouseLeave={() => onHover(null)}
+        onFocus={() => onHover("income")}
+        onBlur={() => onHover(null)}
+        onClick={() => onToggle("income")}
+        onKeyDown={(e) => handleKey(e, "income")}
+        className="flex items-center gap-2 cursor-pointer outline-none"
+        title="Income — hover or click to highlight"
+      >
+        <div
+          className="w-3 h-3 rounded-full bg-emerald-400"
+          style={circleStyle("income")}
+          aria-hidden
+        />
+        <span className="text-slate-300 text-xs sm:text-sm font-medium" style={labelStyle("income")}>Income</span>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full bg-red-400"></div>
-        <span className="text-slate-300 text-xs sm:text-sm font-medium">Expense</span>
+
+      {/* Expense legend item */}
+      <div
+        role="button"
+        aria-pressed={selectedSeries === "expense"}
+        tabIndex={0}
+        onMouseEnter={() => onHover("expense")}
+        onMouseLeave={() => onHover(null)}
+        onFocus={() => onHover("expense")}
+        onBlur={() => onHover(null)}
+        onClick={() => onToggle("expense")}
+        onKeyDown={(e) => handleKey(e, "expense")}
+        className="flex items-center gap-2 cursor-pointer outline-none"
+        title="Expense — hover or click to highlight"
+      >
+        <div
+          className="w-3 h-3 rounded-full bg-red-400"
+          style={circleStyle("expense")}
+          aria-hidden
+        />
+        <span className="text-slate-300 text-xs sm:text-sm font-medium" style={labelStyle("expense")}>Expense</span>
       </div>
-      <button className="ml-2 p-2 hover:bg-slate-700 rounded-lg transition-colors">
-        <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300" />
-      </button>
     </div>
   );
 };
@@ -64,6 +133,10 @@ const IncomeExpenseChart: React.FC<IncomeExpenseChartProps> = ({ data }) => {
   const [activePeriod, setActivePeriod] = useState<string>(() => {
     return localStorage.getItem("incomeExpensePeriod") || "Month";
   });
+
+  // transient hover state and clicked state (but clicked resets when mouse leaves container per requirement)
+  const [hoveredSeries, setHoveredSeries] = useState<"income" | "expense" | null>(null);
+  const [selectedSeries, setSelectedSeries] = useState<"income" | "expense" | null>(null);
 
   // 2️⃣ Save to localStorage whenever user changes period
   useEffect(() => {
@@ -132,9 +205,36 @@ const IncomeExpenseChart: React.FC<IncomeExpenseChartProps> = ({ data }) => {
   const yAxisMax = Math.ceil(maxValue / 1000) * 1000 || 1000;
 
 
+  // ----- Interaction helpers (legend hover + click) -----
+  // Hover (transient) handler from legend
+  const handleLegendHover = (series: "income" | "expense" | null) => {
+    setHoveredSeries(series);
+  };
+
+  // Click/toggle from legend
+  const toggleLegendClick = (series: "income" | "expense") => {
+    setSelectedSeries((prev) => (prev === series ? null : series));
+  };
+
+  // determine fillOpacity for a series based on hovered/selected state
+  const effective = selectedSeries ?? hoveredSeries;
+  const getOpacity = (series: "income" | "expense") => {
+    if (!effective) return 1;
+    return effective === series ? 1 : 0.35; // other bar low opacity
+  };
+
+  // wrapper-level mouse leave: per requirement, when mouse is outside state should reset to normal
+  const handleContainerMouseLeave = () => {
+    setHoveredSeries(null);
+    setSelectedSeries(null);
+  };
+
   return (
     <div className="w-full h-full lg:min-h-screen bg-slate-800 flex items-center justify-center p-0 sm:p-6 lg:p-8">
-      <div className="w-full max-w-6xl bg-[var(--primary-100)] rounded-2xl p-4 sm:p-6 lg:p-8">
+      <div
+        className="w-full max-w-6xl bg-[var(--primary-100)] rounded-2xl p-4 sm:p-6 lg:p-8"
+        onMouseLeave={handleContainerMouseLeave} // reset when mouse leaves the whole area
+      >
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
@@ -149,9 +249,14 @@ const IncomeExpenseChart: React.FC<IncomeExpenseChartProps> = ({ data }) => {
           />
         </div>
 
-        {/* Legend */}
+        {/* Legend (interactive) */}
         <div className="flex justify-start sm:justify-end mb-4 sm:mb-6">
-          <ChartLegend />
+          <ChartLegend
+            hoveredSeries={hoveredSeries}
+            selectedSeries={selectedSeries}
+            onHover={handleLegendHover}
+            onToggle={toggleLegendClick}
+          />
         </div>
 
         {/* Chart */}
@@ -199,8 +304,23 @@ const IncomeExpenseChart: React.FC<IncomeExpenseChartProps> = ({ data }) => {
                 dx={-10}
               />
 
-              <Bar dataKey="expense" stackId="a" fill="#f87171" radius={[0, 0, 8, 8]} />
-              <Bar dataKey="income" stackId="a" fill="var(--tertiary-300)" radius={[8, 8, 0, 0]} />
+              {/* Expense Bar */}
+              <Bar
+                dataKey="expense"
+                stackId="a"
+                fill="#f87171"
+                radius={[0, 0, 8, 8]}
+                fillOpacity={getOpacity("expense")}
+              />
+
+              {/* Income Bar */}
+              <Bar
+                dataKey="income"
+                stackId="a"
+                fill="var(--tertiary-300)"
+                radius={[8, 8, 0, 0]}
+                fillOpacity={getOpacity("income")}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
