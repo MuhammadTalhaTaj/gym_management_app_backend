@@ -25,6 +25,39 @@ interface DeleteResponse {
   message: string;
 }
 
+const GENERAL_ERROR = "Something went wrong. Please try again.";
+
+const getUserFriendlyError = (error: any) => {
+  if (!error) return GENERAL_ERROR;
+
+  // If backend sent message
+  const serverMessage =
+    error?.response?.data?.message ||
+    error?.data?.message ||
+    error?.message;
+
+  // Convert technical stuff into simple msg
+  if (
+    typeof serverMessage === "string" &&
+    (
+      serverMessage.toLowerCase().includes("network") ||
+      serverMessage.toLowerCase().includes("timeout") ||
+      serverMessage.toLowerCase().includes("failed") ||
+      serverMessage.toLowerCase().includes("mongo") ||
+      serverMessage.toLowerCase().includes("validation") ||
+      serverMessage.toLowerCase().includes("cast") ||
+      serverMessage.toLowerCase().includes("jwt")
+    )
+  ) {
+    return GENERAL_ERROR;
+  }
+
+  // If still safe/simple, show it
+  return typeof serverMessage === "string" && serverMessage.length < 80
+    ? serverMessage
+    : GENERAL_ERROR;
+};
+
 // API Service (uses apiRequest)
 const planService = {
   getAllPlans: async (adminId: string): Promise<Plan[]> => {
@@ -87,9 +120,9 @@ const ErrorAlert: React.FC<{ message: string; onDismiss: () => void }> = ({ mess
   <div className="mb-6 p-4 bg-[var(--tertiary-100)] bg-opacity-10 border border-[var(--tertiary-100)] rounded-lg flex items-start gap-3">
     <AlertCircle className="w-5 h-5 text-[var(--tertiary-100)] flex-shrink-0 mt-0.5" />
     <div className="flex-1">
-      <p className="text-[var(--tertiary-100)] text-sm">{message}</p>
+      <p className="text-white text-sm">{message}</p>
     </div>
-    <button onClick={onDismiss} className="text-[var(--tertiary-100)] hover:text-[var(--tertiary-500)]">
+    <button onClick={onDismiss} className="text-white hover:text-[var(--tertiary-500)]">
       ×
     </button>
   </div>
@@ -101,7 +134,7 @@ const SuccessAlert: React.FC<{ message: string; onDismiss: () => void }> = ({ me
       <span className="text-white text-xs">✓</span>
     </div>
     <div className="flex-1">
-      <p className="text-[var(--tertiary-300)] text-sm">{message}</p>
+      <p className="text-white text-sm">{message}</p>
     </div>
     <button onClick={onDismiss} className="text-[var(--tertiary-300)] hover:text-[var(--tertiary-500)]">
       ×
@@ -265,7 +298,7 @@ const PlanCard: React.FC<{
         <div className="flex items-start gap-2">
           <button
             onClick={openEdit}
-            className="p-2 text-[var(--tertiary-500)] hover:bg-[var(--tertiary-500)] hover:bg-opacity-10 rounded-lg transition-colors"
+            className="p-2 text-[var(--tertiary-500)] hover:text-[var(--primary-200)] hover:bg-[var(--tertiary-500)] hover:bg-opacity-10 rounded-lg transition-colors"
             title="Edit plan"
           >
             <Edit2 className="w-5 h-5" />
@@ -273,7 +306,7 @@ const PlanCard: React.FC<{
 
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="p-2 text-[var(--tertiary-100)] hover:bg-[var(--tertiary-100)] hover:bg-opacity-10 rounded-lg transition-colors"
+            className="p-2 text-[var(--tertiary-100)] hover:bg-[var(--tertiary-100)] hover:text-[var(--primary-200)] hover:bg-opacity-10 rounded-lg transition-colors"
             title="Delete plan"
           >
             <Trash2 className="w-5 h-5" />
@@ -306,7 +339,7 @@ const PlanCard: React.FC<{
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
-                className="px-4 py-2 bg-[var(--primary-300)] text-[var(--tertiary-500)] rounded-lg hover:bg-opacity-80 transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-[var(--primary-300)] text-[var(--primary-200)]  rounded-lg hover:bg-opacity-80 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -388,7 +421,7 @@ const PlanCard: React.FC<{
                 <button
                   onClick={() => setShowEditModal(false)}
                   disabled={isUpdating}
-                  className="px-4 py-2 bg-[var(--primary-300)] text-[var(--tertiary-500)] rounded-lg hover:bg-opacity-80 transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-[var(--primary-300)] text-[var(--primary-200)] rounded-lg hover:bg-opacity-80 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -437,7 +470,8 @@ const Plan: React.FC = () => {
       const data = await planService.getAllPlans(userId);
       setPlans(data);
     } catch (err: any) {
-      setError(err?.message || (err instanceof Error ? err.message : 'Failed to fetch plans'));
+      setError('Failed to fetch plans');
+      console.log(err)
     } finally {
       setLoading(false);
     }
@@ -511,7 +545,7 @@ const Plan: React.FC = () => {
             <FilterDropdown selectedFilter={selectedFilter} onFilterChange={setSelectedFilter} />
             <button
               onClick={handleAddPlan}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[var(--secondary-100)] text-[var(--primary-100)] rounded-lg hover:bg-[var(--secondary-100)]/90 transition-colors font-medium whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[var(--secondary-100)] text-[var(--primary-200)] rounded-lg hover:bg-[var(--secondary-100)]/90 transition-colors font-medium whitespace-nowrap"
             >
               <Plus className="w-5 h-5" />
               <span className="hidden sm:inline">Add Plan</span>
