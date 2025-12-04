@@ -130,4 +130,44 @@ res.status(200).json({
   
     
 })
-export {addPlan, getAllPlans, deletePlan}
+const updatePlan = asyncHandler(async (req, res) => {
+  const { planId, userId, name, amount, duration, durationType } = req.body;
+
+  if (!planId || !userId) {
+    throw new APIError(400, "Missing required fields: planId or userId");
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(planId) || !mongoose.Types.ObjectId.isValid(userId)) {
+    throw new APIError(400, "Invalid id format");
+  }
+
+  const plan = await Plan.findById(planId);
+  if (!plan) {
+    throw new APIError(404, "Plan not found");
+  }
+
+  // Authorization: must be creator
+  if (plan.createdBy.toString() !== userId.toString()) {
+    throw new APIError(403, "Not authorized to update this plan");
+  }
+
+  // Build partial update object
+  const updates = {};
+  if (typeof name === "string" && name.trim().length > 0) updates.name = name.trim();
+  if (typeof amount === "number" && !Number.isNaN(amount)) updates.amount = amount;
+  if (typeof duration === "number" && !Number.isNaN(duration)) updates.duration = duration;
+  if (typeof durationType === "string" && durationType.trim().length > 0)
+    updates.durationType = durationType.trim();
+
+  if (Object.keys(updates).length === 0) {
+    throw new APIError(400, "No valid fields provided to update");
+  }
+
+  const updated = await Plan.findByIdAndUpdate(planId, { $set: updates }, { new: true });
+
+  res.status(200).json({
+    message: "Plan updated successfully",
+    data: updated,
+  });
+});
+export {addPlan, getAllPlans, deletePlan,updatePlan}

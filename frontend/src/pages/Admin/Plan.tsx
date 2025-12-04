@@ -1,7 +1,7 @@
-// src/pages/Plan.tsx  (or wherever your Plan.tsx lives)
+// src/pages/Plan.tsx
 import React, { useState, useEffect } from 'react';
-import {useNavigate} from 'react-router-dom'
-import { Trash2, Plus, Search, Filter, Calendar, Banknote, Clock, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Trash2, Plus, Search, Filter, Calendar, Banknote, Clock, AlertCircle, Edit2 } from 'lucide-react';
 import { apiRequest } from '../../config/api'; // <- adjust path if needed
 
 // Types
@@ -28,12 +28,10 @@ interface DeleteResponse {
 // API Service (uses apiRequest)
 const planService = {
   getAllPlans: async (adminId: string): Promise<Plan[]> => {
-    // returns data.data (where server returns { message, data: Plan[] })
     const res = await apiRequest<ApiResponse>({
       method: 'GET',
       endpoint: `/plan/getPlans/${adminId}`,
     });
-    // defensive: if server returned data property or items
     return res?.data ?? [];
   },
 
@@ -45,9 +43,22 @@ const planService = {
     });
     return res;
   },
+
+  updatePlan: async (planId: string, userId: string, updates: Partial<{ name: string; amount: number; duration: number; durationType: string }>) => {
+    // send only provided fields alongside planId and userId
+    const body: any = { planId, userId, ...updates };
+    const res = await apiRequest<{ message: string; data: Plan }>({
+      method: 'PATCH',
+      endpoint: `/plan/updatePlan`,
+      body,
+    });
+    return res;
+  },
 };
 
 // (---- the rest of your components are unchanged ----)
+// LoadingSpinner, EmptyState, ErrorAlert, SuccessAlert, SearchBar, FilterDropdown, etc.
+// (copy from your original file, omitted here for brevity — keep them identical)
 
 const LoadingSpinner: React.FC = () => (
   <div className="flex justify-center items-center py-12">
@@ -139,13 +150,25 @@ const FilterDropdown: React.FC<{
   </div>
 );
 
+// PlanCard with edit support
 const PlanCard: React.FC<{
   plan: Plan;
   onDelete: (planId: string) => void;
-  // userRole: string;
-}> = ({ plan, onDelete }) => {
+  onUpdate: (updated: Plan) => void;
+}> = ({ plan, onDelete, onUpdate }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: plan.name,
+    amount: plan.amount.toString(),
+    duration: plan.duration.toString(),
+    durationType: plan.durationType || "months",
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -169,6 +192,67 @@ const PlanCard: React.FC<{
     return `${plan.duration} ${plan.durationType}${plan.duration > 1 ? 's' : ''}`;
   };
 
+  const openEdit = () => {
+    setEditForm({
+      name: plan.name,
+      amount: plan.amount.toString(),
+      duration: plan.duration.toString(),
+      durationType: plan.durationType || "months",
+    });
+    setEditError(null);
+    setShowEditModal(true);
+  };
+
+  const onEditChange = (key: string, value: string) => {
+    setEditForm((s) => ({ ...s, [key]: value }));
+  };
+
+  const submitEdit = async () => {
+    setEditError(null);
+    // basic validation
+    if (!editForm.name.trim()) {
+      setEditError("Name is required");
+      return;
+    }
+    const amountNum = Number(editForm.amount);
+    const durationNum = Number(editForm.duration);
+    if (Number.isNaN(amountNum) || amountNum < 0) {
+      setEditError("Amount must be a valid number");
+      return;
+    }
+    if (Number.isNaN(durationNum) || durationNum < 1) {
+      setEditError("Duration must be a positive number");
+      return;
+    }
+
+    // build partial updates: send only changed fields
+    const updates: Partial<{ name: string; amount: number; duration: number; durationType: string }> = {};
+    if (editForm.name.trim() !== plan.name) updates.name = editForm.name.trim();
+    if (amountNum !== plan.amount) updates.amount = amountNum;
+    if (durationNum !== plan.duration) updates.duration = durationNum;
+    if (editForm.durationType !== plan.durationType) updates.durationType = editForm.durationType;
+
+    if (Object.keys(updates).length === 0) {
+      setEditError("No changes detected");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const userId = localStorage.getItem('userId') || '';
+      if (!userId) throw new Error("Missing user session");
+
+      const res = await planService.updatePlan(plan._id, userId, updates);
+      // res.data is the updated plan
+      onUpdate(res.data);
+      setShowEditModal(false);
+    } catch (err: any) {
+      setEditError(err?.message || "Failed to update plan");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="bg-[var(--primary-200)] border border-[var(--primary-300)] rounded-xl p-6 hover:border-[var(--secondary-100)] transition-all hover:shadow-lg">
       <div className="flex justify-between items-start mb-4">
@@ -178,13 +262,23 @@ const PlanCard: React.FC<{
             Created on {formatDate(plan.createdAt)}
           </p>
         </div>
-        <button
-          onClick={() => setShowDeleteConfirm(true)}
-          className="p-2 text-[var(--tertiary-100)] hover:bg-[var(--tertiary-100)] hover:bg-opacity-10 rounded-lg transition-colors"
-          title="Delete plan"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
+        <div className="flex items-start gap-2">
+          <button
+            onClick={openEdit}
+            className="p-2 text-[var(--tertiary-500)] hover:bg-[var(--tertiary-500)] hover:bg-opacity-10 rounded-lg transition-colors"
+            title="Edit plan"
+          >
+            <Edit2 className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="p-2 text-[var(--tertiary-100)] hover:bg-[var(--tertiary-100)] hover:bg-opacity-10 rounded-lg transition-colors"
+            title="Delete plan"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -200,6 +294,7 @@ const PlanCard: React.FC<{
         </div>
       </div>
 
+      {/* Delete Confirm Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-[var(--primary-200)] rounded-xl p-6 max-w-md w-full border border-[var(--primary-300)]">
@@ -229,6 +324,82 @@ const PlanCard: React.FC<{
                   'Delete'
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--primary-200)] rounded-xl p-6 max-w-md w-full border border-[var(--primary-300)]">
+            <h3 className="text-xl font-semibold text-[var(--tertiary-500)] mb-3">Edit Plan</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-[var(--tertiary-500)] mb-1">Plan Name</label>
+                <input
+                  value={editForm.name}
+                  onChange={(e) => onEditChange('name', e.target.value)}
+                  className="w-full rounded-lg px-3 py-2 bg-[var(--primary-100)] border border-[var(--primary-300)] text-[var(--tertiary-500)]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-[var(--tertiary-500)] mb-1">Amount</label>
+                  <input
+                    value={editForm.amount}
+                    onChange={(e) => onEditChange('amount', e.target.value)}
+                    type="number"
+                    min={0}
+                    className="w-full rounded-lg px-3 py-2 bg-[var(--primary-100)] border border-[var(--primary-300)] text-[var(--tertiary-500)]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-[var(--tertiary-500)] mb-1">Duration</label>
+                  <input
+                    value={editForm.duration}
+                    onChange={(e) => onEditChange('duration', e.target.value)}
+                    type="number"
+                    min={1}
+                    className="w-full rounded-lg px-3 py-2 bg-[var(--primary-100)] border border-[var(--primary-300)] text-[var(--tertiary-500)]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-[var(--tertiary-500)] mb-1">Duration Type</label>
+                <select
+                  value={editForm.durationType}
+                  onChange={(e) => onEditChange('durationType', e.target.value)}
+                  className="w-full rounded-lg px-3 py-2 bg-[var(--primary-100)] border border-[var(--primary-300)] text-[var(--tertiary-500)]"
+                >
+                  <option value="days">Days</option>
+                  <option value="weeks">Weeks</option>
+                  <option value="months">Months</option>
+                  <option value="years">Years</option>
+                </select>
+              </div>
+
+              {editError && <div className="text-[var(--tertiary-100)]">{editError}</div>}
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  disabled={isUpdating}
+                  className="px-4 py-2 bg-[var(--primary-300)] text-[var(--tertiary-500)] rounded-lg hover:bg-opacity-80 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitEdit}
+                  disabled={isUpdating}
+                  className="px-4 py-2 bg-[var(--secondary-100)] text-[var(--primary-100)] rounded-lg hover:bg-opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {isUpdating ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -265,8 +436,8 @@ const Plan: React.FC = () => {
       setError(null);
       const data = await planService.getAllPlans(userId);
       setPlans(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch plans');
+    } catch (err: any) {
+      setError(err?.message || (err instanceof Error ? err.message : 'Failed to fetch plans'));
     } finally {
       setLoading(false);
     }
@@ -300,14 +471,19 @@ const Plan: React.FC = () => {
       setPlans(plans.filter((plan) => plan._id !== planId));
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      // apiRequest throws {status, message, data} - handle that shape too
       setError(err?.message || (err instanceof Error ? err.message : 'Failed to delete plan'));
     }
   };
-const navigate= useNavigate();
+
+  const handleUpdatePlanInList = (updated: Plan) => {
+    setPlans((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
+    setSuccess('Plan updated successfully');
+    setTimeout(() => setSuccess(null), 3000);
+  };
+
+  const navigate = useNavigate();
   const handleAddPlan = () => {
-    navigate('/addplan')
-    // Navigate to add plan page or open modal
+    navigate('/addplan');
     console.log('Add plan clicked');
   };
 
@@ -335,12 +511,10 @@ const navigate= useNavigate();
             <FilterDropdown selectedFilter={selectedFilter} onFilterChange={setSelectedFilter} />
             <button
               onClick={handleAddPlan}
-              
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-[var(--secondary-100)] text-[var(--primary-100)] rounded-lg hover:bg-[var(--secondary-100)]/90 transition-colors font-medium whitespace-nowrap"
             >
               <Plus className="w-5 h-5" />
-              <span
-               className="hidden sm:inline">Add Plan</span>
+              <span className="hidden sm:inline">Add Plan</span>
             </button>
           </div>
         </div>
@@ -369,7 +543,7 @@ const navigate= useNavigate();
                   key={plan._id}
                   plan={plan}
                   onDelete={handleDeletePlan}
-                  // userRole={userRole}
+                  onUpdate={handleUpdatePlanInList}
                 />
               ))}
             </div>
