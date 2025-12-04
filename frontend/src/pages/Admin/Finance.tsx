@@ -16,21 +16,11 @@ interface StatCardProps {
   percentageChange: number;
   // trend?: string;     
   isExpense: boolean;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
-// Static fallback data (kept but NOT used for UI anymore)
-// const fallbackData = {
-//   stats: {
-//     totalIncome: { amount: 12480.5, percentageChange: 15, trend: 'up' },
-//     totalExpenses: { amount: 7820.0, percentageChange: 8, trend: 'up' },
-//   },
-//   chartData: [
-//     { week: 'Week 1', Income: 2600, Expenses: 1800 },
-//     { week: 'Week 2', Income: 3200, Expenses: 2200 },
-//     { week: 'Week 3', Income: 2800, Expenses: 1900 },
-//     { week: 'Week 4', Income: 4200, Expenses: 2000 },
-//   ],
-// };
+type HoveredCategory = 'income' | 'expense' | null;
 
 // Header Component
 const Header = ({ user }: any) => (
@@ -82,13 +72,17 @@ const TimeToggle = ({ activeView, onViewChange }: any) => {
 
 
 // Stat Card Component
-const StatCard = ({ title, amount, percentageChange, isExpense }: StatCardProps) => {
+const StatCard = ({ title, amount, percentageChange, isExpense, onMouseEnter, onMouseLeave }: StatCardProps) => {
   const bgColor = isExpense ? 'bg-red-50' : 'bg-green-50';
   const iconColor = isExpense ? 'text-red-600' : 'text-green-500';
   const textColor = isExpense ? 'text-red-500' : 'text-green-600';
 
   return (
-    <div className="bg-[var(--primary-100)] rounded-2xl p-6 shadow-sm border border-gray-100">
+    <div
+      className="bg-[var(--primary-100)] rounded-2xl p-6 shadow-sm border border-gray-100"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <div className="flex items-start gap-4">
         <div className={`${bgColor} rounded-full p-4`}>
           {isExpense ? <TrendingDown size={24} className={iconColor} /> : <TrendingUp size={24} className={iconColor} />}
@@ -106,7 +100,15 @@ const StatCard = ({ title, amount, percentageChange, isExpense }: StatCardProps)
 };
 
 // Income vs Expense Chart Component
-const IncomeExpenseChart = ({ data }: { data: DashboardResponse | null }) => {
+const IncomeExpenseChart = ({
+  data,
+  hoveredCategory,
+  setHoveredCategory,
+}: {
+  data: DashboardResponse | null;
+  hoveredCategory: HoveredCategory;
+  setHoveredCategory: (c: HoveredCategory) => void;
+}) => {
   const [activeView, setActiveView] = useState('Month');
 
   const hasBackendData = useMemo(() => {
@@ -158,6 +160,48 @@ const IncomeExpenseChart = ({ data }: { data: DashboardResponse | null }) => {
     ];
   }, [data, activeView, hasBackendData]);
 
+  // Determine opacity based on hoveredCategory:
+  const incomeOpacity = hoveredCategory === 'expense' ? 0.3 : 1;
+  const expenseOpacity = hoveredCategory === 'income' ? 0.3 : 1;
+
+  // Custom legend renderer so we can attach hover handlers to colored boxes inside the chart
+  const renderLegend = (props: any) => {
+    const { payload } = props;
+    if (!payload || !Array.isArray(payload)) return null;
+
+    // Keep the legend layout similar to Recharts default but allow hover
+    return (
+      <div style={{ display: 'flex', gap: 16, paddingTop: 20 }}>
+        {payload.map((entry: any) => {
+          const label = entry.value;
+          // entry.color or entry.payload.fill might contain the color depending on recharts version
+          const color = entry.color ?? entry.payload?.fill ?? (label === 'Income' ? '#4ade80' : '#f87171');
+          const category: HoveredCategory = label === 'Income' ? 'income' : 'expense';
+
+          return (
+            <div
+              key={label}
+              onMouseEnter={() => setHoveredCategory(category)}
+              onMouseLeave={() => setHoveredCategory(null)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'default' }}
+            >
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 12,
+                  height: 12,
+                  borderRadius: 2,
+                  background: color,
+                }}
+              />
+              <span style={{ color: 'white', fontSize: 14 }}>{label}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="bg-[var(--primary-100)] rounded-2xl p-6 shadow-sm border border-gray-100">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-6">
@@ -177,13 +221,10 @@ const IncomeExpenseChart = ({ data }: { data: DashboardResponse | null }) => {
             tick={{ fill: '#8C9BB0', fontSize: 14 }}
             tickFormatter={(value) => `$${value}`}
           />
-          <Legend
-            iconType="square"
-            wrapperStyle={{ paddingTop: '20px' }}
-            formatter={(value) => <span style={{ color: 'white', fontSize: '14px', marginLeft: '8px' }}>{value}</span>}
-          />
-          <Bar dataKey="Income" fill="#4ade80" radius={[8, 8, 0, 0]} />
-          <Bar dataKey="Expenses" fill="#f87171" radius={[8, 8, 0, 0]} />
+          {/* Use custom legend so its colored boxes respond to hover */}
+          <Legend content={renderLegend} />
+          <Bar dataKey="Income" fill="#4ade80" radius={[8, 8, 0, 0]} fillOpacity={incomeOpacity} />
+          <Bar dataKey="Expenses" fill="#f87171" radius={[8, 8, 0, 0]} fillOpacity={expenseOpacity} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -194,6 +235,9 @@ const IncomeExpenseChart = ({ data }: { data: DashboardResponse | null }) => {
 const Finance = () => {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
+
+  // Hover state for chart legend controlling chart opacity
+  const [hoveredCategory, setHoveredCategory] = useState<HoveredCategory>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -230,19 +274,19 @@ const Finance = () => {
 
   // Fallback user info for header (unchanged visual)
   // Load user data from localStorage
-const storedUser = localStorage.getItem("user");
-let parsedUser: any = null;
+  const storedUser = localStorage.getItem("user");
+  let parsedUser: any = null;
 
-try {
-  parsedUser = storedUser ? JSON.parse(storedUser) : null;
-} catch {
-  parsedUser = null;
-}
+  try {
+    parsedUser = storedUser ? JSON.parse(storedUser) : null;
+  } catch {
+    parsedUser = null;
+  }
 
-const user = {
-  name: parsedUser?.name || "User",
-  role: localStorage.getItem("role") || "Staff",
-};
+  const user = {
+    name: parsedUser?.name || "User",
+    role: localStorage.getItem("role") || "Staff",
+  };
 
 
   // **Never use fallbackData for stats** — always derive from dashboardData or default to zeros
@@ -286,7 +330,12 @@ const user = {
           </div>
 
           <div className="lg:col-span-2">
-            <IncomeExpenseChart data={dashboardData} />
+            {/* pass hoveredCategory and setter into chart so legend boxes control opacity */}
+            <IncomeExpenseChart
+              data={dashboardData}
+              hoveredCategory={hoveredCategory}
+              setHoveredCategory={setHoveredCategory}
+            />
           </div>
         </div>
 

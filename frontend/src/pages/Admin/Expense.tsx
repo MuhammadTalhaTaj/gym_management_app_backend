@@ -63,7 +63,7 @@ const ExpenseRow = ({ expense, onEdit, onDelete }: ExpenseRowProps) => (
     <td className="py-4 px-4 text-white font-semibold">₨ {Number(expense.amount || 0).toFixed(2)}</td>
     <td className="py-4 px-4 text-[#94A3B8]">{expense.date}</td>
     <td className="py-4 px-4 text-[#94A3B8]">{expense.notes}</td>
-    <td className="py-4 px-4">
+    {/* <td className="py-4 px-4">
       <div className="flex items-center gap-2">
         <button
           onClick={() => onEdit(expense.id)}
@@ -78,7 +78,7 @@ const ExpenseRow = ({ expense, onEdit, onDelete }: ExpenseRowProps) => (
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
-    </td>
+    </td> */}
   </tr>
 );
 
@@ -348,7 +348,7 @@ const Expense = () => {
                   <th className="py-4 px-4 text-left text-[#94A3B8] font-semibold text-sm uppercase tracking-wider">Amount</th>
                   <th className="py-4 px-4 text-left text-[#94A3B8] font-semibold text-sm uppercase tracking-wider">Date</th>
                   <th className="py-4 px-4 text-left text-[#94A3B8] font-semibold text-sm uppercase tracking-wider">Notes</th>
-                  <th className="py-4 px-4 text-left text-[#94A3B8] font-semibold text-sm uppercase tracking-wider">Actions</th>
+                  {/* <th className="py-4 px-4 text-left text-[#94A3B8] font-semibold text-sm uppercase tracking-wider">Actions</th> */}
                 </tr>
               </thead>
               <tbody>
