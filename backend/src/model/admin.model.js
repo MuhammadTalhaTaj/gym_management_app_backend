@@ -11,19 +11,24 @@ const adminSchema = new mongoose.Schema(
             trim: true
 
         },
-        email: 
-        { 
-            type: String, 
-            required: true, 
-            trim: true, 
-            lowercase: true, 
-            unique: true, 
-            index: true 
+        email:
+        {
+            type: String,
+            required: true,
+            trim: true,
+            lowercase: true,
+            unique: true,
+            index: true
         },
         contact: { type: String, required: true, trim: true, unique: true, index: true },
         password: { type: String, required: true, minlength: 8 },
         gymName: { type: String, required: true, trim: true },
         gymLocation: { type: String, required: true, trim: true },
+
+        resetOtpHash: { type: String },             // bcrypt-hashed OTP
+        resetOtpExpiry: { type: Date },             // when OTP expires
+        resetOtpAttempts: { type: Number, default: 0 }, // failed attempts
+        resetOtpLockedUntil: { type: Date },
         // normalized fields for case-insensitive comparison (no unique index)
         gymNameLower: { type: String },
         gymLocationLower: { type: String },
@@ -38,6 +43,10 @@ const adminSchema = new mongoose.Schema(
                 delete ret.__v;
                 delete ret.gymNameLower;
                 delete ret.gymLocationLower;
+                delete ret.resetOtpHash;
+                delete ret.resetOtpExpiry;
+                delete ret.resetOtpAttempts;
+                delete ret.resetOtpLockedUntil;
             },
         },
     }

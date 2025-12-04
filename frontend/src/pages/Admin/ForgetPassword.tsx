@@ -16,15 +16,25 @@ export default function ForgetPassword(): JSX.Element {
     password: "",
     confirmPassword: "",
   });
+
   const [loading, setLoading] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastText, setToastText] = useState("");
   const [toastSeverity, setToastSeverity] = useState<
     "success" | "error" | "warning" | "info"
   >("success");
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // OTP related states
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [resendTimer, setResendTimer] = useState<number>(0); // seconds left before resend allowed
+
+  // Populate Id from localStorage if present
   useEffect(() => {
     try {
       const storedId = localStorage.getItem("userId");
@@ -40,8 +50,20 @@ export default function ForgetPassword(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // resend countdown effect
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const id = setInterval(() => setResendTimer((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [resendTimer]);
+
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    // If OTP input, update otp state separately
+    if (name === "otp") {
+      setOtp(value.replace(/\D/g, "").slice(0, 6)); // digits only, max 6
+      return;
+    }
     setForm((s) => ({ ...s, [name]: value }));
   };
 
@@ -74,7 +96,7 @@ export default function ForgetPassword(): JSX.Element {
     return null;
   };
 
-  // Use an explicit async function for submit so errors are handled correctly
+  // Update password (existing flow)
   const handleSubmit = async (): Promise<void> => {
     const err = validate();
     if (err) {
@@ -89,7 +111,6 @@ export default function ForgetPassword(): JSX.Element {
         password: form.password,
       };
 
-      // CALL REAL API HELPER
       const res = await apiRequest<{ message?: string; data?: any }>({
         method: "PATCH",
         endpoint: "/admin/updatePassword",
@@ -99,7 +120,6 @@ export default function ForgetPassword(): JSX.Element {
       showToast(res?.message || "Your password has been changed.", "success");
       setForm((s) => ({ ...s, password: "", confirmPassword: "" }));
     } catch (error: any) {
-      // apiRequest throws object {status, message, data} in your implementation
       const message =
         error?.message ||
         (typeof error === "string" ? error : "Something went wrong. Please try again.");
@@ -111,9 +131,100 @@ export default function ForgetPassword(): JSX.Element {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !loading) {
-      // prevent default form submit behaviour from bubbling (if inside a form)
+      // If OTP input visible and OTP has value, verify OTP on Enter
+      if (otpSent && otp.trim().length > 0 && !otpVerifying) {
+        e.preventDefault();
+        void handleVerifyOtp();
+        return;
+      }
       e.preventDefault();
       void handleSubmit();
+    }
+  };
+
+  /**********************
+   * OTP: send and verify
+   **********************/
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+    return emailRegex.test(email);
+  };
+
+  const handleSendOtp = async () => {
+    const email = form.email.trim();
+    if (!email) {
+      showToast("Please enter your email address first.", "error");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      showToast("Please enter a valid email address (e.g. name@example.com).", "error");
+      return;
+    }
+    if (resendTimer > 0) {
+      showToast(`Please wait ${resendTimer}s before resending.`, "warning");
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      await apiRequest<{ message?: string }>({
+        method: "POST",
+        endpoint: "/admin/sendOTP",
+        body: { email },
+      });
+
+      setOtpSent(true);
+      setOtp("");
+      setResendTimer(60); // 60s cooldown before resend
+      showToast("We sent a 6-digit code to your email. Please check your inbox.", "success");
+    } catch (error: any) {
+      const message =
+        error?.message ||
+        (typeof error === "string" ? error : "Failed to send code. Please try again.");
+      showToast(message, "error");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const email = form.email.trim();
+    if (!email) {
+      showToast("Please enter your email address first.", "error");
+      return;
+    }
+    if (!otp || otp.trim().length < 4) {
+      showToast("Please enter the 6-digit code we sent to your email.", "error");
+      return;
+    }
+
+    setOtpVerifying(true);
+    try {
+      const res = await apiRequest<{ message?: string; Id?: string }>({
+        method: "POST",
+        endpoint: "/admin/verifyOTP",
+        body: { email, otp },
+      });
+
+      // Expect backend to return { Id } on success
+      const returnedId = (res as any)?.Id ?? (res as any)?.id ?? (res as any)?.data?.Id;
+      if (returnedId) {
+        localStorage.setItem("userId", String(returnedId));
+        setForm((s) => ({ ...s, Id: String(returnedId) }));
+        setOtpSent(false);
+        setOtp("");
+        showToast("Email verified — you can now set a new password.", "success");
+      } else {
+        // Even if Id wasn't returned, treat verify as success if message indicates success.
+        showToast(res?.message || "Code verified. You can now change your password.", "success");
+      }
+    } catch (error: any) {
+      const message =
+        error?.message ||
+        (typeof error === "string" ? error : "Failed to verify code. Please try again.");
+      showToast(message, "error");
+    } finally {
+      setOtpVerifying(false);
     }
   };
 
@@ -279,7 +390,7 @@ export default function ForgetPassword(): JSX.Element {
           <div style={{ padding: "32px" }}>
             <div onKeyPress={handleKeyPress}>
               {/* Email Field */}
-              <div style={{ marginBottom: "24px" }}>
+              <div style={{ marginBottom: "12px" }}>
                 <label
                   htmlFor="email"
                   style={{
@@ -331,7 +442,118 @@ export default function ForgetPassword(): JSX.Element {
                     required
                   />
                 </div>
+
+                {/* small row for Send OTP button and timer (keeps layout intact) */}
+                <div style={{ marginTop: "10px", display: "flex", gap: "8px", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => void handleSendOtp()}
+                    disabled={otpLoading || resendTimer > 0}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: "10px",
+                      border: "none",
+                      cursor: otpLoading || resendTimer > 0 ? "not-allowed" : "pointer",
+                      background: otpLoading || resendTimer > 0 ? "rgba(148,163,184,0.2)" : "linear-gradient(135deg,#3D8BF2 0%,#11BF7F 100%)",
+                      color: "white",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                      boxShadow: "0 6px 16px rgba(61,139,242,0.15)",
+                    }}
+                  >
+                    {otpLoading ? "Sending..." : resendTimer > 0 ? `Resend in ${resendTimer}s` : "Send code"}
+                  </button>
+
+                  {/* show small helper text */}
+                  <div style={{ fontSize: "13px", color: "#94A3B8" }}>
+                    We'll send a 6-digit code to this email.
+                  </div>
+                </div>
               </div>
+
+              {/* OTP input (only visible after OTP is sent) */}
+              {otpSent && (
+                <div style={{ marginBottom: "18px", marginTop: "8px" }}>
+                  <label
+                    htmlFor="otp"
+                    style={{
+                      display: "block",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      color: "#94A3B8",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Enter code
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      id="otp"
+                      name="otp"
+                      type="text"
+                      inputMode="numeric"
+                      value={otp}
+                      onChange={onChange}
+                      placeholder="123456"
+                      style={{
+                        width: "100%",
+                        padding: "14px 48px 14px 16px",
+                        fontSize: "15px",
+                        border: "2px solid rgba(148, 163, 184, 0.2)",
+                        borderRadius: "12px",
+                        background: "rgba(30, 41, 59, 0.5)",
+                        color: "white",
+                        outline: "none",
+                        transition: "all 0.3s ease",
+                        boxSizing: "border-box",
+                      }}
+                      onFocus={(e) => (e.target.style.borderColor = "#3D8BF2")}
+                      onBlur={(e) => (e.target.style.borderColor = "rgba(148, 163, 184, 0.2)")}
+                      maxLength={6}
+                      required
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => void handleVerifyOtp()}
+                      disabled={otpVerifying || otp.length < 4}
+                      style={{
+                        position: "absolute",
+                        right: "8px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        padding: "8px 10px",
+                        borderRadius: "10px",
+                        border: "none",
+                        cursor: otpVerifying || otp.length < 4 ? "not-allowed" : "pointer",
+                        background: otpVerifying || otp.length < 4 ? "rgba(148,163,184,0.2)" : "#11BF7F",
+                        color: "white",
+                        fontWeight: 700,
+                      }}
+                      aria-label="Verify code"
+                    >
+                      {otpVerifying ? "Verifying..." : "Verify"}
+                    </button>
+                  </div>
+                  <div style={{ marginTop: "8px", fontSize: "13px", color: "#94A3B8" }}>
+                    Didn’t get it? Click <button
+                      onClick={() => void handleSendOtp()}
+                      disabled={otpLoading || resendTimer > 0}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "#EC9A0E",
+                        cursor: otpLoading || resendTimer > 0 ? "not-allowed" : "pointer",
+                        padding: 0,
+                        fontWeight: 700,
+                      }}
+                    >
+                      resend
+                    </button>
+                    {resendTimer > 0 ? ` (${resendTimer}s)` : ""}
+                  </div>
+                </div>
+              )}
 
               {/* Password Field */}
               <div style={{ marginBottom: "20px" }}>
