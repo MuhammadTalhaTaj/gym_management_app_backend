@@ -199,9 +199,9 @@ const LoginForm = ({ data }: any) => {
       } else if (status === 401) {
         showToast('You are not authorized to sign in. If this is a mistake, contact the admin.', 'error');
       } else if (status >= 500) {
-        showToast('Our server is having trouble. Please try again in a little while.', 'error');
+        showToast('Network Error. Please try again in a little while.', 'error');
       } else if (msg.includes('failed to fetch') || msg.includes('network')) {
-        showToast('Cannot reach the server. Check your internet connection and try again.', 'error');
+        showToast('Network Error. Check your internet connection and try again.', 'error');
       } else {
         // generic friendly fallback
         showToast('Sign in failed. Please double-check your details and try again.', 'error');

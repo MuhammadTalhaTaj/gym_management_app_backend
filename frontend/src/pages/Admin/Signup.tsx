@@ -211,7 +211,7 @@ const Signup: React.FC = () => {
               })}
             </div>
 
-            <Checkbox
+            {/* <Checkbox
               label={formConfig.termsText}
               checked={formData.agreeToTerms}
               onChange={(e: any) =>
@@ -220,7 +220,7 @@ const Signup: React.FC = () => {
                 })
               }
               error={errors.agreeToTerms}
-            />
+            /> */}
 
             <Button onClick={handleSubmit} icon={User} disabled={loading}>
               {loading ? "Creating account..." : formConfig.submitButton}
