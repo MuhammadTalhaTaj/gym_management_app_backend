@@ -116,8 +116,8 @@ const MemberPayments: React.FC = () => {
   }, [memberId]);
 
   return (
-    <div className="min-h-screen w-full p-6 bg-gray-50">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm overflow-hidden">
+    <div className="min-h-screen w-full p-6 bg-[var(--primary-100)]">
+      <div className="max-w-4xl mx-auto bg-[var(--primary-200)] rounded-lg shadow-sm overflow-hidden">
         <div className="p-4 border-b border-gray-200 flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
@@ -127,10 +127,10 @@ const MemberPayments: React.FC = () => {
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
-            <h1 className="text-xl font-semibold text-gray-900">
+            <h1 className="text-xl font-semibold text-[var(--primary-300)]">
               Member Payments
             </h1>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-[var(--primary-300)]">
               View member details and payment history
             </p>
           </div>
@@ -174,7 +174,7 @@ const MemberPayments: React.FC = () => {
 
         <div className="p-6">
           {loading && (
-            <div className="py-8 text-center text-gray-600">Loading...</div>
+            <div className="py-8 text-center text-[var(--primary-300)]">Loading...</div>
           )}
 
           {error && (
@@ -187,39 +187,39 @@ const MemberPayments: React.FC = () => {
             <>
               {/* Member Summary */}
               <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-gray-50 rounded">
-                  <div className="text-xs text-gray-500">Name</div>
+                <div className="p-4 bg-[var(--primary-100)] rounded">
+                  <div className="text-xs text-[var(--primary-300)]">Name</div>
                   <div className="text-lg font-medium text-gray-900">
                     {member.name ?? "-"}
                   </div>
-                  <div className="text-sm text-gray-500">{member.email}</div>
+                  <div className="text-sm text-[var(--primary-300)]">{member.email}</div>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded">
-                  <div className="text-xs text-gray-500">Contact</div>
+                <div className="p-4 bg-[var(--primary-100)] rounded">
+                  <div className="text-xs text-[var(--primary-300)]">Contact</div>
                   <div className="text-lg font-medium text-gray-900">
                     {member.contact ?? "-"}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-[var(--primary-300)]">
                     Batch: {member.batch ?? "-"}
                   </div>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded">
-                  <div className="text-xs text-gray-500">Joined</div>
+                <div className="p-4 bg-[var(--primary-100)] rounded">
+                  <div className="text-xs text-[var(--primary-300)]">Joined</div>
                   <div className="text-lg font-medium text-gray-900">
                     {fmtDate(member.joinDate)}
                   </div>
-                  <div className="text-sm text-gray-500">Address: {member.address ?? "-"}</div>
+                  <div className="text-sm text-[var(--primary-300)]">Address: {member.address ?? "-"}</div>
                 </div>
               </div>
 
               {/* Payments table */}
               <div className="rounded-lg border border-gray-100 overflow-hidden">
-                <div className="px-4 py-3 bg-gray-50 flex items-center justify-between">
+                <div className="px-4 py-3 bg-[var(--primary-100)] flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Payment History</h3>
-                    <p className="text-xs text-gray-500">
+                    <h3 className="text-sm font-semibold text-[var(--primary-300)]">Payment History</h3>
+                    <p className="text-xs text-[var(--primary-300)]">
                       {member.paymentHistory?.length ?? 0} payments
                     </p>
                   </div>
@@ -228,11 +228,11 @@ const MemberPayments: React.FC = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="text-xs text-gray-500 uppercase tracking-wide bg-white">
+                      <tr className="text-xs text-[var(--primary-300)] uppercase tracking-wide bg-[var(--primary-200)]">
                         <th className="px-4 py-3">Date</th>
                         <th className="px-4 py-3">Plan</th>
                         <th className="px-4 py-3">Amount</th>
-                        <th className="px-4 py-3">Method</th>
+                        {/* <th className="px-4 py-3">Method</th> */}
                         <th className="px-4 py-3">Actions</th>
                       </tr>
                     </thead>
@@ -240,13 +240,13 @@ const MemberPayments: React.FC = () => {
                       {(member.paymentHistory && member.paymentHistory.length > 0)
                         ? member.paymentHistory.map((p) => (
                           <React.Fragment key={p._id}>
-                            <tr className="border-t border-gray-100 hover:bg-gray-50">
-                              <td className="px-4 py-3 text-sm text-gray-700">{fmtDate(p.paymentDate)}</td>
-                              <td className="px-4 py-3 text-sm text-gray-700">
+                            <tr className="border-t border-gray-100 ">
+                              <td className="px-4 py-3 text-sm text-[var(--primary-300)]">{fmtDate(p.paymentDate)}</td>
+                              <td className="px-4 py-3 text-sm text-[var(--primary-300)]">
                                 {typeof p.plan === "string" ? p.plan : p.plan?.name ?? "-"}
                               </td>
-                              <td className="px-4 py-3 text-sm font-medium text-gray-900">₹ {p.amount}</td>
-                              <td className="px-4 py-3 text-sm text-gray-700">{p.paymentMethod ?? "-"}</td>
+                              <td className="px-4 py-3 text-sm font-medium text-[var(--primary-300)]">Rs {p.amount}</td>
+                              {/* <td className="px-4 py-3 text-sm text-[var(--primary-300)]">{p.paymentMethod ?? "-"}</td> */}
                               <td className="px-4 py-3">
                                 <button
                                   onClick={() => toggleExpand(p._id)}
@@ -260,19 +260,19 @@ const MemberPayments: React.FC = () => {
 
                             {expandedPayment === p._id && (
                               <tr>
-                                <td colSpan={5} className="px-4 py-3 bg-gray-50 text-sm text-gray-700">
+                                <td colSpan={5} className="px-4 py-3 bg-[var(--primary-100)] text-sm text-[var(--primary-300)]">
                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     <div>
-                                      <div className="text-xs text-gray-500">Payment ID</div>
-                                      <div className="text-sm text-gray-900">{p._id}</div>
+                                      <div className="text-xs text-[var(--primary-300)]">Payment ID</div>
+                                      <div className="text-sm text-[var(--primary-300)]">{p._id}</div>
                                     </div>
                                     <div>
-                                      <div className="text-xs text-gray-500">Note</div>
-                                      <div className="text-sm text-gray-900">{p.note ?? "-"}</div>
+                                      <div className="text-xs text-[var(--primary-300)]">Note</div>
+                                      <div className="text-sm text-[var(--primary-300)]">{p.note ?? "-"}</div>
                                     </div>
                                     <div>
-                                      <div className="text-xs text-gray-500">Created</div>
-                                      <div className="text-sm text-gray-900">{fmtDate(p.createdAt ?? p.paymentDate)}</div>
+                                      <div className="text-xs text-[var(--primary-300)]">Created</div>
+                                      <div className="text-sm text-[var(--primary-300)]">{fmtDate(p.createdAt ?? p.paymentDate)}</div>
                                     </div>
                                   </div>
                                 </td>
