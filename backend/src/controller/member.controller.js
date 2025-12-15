@@ -274,6 +274,8 @@ const getMemberWithPaymentHistory = asyncHandler(async (req, res) => {
     throw new APIError(404, "Member not found");
   }
   console.log("received member from database: ", member)
+  const planInfo = await Plan.findById(member.plan)
+
   // ✅ Aggregation pipeline to get member with payment history
   const memberWithPayments = await Member.aggregate([
     {
@@ -305,7 +307,8 @@ const getMemberWithPaymentHistory = asyncHandler(async (req, res) => {
   // ✅ Send response
   res.status(200).json({
     message: "Member with Payment History fetched successfully",
-    data: memberWithPayments[0] // Return the member data along with their payment history
+    data: memberWithPayments[0],
+    plan: planInfo // Return the member data along with their payment history
   });
 });
 
