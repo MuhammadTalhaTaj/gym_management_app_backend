@@ -21,9 +21,14 @@ function AdminSidebar() {
   const isActive = (path: string) => {
     const p = location.pathname;
 
-    if (path === '/members') {
-      return p === '/members' || p === '/addmember';
-    }
+   if (path === '/members') {
+  return (
+    p === '/members' ||
+    p === '/addmember' ||
+    p.startsWith('/member/') 
+  );
+}
+
     if (path === '/staff') {
       return p === '/staff' || p === '/addstaff';
     }

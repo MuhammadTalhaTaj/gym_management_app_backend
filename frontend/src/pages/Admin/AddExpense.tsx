@@ -10,7 +10,7 @@ import CustomAlert from '../../Components/CustomAlert';
 
 // Data configuration file
 const expenseFormConfig = {
-  quickAmounts: [ 10, 25, 50, 100, 200],
+  quickAmounts: [ 100, 200, 500, 1000, 2000],
   placeholders: {
     expenseName: 'e.g., Grocery Shopping, Fuel, Restaurant',
     amount: ' 0.00',

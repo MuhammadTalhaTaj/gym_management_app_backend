@@ -74,6 +74,7 @@ const MemberPayments: React.FC = () => {
   const toggleExpand = (paymentId: string) => {
     setExpandedPayment((prev) => (prev === paymentId ? null : paymentId));
   };
+const [planName, setPlanName] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -87,10 +88,16 @@ const MemberPayments: React.FC = () => {
       }
 
       try {
-        const res = await apiRequest<{ message?: string; data?: MemberWithPayments }>({
-          method: "GET",
-          endpoint: `/member/getMemberPayments/${memberId}`,
-        });
+        const res = await apiRequest<{
+  data?: MemberWithPayments;
+  plan?: { _id: string; name: string };
+}>({
+  method: "GET",
+  endpoint: `/member/getMemberPayments/${memberId}`,
+});
+if (res.plan?.name) {
+  setPlanName(res.plan.name);
+}
 
         // Safe-guard if backend returned empty data
         if (!res || !res.data) {
@@ -243,7 +250,7 @@ const MemberPayments: React.FC = () => {
                             <tr className="border-t border-gray-100 ">
                               <td className="px-4 py-3 text-sm text-[var(--primary-300)]">{fmtDate(p.paymentDate)}</td>
                               <td className="px-4 py-3 text-sm text-[var(--primary-300)]">
-                                {typeof p.plan === "string" ? p.plan : p.plan?.name ?? "-"}
+                                {planName ?? "-"}
                               </td>
                               <td className="px-4 py-3 text-sm font-medium text-[var(--primary-300)]">Rs {p.amount}</td>
                               {/* <td className="px-4 py-3 text-sm text-[var(--primary-300)]">{p.paymentMethod ?? "-"}</td> */}
